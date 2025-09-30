@@ -21,7 +21,10 @@ export const loginViaSalla = (req, res) => {
   sallaUrl.searchParams.set("response_type", "code");
   sallaUrl.searchParams.set("client_id", config.clientKey);
   sallaUrl.searchParams.set("redirect_uri", config.redirectUri);
-  sallaUrl.searchParams.set("scope", "offline_access");
+  sallaUrl.searchParams.set(
+    "scope",
+    "offline_access specialoffers.read_write products.read_write webhooks.read_write orders.read metadata.read_write"
+  );
   sallaUrl.searchParams.set("state", state);
 
   res.redirect(sallaUrl.toString());
@@ -62,19 +65,44 @@ export const sallaCallback = asyncWrapper(async (req, res) => {
 
   const store = storeRes.data.data;
 
+  const storePlan = store.plan || "basic";
+
+  // Calculate bundle limit based on plan
+  let maxBundles = 3; // default
+  switch (storePlan) {
+    case "basic":
+      maxBundles = 3;
+      break;
+    case "pro":
+      maxBundles = 10;
+      break;
+    case "enterprise":
+      maxBundles = 50;
+      break;
+    case "special":
+      maxBundles = 100;
+      break;
+  }
+
   await Store.findOneAndUpdate(
     { store_id: store.id },
     {
       name: store.name,
       domain: store.domain,
       description: store.description,
-      plan: store.plan || "basic",
+      plan: storePlan,
       access_token,
       refresh_token,
       scope,
       access_token_expires_at: new Date(Date.now() + expires_in * 1000),
       installed_at: new Date(),
       avatar: store.avatar,
+      bundle_settings: {
+        max_bundles_per_store: maxBundles,
+        analytics_enabled: true,
+      },
+      bundles_enabled: true,
+      status: "active",
     },
     { upsert: true }
   );
@@ -155,9 +183,9 @@ export const sallaCallback = asyncWrapper(async (req, res) => {
                   name: store.name,
                   domain: store.domain,
                   avatar: store.avatar,
-                  plan: store.plan || "basic"
-                }
-              }
+                  plan: store.plan || "basic",
+                },
+              },
             })};
             
             // Encode auth data for URL
@@ -166,7 +194,9 @@ export const sallaCallback = asyncWrapper(async (req, res) => {
             
             // Redirect to frontend with auth data in URL
             setTimeout(() => {
-                window.location.href = '${config.dashboard}/auth/callback?token=' + encodedToken + '&user=' + encodedUser;
+                window.location.href = '${
+                  config.dashboard
+                }/auth/callback?token=' + encodedToken + '&user=' + encodedUser;
             }, 1500);
         </script>
     </body>

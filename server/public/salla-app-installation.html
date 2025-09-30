@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Salla Bundle System - Corrected Snippet</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+        background: #f8f9fa;
+        direction: rtl;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .code-block {
+        background: #2d3748;
+        color: #e2e8f0;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+        overflow-x: auto;
+        margin: 15px 0;
+        white-space: pre-wrap;
+      }
+      .highlight {
+        background: #ffd700;
+        color: #000;
+        padding: 2px 4px;
+        border-radius: 3px;
+      }
+      .warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+      }
+      .code-container {
+        position: relative;
+      }
+      .copy-button {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: #4a5568;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.2s;
+      }
+      .copy-button:hover {
+        background: #2d3748;
+      }
+      .copy-button.copied {
+        background: #38a169;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔧 Salla Bundle System - Corrected Snippet</h1>
+
+      <div class="warning">
+        <strong>⚠️ مشكلة تم حلها:</strong>
+        <p>
+          المشكلة كانت أن متغيرات سلة مثل <code>{{ store.domain }}</code> لا يتم
+          استبدالها في URL الخاص بتحميل الـ script، مما يؤدي إلى فشل تحميل
+          الملف.
+        </p>
+      </div>
+
+      <div class="success">
+        <strong>✅ الحل:</strong>
+        <p>
+          تم تعديل الكود ليقوم بتمرير متغيرات سلة عبر
+          <code>window.sallaStoreContext</code> بدلاً من URL.
+        </p>
+      </div>
+
+      <h2>📋 Snippet المُصحح للاستخدام في Salla Partners Portal:</h2>
+
+      <div class="code-container">
+        <button class="copy-button" onclick="copyCode()">📋 نسخ الكود</button>
+        <div class="code-block" id="snippet-code">
+          &lt;script type="text/javascript"&gt; var sallaStoreContext = {
+          storeDomain: '{{ store.domain }}', storeId: '{{ store.id }}',
+          storeUsername: '{{ store.username }}', storeEmail: '{{ store.email
+          }}', customerId: '{{ customer.id }}', customerName: '{{ customer.name
+          }}', customerEmail: '{{ customer.email }}', customerMobile: '{{
+          customer.mobile }}' };window.sallaStoreContext = sallaStoreContext;
+          var url = 'https://app.hazemaamer.tech/api/v1/snippet/app-snippet.js';
+          var s = document.createElement('script'); s.type = 'text/javascript';
+          s.async = true; s.src = url; s.onload = function() { console.log('✅
+          Salla Bundle System loaded successfully'); }; s.onerror = function() {
+          console.error('❌ Failed to load Salla Bundle System'); }; var x =
+          document.getElementsByTagName('script')[0];
+          x.parentNode.insertBefore(s, x); &lt;/script&gt;
+        </div>
+      </div>
+
+      <h2>🔄 ما تم تغييره (النسخة المتوافقة):</h2>
+      <ol>
+        <li>
+          <span class="highlight">استخدام type="text/javascript" صراحة</span> -
+          لتجنب مشاكل الأمان
+        </li>
+        <li>
+          <span class="highlight">استخدام var بدلاً من const/let</span> -
+          للتوافق مع المتصفحات القديمة
+        </li>
+        <li>
+          <span class="highlight"
+            >استخدام insertBefore بدلاً من appendChild</span
+          >
+          - نفس طريقة التطبيقات الأخرى
+        </li>
+        <li>
+          <span class="highlight">تجنب IIFE غير الضرورية</span> - كود أبسط وأقل
+          عرضة للحجب
+        </li>
+        <li>
+          <span class="highlight"
+            >تعيين البيانات في window.sallaStoreContext</span
+          >
+          - قبل تحميل الـ script
+        </li>
+      </ol>
+
+      <h2>🧪 كيفية الاختبار:</h2>
+      <ol>
+        <li>استبدل <code>YOUR_DOMAIN.com</code> بالدومين الفعلي لخادمك</li>
+        <li>أضف الـ snippet في Salla Partners Portal</li>
+        <li>اختر <strong>Product Pages</strong> كصفحات مستهدفة</li>
+        <li>احفظ وانشر التطبيق</li>
+        <li>افتح صفحة منتج في متجرك</li>
+        <li>افتح Developer Tools > Console وشاهد الرسائل</li>
+        <li>
+          تحقق من Network tab لترى إذا كان <code>app-snippet.js</code> يتم
+          تحميله
+        </li>
+      </ol>
+
+      <div class="warning">
+        <strong>📝 ملاحظة مهمة:</strong>
+        <p>
+          تأكد من أن خادمك يعمل وأن الرابط
+          <code>https://YOUR_DOMAIN.com/api/v1/snippet/app-snippet.js</code>
+          متاح للوصول العام. استبدل <code>YOUR_DOMAIN.com</code> بدومين خادمك
+          الفعلي.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      function copyCode() {
+        const codeElement = document.getElementById("snippet-code");
+        const button = document.querySelector(".copy-button");
+
+        // Get the text content and clean it up
+        let codeText = codeElement.textContent || codeElement.innerText;
+
+        // Copy to clipboard
+        navigator.clipboard
+          .writeText(codeText)
+          .then(function () {
+            // Success feedback
+            const originalText = button.innerHTML.trim();
+            button.innerHTML = "✅ تم النسخ!";
+            button.classList.add("copied");
+
+            // Reset after 2 seconds
+            setTimeout(function () {
+              button.innerHTML = originalText;
+              button.classList.remove("copied");
+            }, 2000);
+          })
+          .catch(function (err) {
+            // Fallback for older browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = codeText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+
+            // Success feedback
+            const originalText = button.innerHTML;
+            button.innerHTML = "✅ تم النسخ!";
+            button.classList.add("copied");
+
+            setTimeout(function () {
+              button.innerHTML = originalText;
+              button.classList.remove("copied");
+            }, 2000);
+          });
+      }
+    </script>
+  </body>
+</html>

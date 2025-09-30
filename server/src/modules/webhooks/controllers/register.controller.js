@@ -8,7 +8,10 @@ export const registerNewStore = asyncWrapper(async (req, res) => {
   const { event, merchant } = req.body;
   const payload = req.body?.data;
 
+  // Enhanced logging for debugging
   console.log(`[Webhook]: Received event ${event} for merchant ${merchant}`);
+  console.log(`[Webhook]: Full payload:`, JSON.stringify(req.body, null, 2));
+  console.log(`[Webhook]: Headers:`, JSON.stringify(req.headers, null, 2));
 
   switch (event) {
     case "app.store.authorize":

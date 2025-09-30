@@ -14,6 +14,12 @@ class StoreService {
       scope,
     } = payload;
 
+    // Set default bundle settings for new stores
+    const defaultBundleSettings = {
+      max_bundles_per_store: 3, // Basic plan default
+      analytics_enabled: true,
+    };
+
     await Store.findOneAndUpdate(
       { store_id },
       {
@@ -25,6 +31,9 @@ class StoreService {
         token_type,
         access_token_expires_at: new Date(Date.now() + expires * 1000),
         installed_at: new Date(),
+        bundle_settings: defaultBundleSettings,
+        bundles_enabled: true,
+        status: "active",
       },
       { upsert: true, new: true }
     );
@@ -60,13 +69,25 @@ class StoreService {
   async updateStorePlan(store_id, plan) {
     const validPlans = ["basic", "pro", "enterprise", "special"];
     const normalizedPlan = validPlans.includes(plan) ? plan : "basic";
-    
+
+    // Calculate new bundle limit based on plan
+    let maxBundles = 3; // default
+    switch (normalizedPlan) {
+      case "basic": maxBundles = 3; break;
+      case "pro": maxBundles = 10; break;
+      case "enterprise": maxBundles = 50; break;
+      case "special": maxBundles = 100; break;
+    }
+
     const store = await Store.findOneAndUpdate(
       { store_id },
-      { plan: normalizedPlan },
+      {
+        plan: normalizedPlan,
+        "bundle_settings.max_bundles_per_store": maxBundles
+      },
       { new: true }
     );
-    
+
     if (!store) throw new Error("Store not found");
     return store;
   }
