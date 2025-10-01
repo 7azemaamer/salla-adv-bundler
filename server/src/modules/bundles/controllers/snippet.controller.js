@@ -178,6 +178,15 @@ class SnippetController {
       this.retryCount = 0;
       this.maxRetries = 10;
       this.modalScriptLoaded = false;
+      this.settings = {
+        hide_default_buttons: false,
+        hide_salla_offer_modal: false
+      };
+      this.bundleData = {
+        cta_button_text: 'اختر الباقة',
+        cta_button_bg_color: '#0066ff',
+        cta_button_text_color: '#ffffff'
+      };
     }
 
     async initialize() {
@@ -235,6 +244,12 @@ class SnippetController {
         }
 
         this.injectBundleUI();
+
+        // Hide Salla default buttons if enabled in settings
+        this.hideSallaDefaultButtons();
+
+        // Hide Salla offer modal if enabled in settings
+        this.hideSallaOfferModal();
 
         // Load modal script asynchronously immediately after injection
         this.loadModalScriptAsync();
@@ -343,11 +358,161 @@ class SnippetController {
             'X-Customer-ID': CONFIG.customerId || ''
           }
         });
-        return response.ok;
+
+        if (response.ok) {
+          // Parse response to get settings and bundle data
+          const data = await response.json();
+          if (data.data) {
+            // Store settings
+            if (data.data.settings) {
+              this.settings = data.data.settings;
+              console.log('[Salla Bundle] Settings loaded:', this.settings);
+            }
+            
+            // Store bundle data for UI customization
+            this.bundleData = data.data;
+            console.log('[Salla Bundle] Bundle data loaded:', {
+              cta_button_text: this.bundleData.cta_button_text,
+              cta_button_bg_color: this.bundleData.cta_button_bg_color,
+              cta_button_text_color: this.bundleData.cta_button_text_color,
+              modal_title: this.bundleData.modal_title,
+              modal_subtitle: this.bundleData.modal_subtitle
+            });
+            console.log('[Salla Bundle] FULL BUNDLE DATA:', JSON.stringify(data.data, null, 2));
+          }
+          return true;
+        }
+
+        return false;
       } catch (error) {
         console.error('[Salla Bundle] Bundle check failed:', error);
         return false;
       }
+    }
+
+    hideSallaDefaultButtons() {
+      if (!this.settings.hide_default_buttons) {
+        console.log('[Salla Bundle] Hide default buttons disabled in settings');
+        return;
+      }
+
+      console.log('[Salla Bundle] Hiding Salla default buttons...');
+
+      // Add CSS to hide default buttons
+      const style = document.createElement('style');
+      style.id = 'salla-bundle-hide-defaults';
+      style.textContent = \`
+        /* Hide Salla default add-to-cart buttons */
+        form.product-form salla-add-product-button,
+        form.product-form .salla-add-product-button,
+        form.product-form button[type="submit"]:not(.salla-bundle-btn),
+        .product-form .add-to-cart-btn:not(.salla-bundle-btn),
+        .product-actions .buy-now-btn:not(.salla-bundle-btn) {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+
+        /* Ensure bundle button remains visible */
+        .salla-bundle-btn,
+        .salla-bundle-container {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+      \`;
+
+      // Check if style already exists
+      const existingStyle = document.getElementById('salla-bundle-hide-defaults');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      document.head.appendChild(style);
+
+      // Also hide buttons via JS (backup method)
+      const selectors = [
+        'form.product-form salla-add-product-button',
+        'form.product-form .salla-add-product-button',
+        '.product-form .add-to-cart-btn',
+        '.product-actions .buy-now-btn',
+        'form.product-form button[type="submit"]'
+      ];
+
+      selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(element => {
+          // Don't hide if it's our bundle button
+          if (!element.classList.contains('salla-bundle-btn')) {
+            element.style.cssText = 'display: none !important; visibility: hidden !important;';
+          }
+        });
+      });
+
+      console.log('[Salla Bundle] Default buttons hidden');
+    }
+
+    hideSallaOfferModal() {
+      if (!this.settings.hide_salla_offer_modal) {
+        console.log('[Salla Bundle] Hide Salla offer modal disabled in settings');
+        return;
+      }
+
+      console.log('[Salla Bundle] Hiding Salla offer modal (s-offer-modal-type-products)...');
+
+      // Add CSS to hide the specific Salla offer modal
+      const style = document.createElement('style');
+      style.id = 'salla-bundle-hide-offer-modal';
+      style.textContent = \`
+        /* Hide Salla default offer modal (only s-offer-modal-type-products) */
+        salla-modal[s-offer-modal-type-products] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+      \`;
+
+      // Check if style already exists
+      const existingStyle = document.getElementById('salla-bundle-hide-offer-modal');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      document.head.appendChild(style);
+
+      // Also hide modal via JS (backup method) and observe for dynamically added modals
+      const hideOfferModals = () => {
+        const offerModals = document.querySelectorAll('salla-modal[s-offer-modal-type-products]');
+        offerModals.forEach(modal => {
+          modal.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+        });
+        if (offerModals.length > 0) {
+          console.log(\`[Salla Bundle] Hidden \${offerModals.length} Salla offer modal(s)\`);
+        }
+      };
+
+      // Hide existing modals
+      hideOfferModals();
+
+      // Observe for new modals being added to DOM
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1 && node.tagName === 'SALLA-MODAL' && node.hasAttribute('s-offer-modal-type-products')) {
+              console.log('[Salla Bundle] Detected new Salla offer modal, hiding...');
+              node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+
+      console.log('[Salla Bundle] Salla offer modal hidden and observer set up');
     }
 
     injectBundleUI() {
@@ -421,6 +586,13 @@ class SnippetController {
     }
 
     createBundleButton() {
+      console.log('[Salla Bundle] Creating bundle button...');
+      console.log('[Salla Bundle] Current bundleData:', {
+        cta_button_text: this.bundleData.cta_button_text,
+        cta_button_bg_color: this.bundleData.cta_button_bg_color,
+        cta_button_text_color: this.bundleData.cta_button_text_color
+      });
+
       // Create bundle button container
       const bundleContainer = document.createElement('div');
       bundleContainer.className = 'salla-bundle-container';
@@ -434,20 +606,23 @@ class SnippetController {
       bundleButton.type = 'button';
       bundleButton.className = 'salla-bundle-btn';
 
-      // Personalize button text based on customer info
-      let buttonText = '🔥 عروض حصرية متاحة - اختر باقتك';
-      if (CONFIG.customerName) {
-        buttonText = \`🔥 عروض خاصة لك \${CONFIG.customerName} - اختر باقتك\`;
-      } else if (CONFIG.customerId) {
-        buttonText = '🔥 عروض خاصة لعملائنا المميزين - اختر باقتك';
-      }
+      // Use dynamic button text from bundle configuration
+      const buttonText = this.bundleData.cta_button_text || 'اختر الباقة';
+      console.log('[Salla Bundle] Button text resolved to:', buttonText);
 
       bundleButton.innerHTML = buttonText;
 
+      // Use dynamic colors from bundle configuration
+      const buttonBgColor = this.bundleData.cta_button_bg_color || '#0066ff';
+      const buttonTextColor = this.bundleData.cta_button_text_color || '#ffffff';
+      
+      // Create a darker shade for hover effect
+      const darkerBgColor = this.adjustColorBrightness(buttonBgColor, -20);
+
       bundleButton.style.cssText = \`
         width: 100%;
-        background: linear-gradient(135deg, #fece0a 0%, #e6b800 100%);
-        color: #000;
+        background: \${buttonBgColor};
+        color: \${buttonTextColor};
         border: none;
         padding: 16px 20px;
         border-radius: 8px;
@@ -456,24 +631,24 @@ class SnippetController {
         cursor: pointer;
         margin-bottom: 12px;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(254, 206, 10, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         font-family: inherit;
         text-align: center;
         position: relative;
         overflow: hidden;
       \`;
 
-      // Add hover effects
+      // Add hover effects with dynamic colors
       bundleButton.onmouseenter = () => {
-        bundleButton.style.background = 'linear-gradient(135deg, #e6b800 0%, #cc9900 100%)';
+        bundleButton.style.background = darkerBgColor;
         bundleButton.style.transform = 'translateY(-2px)';
-        bundleButton.style.boxShadow = '0 8px 20px rgba(254, 206, 10, 0.5)';
+        bundleButton.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
       };
 
       bundleButton.onmouseleave = () => {
-        bundleButton.style.background = 'linear-gradient(135deg, #fece0a 0%, #e6b800 100%)';
+        bundleButton.style.background = buttonBgColor;
         bundleButton.style.transform = 'translateY(0)';
-        bundleButton.style.boxShadow = '0 4px 12px rgba(254, 206, 10, 0.3)';
+        bundleButton.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
       };
 
       bundleButton.onclick = (e) => {
@@ -483,6 +658,28 @@ class SnippetController {
 
       bundleContainer.appendChild(bundleButton);
       return bundleContainer;
+    }
+
+    // Helper function to adjust color brightness
+    adjustColorBrightness(hex, percent) {
+      // Remove # if present
+      hex = hex.replace('#', '');
+      
+      // Parse r, g, b values
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      // Calculate new values
+      const newR = Math.max(0, Math.min(255, r + (r * percent / 100)));
+      const newG = Math.max(0, Math.min(255, g + (g * percent / 100)));
+      const newB = Math.max(0, Math.min(255, b + (b * percent / 100)));
+      
+      // Convert back to hex
+      return '#' + 
+        Math.round(newR).toString(16).padStart(2, '0') +
+        Math.round(newG).toString(16).padStart(2, '0') +
+        Math.round(newB).toString(16).padStart(2, '0');
     }
 
     injectAlternativeUI() {
@@ -501,38 +698,39 @@ class SnippetController {
         if (container) {
           const notice = document.createElement('div');
           notice.className = 'salla-bundle-notice';
+          
+          // Use dynamic colors from bundle configuration
+          const buttonBgColor = this.bundleData.cta_button_bg_color || '#0066ff';
+          const buttonTextColor = this.bundleData.cta_button_text_color || '#ffffff';
+          const darkerBgColor = this.adjustColorBrightness(buttonBgColor, -20);
+          
           notice.style.cssText = \`
-            background: linear-gradient(135deg, #fece0a 0%, #e6b800 100%);
-            color: #000;
+            background: \${buttonBgColor};
+            color: \${buttonTextColor};
             padding: 14px 18px;
             border-radius: 8px;
             margin: 15px 0;
             text-align: center;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(254, 206, 10, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             font-size: 15px;
           \`;
           
-          // Personalize notice text
-          let noticeText = '🔥 عروض حصرية متاحة لهذا المنتج - انقر للاطلاع';
-          if (CONFIG.customerName) {
-            noticeText = \`🔥 عروض خاصة لك \${CONFIG.customerName} - انقر للاطلاع\`;
-          } else if (CONFIG.customerId) {
-            noticeText = '🔥 عروض خاصة لعملائنا المميزين - انقر للاطلاع';
-          }
-          
+          // Use dynamic button text from bundle configuration
+          const noticeText = this.bundleData.cta_button_text || 'اختر الباقة';
+
           notice.innerHTML = noticeText;
           notice.onclick = () => this.openBundleModal();
           
           notice.onmouseenter = () => {
-            notice.style.background = 'linear-gradient(135deg, #e6b800 0%, #cc9900 100%)';
+            notice.style.background = darkerBgColor;
             notice.style.transform = 'translateY(-2px)';
           };
           
           notice.onmouseleave = () => {
-            notice.style.background = 'linear-gradient(135deg, #fece0a 0%, #e6b800 100%)';
+            notice.style.background = buttonBgColor;
             notice.style.transform = 'translateY(0)';
           };
           

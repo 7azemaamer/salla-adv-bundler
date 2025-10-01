@@ -52,6 +52,44 @@ const BundleConfigSchema = new mongoose.Schema(
           min: 1,
           max: 20,
         },
+        // Tier UI Customization
+        tier_title: {
+          type: String,
+          trim: true,
+          maxLength: 50,
+          default: function() {
+            return `المستوى ${this.tier}`;
+          }
+        },
+        tier_highlight_text: {
+          type: String,
+          trim: true,
+          maxLength: 30,
+        },
+        tier_bg_color: {
+          type: String,
+          trim: true,
+          default: '#f8f9fa',
+        },
+        tier_text_color: {
+          type: String,
+          trim: true,
+          default: '#212529',
+        },
+        tier_highlight_bg_color: {
+          type: String,
+          trim: true,
+          default: '#ffc107',
+        },
+        tier_highlight_text_color: {
+          type: String,
+          trim: true,
+          default: '#000000',
+        },
+        is_default: {
+          type: Boolean,
+          default: false,
+        },
         offers: [
           {
             product_id: {
@@ -120,6 +158,35 @@ const BundleConfigSchema = new mongoose.Schema(
         },
         message: "Expiry date must be after start date",
       },
+    },
+    // Modal UI Customization
+    modal_title: {
+      type: String,
+      trim: true,
+      maxLength: 100,
+      default: 'اختر باقتك',
+    },
+    modal_subtitle: {
+      type: String,
+      trim: true,
+      maxLength: 150,
+      default: '',
+    },
+    cta_button_text: {
+      type: String,
+      trim: true,
+      maxLength: 50,
+      default: 'اختر الباقة',
+    },
+    cta_button_bg_color: {
+      type: String,
+      trim: true,
+      default: '#0066ff',
+    },
+    cta_button_text_color: {
+      type: String,
+      trim: true,
+      default: '#ffffff',
     },
     config_hash: {
       type: String,

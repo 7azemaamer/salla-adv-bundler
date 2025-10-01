@@ -20,6 +20,8 @@ import {
   Badge,
   Divider,
   Textarea,
+  ColorInput,
+  Switch,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import {
@@ -33,6 +35,8 @@ import {
   IconSearch,
   IconArrowLeft,
   IconArrowRight,
+  IconPalette,
+  IconStar,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
@@ -53,10 +57,22 @@ export default function CreateBundlePage() {
       target_product_name: "",
       start_date: new Date(),
       expiry_date: null,
+      modal_title: "اختر باقتك",
+      modal_subtitle: "",
+      cta_button_text: "اختر الباقة",
+      cta_button_bg_color: "#0066ff",
+      cta_button_text_color: "#ffffff",
       bundles: [
         {
           tier: 1,
           buy_quantity: 1,
+          tier_title: "باقة البداية",
+          tier_highlight_text: "",
+          tier_bg_color: "#f8f9fa",
+          tier_text_color: "#212529",
+          tier_highlight_bg_color: "#ffc107",
+          tier_highlight_text_color: "#000000",
+          is_default: true,
           offers: [
             {
               product_id: "",
@@ -99,9 +115,26 @@ export default function CreateBundlePage() {
   );
 
   const addTier = () => {
+    const tierNum = form.values.bundles.length + 1;
+    const tierColors = [
+      { bg: "#f8f9fa", text: "#212529", highlightBg: "#17a2b8", highlightText: "#ffffff" }, // Light gray
+      { bg: "#e3f2fd", text: "#1565c0", highlightBg: "#1976d2", highlightText: "#ffffff" }, // Light blue
+      { bg: "#f3e5f5", text: "#6a1b9a", highlightBg: "#7b1fa2", highlightText: "#ffffff" }, // Light purple
+      { bg: "#fff3e0", text: "#e65100", highlightBg: "#f57c00", highlightText: "#ffffff" }, // Light orange
+      { bg: "#e8f5e9", text: "#2e7d32", highlightBg: "#388e3c", highlightText: "#ffffff" }, // Light green
+    ];
+    const colorScheme = tierColors[(tierNum - 1) % tierColors.length];
+
     const newTier = {
-      tier: form.values.bundles.length + 1,
-      buy_quantity: form.values.bundles.length + 1,
+      tier: tierNum,
+      buy_quantity: tierNum,
+      tier_title: tierNum === 2 ? "باقة الأصدقاء" : tierNum === 3 ? "باقة العائلة" : `المستوى ${tierNum}`,
+      tier_highlight_text: tierNum === 2 ? "وفر أكثر" : tierNum === 3 ? "أفضل قيمة" : "",
+      tier_bg_color: colorScheme.bg,
+      tier_text_color: colorScheme.text,
+      tier_highlight_bg_color: colorScheme.highlightBg,
+      tier_highlight_text_color: colorScheme.highlightText,
+      is_default: false,
       offers: [
         {
           product_id: "",
@@ -110,9 +143,7 @@ export default function CreateBundlePage() {
           discount_type: "free",
           discount_amount: 100,
           offer_type: "gift",
-          arabic_message: `اشترِ ${
-            form.values.bundles.length + 1
-          } واحصل على عرض خاص`,
+          arabic_message: `اشترِ ${tierNum} واحصل على عرض خاص`,
         },
       ],
     };
@@ -374,11 +405,29 @@ export default function CreateBundlePage() {
                 </Group>
 
                 {form.values.bundles.map((tier, tierIndex) => (
-                  <Paper key={tierIndex} p="md" withBorder>
+                  <Paper key={tierIndex} p="md" withBorder style={{ backgroundColor: tier.tier_bg_color || '#f8f9fa' }}>
                     <Group justify="space-between" mb="md">
-                      <Title order={4} className="text-blue-600">
-                        المستوى {tier.tier}
-                      </Title>
+                      <Group gap="sm">
+                        <Title order={4} style={{ color: tier.tier_text_color || '#212529' }}>
+                          {tier.tier_title || `المستوى ${tier.tier}`}
+                        </Title>
+                        {tier.tier_highlight_text && (
+                          <Badge
+                            size="lg"
+                            style={{
+                              backgroundColor: tier.tier_highlight_bg_color || '#ffc107',
+                              color: tier.tier_highlight_text_color || '#000000'
+                            }}
+                          >
+                            {tier.tier_highlight_text}
+                          </Badge>
+                        )}
+                        {tier.is_default && (
+                          <Badge size="sm" color="green" leftSection={<IconStar size="0.8rem" />}>
+                            افتراضي
+                          </Badge>
+                        )}
+                      </Group>
                       {form.values.bundles.length > 1 && (
                         <ActionIcon
                           color="red"
@@ -392,14 +441,83 @@ export default function CreateBundlePage() {
 
                     <Grid>
                       <Grid.Col span={6}>
+                        <TextInput
+                          label="عنوان المستوى"
+                          placeholder="مثال: باقة البداية"
+                          leftSection={<IconPackage size="0.9rem" />}
+                          {...form.getInputProps(`bundles.${tierIndex}.tier_title`)}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={6}>
                         <NumberInput
                           label="كمية الشراء المطلوبة"
                           placeholder="1"
                           min={1}
                           max={10}
-                          {...form.getInputProps(
-                            `bundles.${tierIndex}.buy_quantity`
-                          )}
+                          {...form.getInputProps(`bundles.${tierIndex}.buy_quantity`)}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={6}>
+                        <TextInput
+                          label="نص التميز (اختياري)"
+                          placeholder="مثال: وفر أكثر، أفضل قيمة"
+                          {...form.getInputProps(`bundles.${tierIndex}.tier_highlight_text`)}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={6}>
+                        <Switch
+                          label="جعل هذا المستوى افتراضياً"
+                          description="سيتم تحديد هذا المستوى مسبقاً في الواجهة"
+                          checked={tier.is_default}
+                          onChange={(event) => {
+                            // Uncheck all other tiers
+                            const updatedBundles = form.values.bundles.map((b, idx) => ({
+                              ...b,
+                              is_default: idx === tierIndex ? event.currentTarget.checked : false
+                            }));
+                            form.setFieldValue('bundles', updatedBundles);
+                          }}
+                        />
+                      </Grid.Col>
+                    </Grid>
+
+                    <Divider my="md" label={<Group gap="xs"><IconPalette size="1rem" /> ألوان المستوى</Group>} labelPosition="center" />
+
+                    <Grid>
+                      <Grid.Col span={6}>
+                        <ColorInput
+                          label="لون خلفية المستوى"
+                          description="لون الخلفية للبطاقة في الواجهة"
+                          placeholder="اختر اللون"
+                          format="hex"
+                          {...form.getInputProps(`bundles.${tierIndex}.tier_bg_color`)}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={6}>
+                        <ColorInput
+                          label="لون نص المستوى"
+                          description="لون النصوص داخل البطاقة"
+                          placeholder="اختر اللون"
+                          format="hex"
+                          {...form.getInputProps(`bundles.${tierIndex}.tier_text_color`)}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={6}>
+                        <ColorInput
+                          label="لون خلفية شارة التميز"
+                          description="لون خلفية الشارة (مثل: أفضل قيمة)"
+                          placeholder="اختر اللون"
+                          format="hex"
+                          {...form.getInputProps(`bundles.${tierIndex}.tier_highlight_bg_color`)}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={6}>
+                        <ColorInput
+                          label="لون نص شارة التميز"
+                          description="لون نص الشارة"
+                          placeholder="اختر اللون"
+                          format="hex"
+                          {...form.getInputProps(`bundles.${tierIndex}.tier_highlight_text_color`)}
                         />
                       </Grid.Col>
                     </Grid>
@@ -556,15 +674,6 @@ export default function CreateBundlePage() {
                                 )}
                               />
                             </Grid.Col>
-                            <Grid.Col span={6}>
-                              <TextInput
-                                label="رسالة المنتج (عربي)"
-                                size="sm"
-                                {...form.getInputProps(
-                                  `bundles.${tierIndex}.offers.${offerIndex}.arabic_message`
-                                )}
-                              />
-                            </Grid.Col>
                           </Grid>
                         </Stack>
                       </Card>
@@ -595,6 +704,53 @@ export default function CreateBundlePage() {
                       label="تاريخ انتهاء الباقة (اختياري)"
                       placeholder="اختر التاريخ"
                       {...form.getInputProps("expiry_date")}
+                    />
+                  </Grid.Col>
+                </Grid>
+
+                <Divider my="md" label={<Group gap="xs"><IconPalette size="1rem" /> تخصيص واجهة العرض</Group>} labelPosition="center" />
+
+                <Grid>
+                  <Grid.Col span={12}>
+                    <TextInput
+                      label="عنوان النافذة المنبثقة"
+                      placeholder="مثال: اختر باقتك المفضلة"
+                      description="العنوان الذي سيظهر في أعلى نافذة اختيار الباقات"
+                      {...form.getInputProps("modal_title")}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={12}>
+                    <TextInput
+                      label="العنوان الفرعي للباقات (اختياري)"
+                      placeholder="مثال: اختيارات أفضل قيمة — وفر أكثر"
+                      description="نص توضيحي يظهر أسفل عنوان 'باقاتنا' (اتركه فارغاً لإخفائه)"
+                      {...form.getInputProps("modal_subtitle")}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <TextInput
+                      label="نص زر الاختيار"
+                      placeholder="مثال: اختر الباقة"
+                      description="النص الذي سيظهر على زر الاختيار لكل باقة"
+                      {...form.getInputProps("cta_button_text")}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={3}>
+                    <ColorInput
+                      label="لون خلفية الزر"
+                      description="لون الخلفية لزر الاختيار"
+                      placeholder="اختر اللون"
+                      format="hex"
+                      {...form.getInputProps("cta_button_bg_color")}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={3}>
+                    <ColorInput
+                      label="لون نص الزر"
+                      description="لون النص داخل الزر"
+                      placeholder="اختر اللون"
+                      format="hex"
+                      {...form.getInputProps("cta_button_text_color")}
                     />
                   </Grid.Col>
                 </Grid>
@@ -661,19 +817,135 @@ export default function CreateBundlePage() {
                   </Stack>
                 </Paper>
 
-                {form.values.bundles.map((tier, index) => (
-                  <Paper key={index} p="md" withBorder>
-                    <Title order={5} mb="sm">
-                      المستوى {tier.tier}: اشترِ {tier.buy_quantity} واحصل على{" "}
-                      {tier.offers.length} عرض
-                    </Title>
-                    {tier.offers.map((offer, offerIndex) => (
-                      <Text key={offerIndex} size="sm" c="dimmed">
-                        • {offer.product_name} (الكمية: {offer.quantity})
-                      </Text>
-                    ))}
-                  </Paper>
-                ))}
+                {form.values.bundles.map((tier, index) => {
+                  // Find target product from products list
+                  const targetProduct = products.find(p => p.id === form.values.target_product_id);
+
+                  return (
+                    <Paper key={index} p="md" withBorder style={{ backgroundColor: tier.tier_bg_color || '#f8f9fa' }}>
+                      <Group justify="space-between" mb="md">
+                        <Group gap="sm">
+                          <Title order={5} style={{ color: tier.tier_text_color || '#212529' }}>
+                            {tier.tier_title || `المستوى ${tier.tier}`}
+                          </Title>
+                          {tier.tier_highlight_text && (
+                            <Badge
+                              style={{
+                                backgroundColor: tier.tier_highlight_bg_color || '#ffc107',
+                                color: tier.tier_highlight_text_color || '#000000'
+                              }}
+                            >
+                              {tier.tier_highlight_text}
+                            </Badge>
+                          )}
+                          {tier.is_default && (
+                            <Badge color="green" size="sm">افتراضي</Badge>
+                          )}
+                        </Group>
+                        <Text size="sm" c="dimmed">
+                          اشترِ {tier.buy_quantity} واحصل على {tier.offers.length} عرض
+                        </Text>
+                      </Group>
+
+                      <Stack gap="md">
+                        {/* Target Product */}
+                        <div>
+                          <Text size="sm" fw={600} mb="xs" style={{ color: tier.tier_text_color || '#212529' }}>
+                            المنتج المستهدف:
+                          </Text>
+                          <Card withBorder padding="sm">
+                            <Group gap="sm">
+                              {targetProduct?.image && (
+                                <Image
+                                  src={targetProduct.image}
+                                  alt={targetProduct.name}
+                                  w={50}
+                                  h={50}
+                                  radius="sm"
+                                />
+                              )}
+                              <div style={{ flex: 1 }}>
+                                <Text size="sm" fw={500}>
+                                  {form.values.target_product_name}
+                                </Text>
+                                <Group gap="xs">
+                                  <Text size="xs" c="dimmed">
+                                    الكمية: {tier.buy_quantity}
+                                  </Text>
+                                  {targetProduct?.price && (
+                                    <Text size="xs" fw={500}>
+                                      {targetProduct.price} {targetProduct.currency || 'SAR'}
+                                    </Text>
+                                  )}
+                                </Group>
+                              </div>
+                            </Group>
+                          </Card>
+                        </div>
+
+                        {/* Offers/Gifts */}
+                        {tier.offers.length > 0 && (
+                          <div>
+                            <Text size="sm" fw={600} mb="xs" style={{ color: tier.tier_text_color || '#212529' }}>
+                              العروض والهدايا ({tier.offers.length}):
+                            </Text>
+                            <Stack gap="xs">
+                              {tier.offers.map((offer, offerIndex) => {
+                                const offerProduct = products.find(p => p.id === offer.product_id);
+                                const discountLabel =
+                                  offer.discount_type === 'free' ? 'مجاناً' :
+                                  offer.discount_type === 'percentage' ? `خصم ${offer.discount_amount}%` :
+                                  `خصم ${offer.discount_amount} ريال`;
+
+                                return (
+                                  <Card key={offerIndex} withBorder padding="sm" bg="white">
+                                    <Group gap="sm">
+                                      {offerProduct?.image && (
+                                        <Image
+                                          src={offerProduct.image}
+                                          alt={offerProduct.name}
+                                          w={40}
+                                          h={40}
+                                          radius="sm"
+                                        />
+                                      )}
+                                      <div style={{ flex: 1 }}>
+                                        <Group gap="xs">
+                                          <Text size="sm" fw={500}>
+                                            {offer.product_name}
+                                          </Text>
+                                          <Badge
+                                            size="sm"
+                                            color={offer.discount_type === 'free' ? 'green' : 'blue'}
+                                          >
+                                            {discountLabel}
+                                          </Badge>
+                                        </Group>
+                                        <Group gap="xs">
+                                          <Text size="xs" c="dimmed">
+                                            الكمية: {offer.quantity}
+                                          </Text>
+                                          {offerProduct?.price && (
+                                            <>
+                                              <Text size="xs" c="dimmed">•</Text>
+                                              <Text size="xs" c="dimmed">
+                                                السعر الأصلي: {offerProduct.price} {offerProduct.currency || 'SAR'}
+                                              </Text>
+                                            </>
+                                          )}
+                                        </Group>
+                                      </div>
+                                    </Group>
+                                  </Card>
+                                );
+                              })}
+                            </Stack>
+                          </div>
+                        )}
+                      </Stack>
+                    </Paper>
+                  );
+                })}
               </Stack>
             )}
 

@@ -179,12 +179,12 @@ export default function BundleDetailsPage() {
       icon: IconTrendingUp,
       color: "green",
     },
-    {
-      title: "الإيرادات المحققة",
-      value: `${(currentBundle.total_revenue || 0).toFixed(2)} ر.س`,
-      icon: IconCoin,
-      color: "orange",
-    },
+    // {
+    //   title: "الإيرادات المحققة",
+    //   value: `${(currentBundle.total_revenue || 0).toFixed(2)} ر.س`,
+    //   icon: IconCoin,
+    //   color: "orange",
+    // },
   ];
 
   return (
@@ -295,7 +295,7 @@ export default function BundleDetailsPage() {
         </div>
 
         {/* Statistics Cards */}
-        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
           {stats.map((stat, index) => (
             <Card key={index} padding="lg" radius="md" withBorder>
               <Group gap="sm">

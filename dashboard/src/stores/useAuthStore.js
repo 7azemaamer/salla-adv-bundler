@@ -5,7 +5,6 @@ import axios from "axios";
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1";
 
-// Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
 
 const useAuthStore = create(
@@ -139,7 +138,6 @@ const useAuthStore = create(
   )
 );
 
-// Add axios interceptors after store is defined
 axios.interceptors.request.use(
   (config) => {
     // Get current token from store

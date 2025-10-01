@@ -156,15 +156,28 @@ router.get("/modal.js", (req, res) => {
 
     .salla-bundle-card {
       border-radius: 14px;
-      border: 1px solid var(--border);
+      border: 1px solid #e5e7eb;
       background: var(--bg-card);
       padding: 12px;
-      box-shadow: var(--shadow-1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       transition: all 0.2s ease;
+      position: relative;
     }
 
     .salla-bundle-card.active {
-      border-color: var(--text-1);
+      border: 1px solid var(--text-1);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .salla-bundle-card:not(.active) {
+      opacity: 0.85;
+      background: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .salla-bundle-card:not(.active):hover {
+      opacity: 0.95;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .salla-bundle-card-header {
@@ -244,8 +257,8 @@ router.get("/modal.js", (req, res) => {
     }
 
     .salla-bundle-button.active {
-      background: var(--text-1);
-      color: white;
+      background: transparent !important;
+      color: var(--text-1) !important;
       border-color: var(--text-1);
     }
 
@@ -637,11 +650,14 @@ router.get("/modal.js", (req, res) => {
       this.modalElement = document.createElement('div');
       this.modalElement.className = 'salla-bundle-modal';
 
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const modalTitle = bundleConfig.modal_title || 'اختر باقتك';
+
       this.modalElement.innerHTML = \`
         <div class="salla-bundle-panel">
           <div class="salla-bundle-header">
             <div class="salla-bundle-header-row">
-              <h2 class="salla-bundle-title">\${this.bundleData.name || 'اختر باقتك (أفضل قيمة)'}</h2>
+              <h2 class="salla-bundle-title">\${modalTitle}</h2>
               <button class="salla-bundle-close">&times;</button>
             </div>
           </div>
@@ -769,32 +785,47 @@ router.get("/modal.js", (req, res) => {
 
         return {
           id: \`tier-\${tier.tier}\`,
-          name: \`باقة \${tier.tier === 1 ? 'البداية' : tier.tier === 2 ? 'الأصدقاء' : 'العائلة'}\`,
+          name: tier.tier_title || \`المستوى \${tier.tier}\`,
           price: totalCustomerPays, // What customer actually pays
           originalPrice: subtotal, // Just the target product price
           offersCost: offersCost, // What customer pays for offers
           jugCount: buyQuantity,
           value: subtotal + giftValue + offersCost, // Total value of everything
-          badge: hasUnavailableProducts || targetProductUnavailable ? 
-            'منتجات غير متوفرة' : 
-            (tier.tier === 1 ? 'وفر أكثر' : tier.tier === 2 ? 'أفضل قيمة' : 'أقصى توفير'),
+          badge: hasUnavailableProducts || targetProductUnavailable ?
+            'منتجات غير متوفرة' :
+            (tier.tier_highlight_text || ''),
           items: items,
           tier: tier,
           savings: giftValue,
           hasUnavailableProducts: hasUnavailableProducts || targetProductUnavailable,
-          unavailableProducts: unavailableProducts
+          unavailableProducts: unavailableProducts,
+          // Add customization data
+          bgColor: tier.tier_bg_color || '#f8f9fa',
+          textColor: tier.tier_text_color || '#212529',
+          highlightBgColor: tier.tier_highlight_bg_color || '#ffc107',
+          highlightTextColor: tier.tier_highlight_text_color || '#000000',
+          isDefault: tier.is_default || false
         };
       });
 
-      // Set first available bundle as selected by default (prefer bundles without unavailable products)
+      // Set default bundle based on admin configuration or first available
       if (!this.selectedBundle && bundleDisplayData.length > 0) {
-        // First try to select a bundle without unavailable products
-        const availableBundle = bundleDisplayData.find(bundle => !bundle.hasUnavailableProducts);
-        if (availableBundle) {
-          this.selectedBundle = availableBundle.id;
+        // First priority: Find bundle marked as default (is_default = true)
+        const defaultBundle = bundleDisplayData.find(bundle => bundle.isDefault === true);
+        if (defaultBundle) {
+          this.selectedBundle = defaultBundle.id;
+          console.log('[Bundle Selection] Selected default bundle:', defaultBundle.name);
         } else {
-          // If all bundles have unavailable products, select the first one
-          this.selectedBundle = bundleDisplayData[0].id;
+          // Fallback: Select first bundle without unavailable products
+          const availableBundle = bundleDisplayData.find(bundle => !bundle.hasUnavailableProducts);
+          if (availableBundle) {
+            this.selectedBundle = availableBundle.id;
+            console.log('[Bundle Selection] Selected first available bundle:', availableBundle.name);
+          } else {
+            // Last resort: Select the first bundle
+            this.selectedBundle = bundleDisplayData[0].id;
+            console.log('[Bundle Selection] Selected first bundle (all have issues):', bundleDisplayData[0].name);
+          }
         }
       }
 
@@ -805,11 +836,14 @@ router.get("/modal.js", (req, res) => {
       const hasAnyUnavailableProducts = bundleDisplayData.some(bundle => bundle.hasUnavailableProducts);
       const allBundlesUnavailable = bundleDisplayData.every(bundle => bundle.hasUnavailableProducts);
 
+      // Get modal subtitle from bundle config (optional)
+      const modalSubtitle = bundleConfig.modal_subtitle || '';
+
       let html = \`
         <!-- Bundles Section -->
         <div class="salla-bundle-section">
           <h3>باقاتنا</h3>
-          <div class="subtitle">اختيارات أفضل قيمة — وفر أكثر</div>
+          \${modalSubtitle ? \`<div class="subtitle">\${modalSubtitle}</div>\` : ''}
           \${hasAnyUnavailableProducts ? \`
             <div style="background: #fef3cd; border: 1px solid #f6d55c; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #d97706;">
               \${allBundlesUnavailable ? 
@@ -826,28 +860,32 @@ router.get("/modal.js", (req, res) => {
           \` : ''}
           <div class="salla-bundle-grid">
             \${bundleDisplayData.map(bundle => \`
-              <div class="salla-bundle-card \${this.selectedBundle === bundle.id ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}">
+              <div class="salla-bundle-card \${this.selectedBundle === bundle.id ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
+                   style="background-color: \${bundle.bgColor}; border-color: \${this.selectedBundle === bundle.id ? bundle.textColor : bundle.bgColor};">
                 <div class="salla-bundle-card-header">
                   <div>
-                    <div class="salla-bundle-card-title">\${bundle.name}</div>
-                    <div class="salla-bundle-card-value">قيمة \${formatPrice(bundle.value)}</div>
+                    <div class="salla-bundle-card-title" style="color: \${bundle.textColor};">\${bundle.name}</div>
+                    <div class="salla-bundle-card-value" style="color: \${bundle.textColor};">قيمة \${formatPrice(bundle.value)}</div>
                     \${bundle.hasUnavailableProducts ? \`
                       <div style="font-size: 11px; color: #ef4444; margin-top: 2px;">
                         ⚠️ بعض المنتجات غير متوفرة
                       </div>
                     \` : ''}
                   </div>
-                  <span class="salla-bundle-badge" style="\${bundle.hasUnavailableProducts ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">\${bundle.badge}</span>
+                  \${bundle.badge ? \`
+                    <span class="salla-bundle-badge" style="background: \${bundle.hasUnavailableProducts ? '#fee2e2' : bundle.highlightBgColor}; color: \${bundle.hasUnavailableProducts ? '#dc2626' : bundle.highlightTextColor}; border-color: \${bundle.hasUnavailableProducts ? '#fecaca' : bundle.highlightBgColor};">\${bundle.badge}</span>
+                  \` : ''}
                 </div>
                 <ul class="salla-bundle-items">
-                  \${bundle.items.map(item => \`<li style="\${item.includes('(غير متوفر)') ? 'color: #9ca3af; text-decoration: line-through;' : ''}">\${item}</li>\`).join('')}
+                  \${bundle.items.map(item => \`<li style="color: \${item.includes('(غير متوفر)') ? '#9ca3af' : bundle.textColor}; \${item.includes('(غير متوفر)') ? 'text-decoration: line-through;' : ''}">\${item}</li>\`).join('')}
                 </ul>
                 <div class="salla-bundle-card-footer">
-                  <div class="salla-bundle-price">\${formatPrice(bundle.price)}</div>
+                  <div class="salla-bundle-price" style="color: \${bundle.textColor};">\${formatPrice(bundle.price)}</div>
                   <button class="salla-bundle-button \${this.selectedBundle === bundle.id ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
                           onclick="if(window.sallaBundleModal) window.sallaBundleModal.selectBundle('\${bundle.id}'); else console.error('Modal instance not found');"
+                          style="background-color: \${bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.cta_button_text_color || '#ffffff'};"
                           \${bundle.hasUnavailableProducts ? 'title="تحتوي هذه الباقة على منتجات غير متوفرة"' : ''}>
-                    \${this.selectedBundle === bundle.id ? 'محدد' : 'اختر'}
+                    \${this.selectedBundle === bundle.id ? 'محدد' : (bundleConfig.cta_button_text || 'اختر الباقة')}
                   </button>
                 </div>
               </div>
@@ -914,7 +952,9 @@ router.get("/modal.js", (req, res) => {
       }
 
       summaryHtml += \`
-        <button class="salla-checkout-button" onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
+        <button class="salla-checkout-button"
+                style="background-color: \${bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.cta_button_text_color || '#ffffff'};"
+                onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
           <span>🛒</span>
           <span>إتمام الطلب — \${formatPrice(totalPrice)}</span>
         </button>
@@ -1894,7 +1934,10 @@ router.get("/modal.js", (req, res) => {
         return '';
       }
 
-      const selectorsHtml = productData.options.map(option => {
+      const selectorsHtml = productData.options.map((option, optionIndex) => {
+        // Use the option name exactly as configured in Salla
+        const optionLabel = option.name || \`الخيار \${optionIndex + 1}\`;
+
         // Mark variant options as required (they usually are for cart operations)
         const isRequired = option.required || option.purpose === 'variants' || (option.values && option.values.length > 0);
 
@@ -1934,7 +1977,7 @@ router.get("/modal.js", (req, res) => {
         return \`
           <div class="salla-variant-group">
             <label class="salla-variant-label \${isRequired && !allOutOfStock ? 'required' : ''}" for="variant-\${selectorProductId}-\${option.id}">
-              \${option.name}\${labelSuffix}
+              \${optionLabel}\${labelSuffix}
               \${allOutOfStock ? '<span style="color: #ef4444; font-size: 12px;"> (جميع الخيارات نفدت)</span>' : ''}
             </label>
             <select
@@ -1948,7 +1991,7 @@ router.get("/modal.js", (req, res) => {
               \${isRequired && !allOutOfStock ? 'required' : ''}
               \${allOutOfStock ? 'disabled' : ''}
             >
-              <option value="">\${allOutOfStock ? 'غير متوفر حالياً' : \`اختر \${option.name}\`}</option>
+              <option value="">\${allOutOfStock ? 'غير متوفر حالياً' : \`اختر \${optionLabel}\`}</option>
               \${option.values ? option.values.map(value => {
                 // Determine if this specific value is out of stock
                 let isValueOutOfStock = false;

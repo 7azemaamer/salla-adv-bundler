@@ -1,5 +1,6 @@
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import bundleService from "../services/bundle.service.js";
+import settingsService from "../../settings/services/settings.service.js";
 
 /* ===============================================
  * Get bundles for a specific product (public endpoint)
@@ -48,10 +49,19 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
   // Get enhanced bundle data with product information
   const enhancedBundle = await bundleService.getEnhancedBundleData(store_id, bundle);
 
-  // Return enhanced bundle configuration for frontend
+  // Get store settings (includes hide_default_buttons)
+  const settings = await settingsService.getSettings(store_id);
+
+  // Return enhanced bundle configuration for frontend with settings
   res.status(200).json({
     success: true,
-    data: enhancedBundle,
+    data: {
+      ...enhancedBundle,
+      settings: {
+        hide_default_buttons: settings.hide_default_buttons,
+        hide_salla_offer_modal: settings.hide_salla_offer_modal,
+      },
+    },
   });
 });
 

@@ -78,10 +78,10 @@ function BundleCard({
     }
   };
 
-  const conversionRate =
-    bundle.total_clicks > 0
-      ? ((bundle.total_conversions / bundle.total_clicks) * 100).toFixed(1)
-      : 0;
+  // const conversionRate =
+  //   bundle.total_clicks > 0
+  //     ? ((bundle.total_conversions / bundle.total_clicks) * 100).toFixed(1)
+  //     : 0;
 
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -251,7 +251,7 @@ function BundleCard({
             </Text>
           </div>
         </Grid.Col>
-        <Grid.Col span={3}>
+        {/* <Grid.Col span={3}>
           <div className="text-center">
             <Text size="lg" fw={700} c="orange">
               {conversionRate}%
@@ -260,7 +260,7 @@ function BundleCard({
               معدل
             </Text>
           </div>
-        </Grid.Col>
+        </Grid.Col> */}
       </Grid>
 
       {/* Dates */}
@@ -396,49 +396,86 @@ export default function BundlesPage() {
   };
 
   const handleGenerateOffers = async (bundleId) => {
+    // Show loading notification
+    notifications.show({
+      id: `activate-${bundleId}`,
+      loading: true,
+      title: "جاري التفعيل...",
+      message: "جاري إنشاء العروض وتفعيل الباقة، قد يستغرق الأمر بضع ثوانٍ...",
+      autoClose: false,
+      withCloseButton: false,
+    });
+
     try {
       await generateOffers(bundleId);
-      notifications.show({
+      notifications.update({
+        id: `activate-${bundleId}`,
+        loading: false,
         title: "تم تفعيل الباقة",
         message: "تم إنشاء العروض وتفعيل الباقة بنجاح",
         color: "green",
         icon: <IconCheck size="1rem" />,
+        autoClose: 5000,
       });
     } catch (error) {
-      notifications.show({
+      notifications.update({
+        id: `activate-${bundleId}`,
+        loading: false,
         title: "خطأ في التفعيل",
         message: error.message || "حدث خطأ أثناء تفعيل الباقة",
         color: "red",
         icon: <IconX size="1rem" />,
+        autoClose: 5000,
       });
     }
   };
 
   const handleToggleStatus = async (bundleId, newStatus) => {
+    // Show loading notification
+    // const loadingNotification = notifications.show({
+    //   id: `toggle-${bundleId}`,
+    //   loading: true,
+    //   title: newStatus === "active" ? "جاري إعادة التفعيل..." : "جاري الإيقاف...",
+    //   message: newStatus === "active"
+    //     ? "جاري إنشاء العروض وتفعيل الباقة، قد يستغرق الأمر بضع ثوانٍ..."
+    //     : "جاري إيقاف الباقة وحذف العروض...",
+    //   autoClose: false,
+    //   withCloseButton: false,
+    // });
+
     try {
       if (newStatus === "inactive") {
         await deactivateBundle(bundleId);
-        notifications.show({
+        notifications.update({
+          id: `toggle-${bundleId}`,
+          loading: false,
           title: "تم إيقاف الباقة",
-          message: "تم إيقاف الباقة وجميع عروضها",
+          message: "تم إيقاف الباقة وحذف جميع عروضها بنجاح",
           color: "orange",
           icon: <IconCheck size="1rem" />,
+          autoClose: 5000,
         });
       } else if (newStatus === "active") {
         await generateOffers(bundleId);
-        notifications.show({
+        notifications.update({
+          id: `toggle-${bundleId}`,
+          loading: false,
           title: "تم إعادة تفعيل الباقة",
-          message: "تم إعادة تفعيل الباقة وجميع عروضها",
+          message: "تم إنشاء العروض وإعادة تفعيل الباقة بنجاح",
           color: "green",
           icon: <IconCheck size="1rem" />,
+          autoClose: 5000,
         });
       }
     } catch (error) {
-      notifications.show({
+      notifications.update({
+        id: `toggle-${bundleId}`,
+        loading: false,
         title: "خطأ في العملية",
         message: error.message || "حدث خطأ أثناء تحديث حالة الباقة",
         color: "red",
         icon: <IconX size="1rem" />,
+        autoClose: 5000,
       });
     }
   };

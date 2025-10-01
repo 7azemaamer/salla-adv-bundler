@@ -351,17 +351,31 @@ class SpecialOffersService {
       },
     };
 
-    // Always add expiry date (recommended by Salla) - 30 days from future start time
-    const expiryDate = new Date(
-      futureTime.getTime() + 30 * 24 * 60 * 60 * 1000
-    ); // +30 days from start
+    // Set expiry date - use bundle's expiry or default to 5 years
+    let expiryDate;
+    if (bundleConfig.expiry_date) {
+      // Use bundle's expiry date
+      expiryDate = new Date(bundleConfig.expiry_date);
+      console.log(
+        `[SpecialOffers]: Using bundle expiry date: ${bundleConfig.expiry_date.toISOString().split("T")[0]}`
+      );
+    } else {
+      // No expiry date set - use 5 years from now (permanent offer)
+      expiryDate = new Date(
+        futureTime.getTime() + 5 * 365 * 24 * 60 * 60 * 1000
+      ); // +5 years
+      console.log(
+        `[SpecialOffers]: No expiry date in bundle - setting to 5 years from now (permanent offer)`
+      );
+    }
+
     const effectiveExpiryDate = expiryDate
       .toISOString()
       .replace("T", " ")
       .split(".")[0]; // YYYY-MM-DD HH:mm:ss format
 
     console.log(
-      `[SpecialOffers]: Setting expiry date to 30 days from start: ${effectiveExpiryDate}`
+      `[SpecialOffers]: Final expiry date: ${effectiveExpiryDate}`
     );
     payload.expiry_date = effectiveExpiryDate;
 
@@ -548,21 +562,8 @@ class SpecialOffersService {
             const responseStatus =
               error.originalResponse?.status || error.response?.status;
 
-            console.error(
-              `[SpecialOffers]: Failed to create offer for tier ${tier.tier}, product ${offer.product_id}:`
-            );
-            console.error(`[SpecialOffers]: Error message: ${error.message}`);
-            console.error(`[SpecialOffers]: HTTP Status: ${responseStatus}`);
-            console.error(
-              `[SpecialOffers]: Response data:`,
-              JSON.stringify(responseData, null, 2)
-            );
-            console.error(
-              `[SpecialOffers]: Sent payload:`,
-              JSON.stringify(offerPayload, null, 2)
-            );
+     
 
-            // Log detailed field validation errors
             if (responseData?.error?.fields) {
               console.error(
                 `[SpecialOffers]: Detailed field validation errors:`

@@ -292,7 +292,7 @@ class BundleService {
   }
 
   /* ===============
-   * Deactivate bundle and its offers
+   * Deactivate bundle and DELETE its offers from Salla
    * ===============*/
   async deactivateBundle(bundle_id) {
     const bundle = await BundleConfig.findById(bundle_id);
@@ -309,24 +309,25 @@ class BundleService {
     const offer_ids = offers.map((offer) => offer.offer_id);
 
     if (offer_ids.length > 0) {
-      // Deactivate offers in Salla
-      const deactivationResults = await specialOffersService.deactivateOffers(
+      // DELETE offers from Salla (not just deactivate)
+      // This allows reactivation with the same offer names
+      console.log(
+        `[Bundle]: Deleting ${offer_ids.length} offers from Salla for bundle ${bundle_id}`
+      );
+
+      const deletionResults = await specialOffersService.deleteOffers(
         bundle.store_id,
         offer_ids
       );
 
-      // Update local offer status
-      await BundleOffer.updateMany(
-        { bundle_id, status: "active" },
-        {
-          status: "inactive",
-          sync_status: "synced",
-          last_sync_at: new Date(),
-        }
-      );
+      // Delete local offer records
+      await BundleOffer.deleteMany({
+        bundle_id,
+        status: "active",
+      });
 
       console.log(
-        `[Bundle]: Deactivated ${offer_ids.length} offers for bundle ${bundle_id}`
+        `[Bundle]: Deleted ${offer_ids.length} offers for bundle ${bundle_id}`
       );
     }
 
@@ -334,12 +335,13 @@ class BundleService {
     await BundleConfig.findByIdAndUpdate(bundle_id, {
       status: "inactive",
       deactivated_at: new Date(),
+      offers_count: 0, // Reset offers count
     });
 
     return {
       success: true,
       bundle_id,
-      offers_deactivated: offer_ids.length,
+      offers_deleted: offer_ids.length,
     };
   }
 
@@ -534,6 +536,14 @@ class BundleService {
         const cleanTier = {
           tier: tier.tier,
           buy_quantity: tier.buy_quantity,
+          // Tier UI Customization fields
+          tier_title: tier.tier_title,
+          tier_highlight_text: tier.tier_highlight_text,
+          tier_bg_color: tier.tier_bg_color,
+          tier_text_color: tier.tier_text_color,
+          tier_highlight_bg_color: tier.tier_highlight_bg_color,
+          tier_highlight_text_color: tier.tier_highlight_text_color,
+          is_default: tier.is_default,
           offers: tier.offers.map(offer => ({
             product_id: offer.product_id,
             product_name: offer.product_name,
@@ -556,7 +566,7 @@ class BundleService {
         return cleanTier;
       });
 
-      return {
+      const result = {
         id: bundle._id.toString(),
         name: bundle.name,
         target_product_id: bundle.target_product_id,
@@ -566,7 +576,30 @@ class BundleService {
         start_date: bundle.start_date,
         expiry_date: bundle.expiry_date,
         is_active: bundle.is_currently_active,
+        // UI Customization fields
+        modal_title: bundle.modal_title,
+        modal_subtitle: bundle.modal_subtitle,
+        cta_button_text: bundle.cta_button_text,
+        cta_button_bg_color: bundle.cta_button_bg_color,
+        cta_button_text_color: bundle.cta_button_text_color,
       };
+
+      // Log enhanced bundle with tier customization
+      console.log('[Bundle Service] Enhanced bundle UI fields:', {
+        modal_title: result.modal_title,
+        modal_subtitle: result.modal_subtitle,
+        cta_button_text: result.cta_button_text,
+        cta_button_bg_color: result.cta_button_bg_color,
+        cta_button_text_color: result.cta_button_text_color,
+        tiers: result.bundles.map(t => ({
+          tier: t.tier,
+          is_default: t.is_default,
+          tier_title: t.tier_title,
+          tier_bg_color: t.tier_bg_color
+        }))
+      });
+
+      return result;
 
     } catch (error) {
       console.error('[Bundle Service] Error enhancing bundle data:', error);

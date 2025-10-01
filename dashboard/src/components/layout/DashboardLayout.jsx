@@ -253,14 +253,6 @@ export default function DashboardLayout() {
                   </Text>
                 </div>
                 <Divider orientation="vertical" />
-                <div className="text-center">
-                  <Text size="lg" fw={700} c="green">
-                    {totalConversions}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    تحويل
-                  </Text>
-                </div>
               </Group>
             </div>
 

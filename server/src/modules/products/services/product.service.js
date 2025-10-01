@@ -174,54 +174,29 @@ class ProductService {
    * Determine if a variant is truly out of stock
    * ===============*/
   isVariantOutOfStock(variant, parentProduct) {
-    // Add detailed logging for debugging stock issues
-    const debugInfo = {
-      variantId: variant.id,
-      variantName: variant.name,
-      productId: parentProduct.id,
-      productName: parentProduct.name,
-      parentTrackQuantity: parentProduct.track_quantity,
-      parentEnableStock: parentProduct.enable_stock,
-      parentInventoryTracking: parentProduct.inventory_tracking,
-      parentUnlimitedQuantity: parentProduct.unlimited_quantity,
-      variantIsOutOfStock: variant.is_out_of_stock,
-      variantQuantity: variant.quantity,
-      variantIsAvailable: variant.is_available,
-      variantUnlimitedQuantity: variant.unlimited_quantity,
-    };
-
-    console.log("[Product Service] Stock Check Debug:", debugInfo);
-
-    // Check for unlimited quantity at product level first
     if (parentProduct.unlimited_quantity === true) {
-      console.log(
-        `[Product Service] Product has unlimited_quantity=true, all variants are available for ${parentProduct.name}`
-      );
-      return false; // Always available if product has unlimited quantity
+      return false;
     }
 
-    // Check for unlimited quantity at variant level
     if (variant.unlimited_quantity === true) {
       console.log(
         `[Product Service] Variant has unlimited_quantity=true, variant is available: ${variant.name}`
       );
-      return false; // Always available if variant has unlimited quantity
+      return false;
     }
 
-    // If ALL stock tracking is disabled at product level, ignore variant is_out_of_stock
     const noStockTracking =
       !parentProduct.track_quantity &&
       !parentProduct.enable_stock &&
       !parentProduct.inventory_tracking;
 
     if (noStockTracking) {
-      console.log(
-        `[Product Service] ALL stock tracking disabled for ${parentProduct.name}, ignoring variant stock status - assuming unlimited`
-      );
+      // console.log(
+      //   `[Product Service] ALL stock tracking disabled for ${parentProduct.name}, ignoring variant stock status - assuming unlimited`
+      // );
       return false; // Assume unlimited stock when all tracking is disabled
     }
 
-    // Salla API provides explicit stock status - use it if stock tracking is enabled
     if (variant.hasOwnProperty("is_out_of_stock")) {
       const result = variant.is_out_of_stock;
       console.log(
@@ -230,7 +205,6 @@ class ProductService {
       return result;
     }
 
-    // If the variant has availability info
     if (variant.hasOwnProperty("is_available")) {
       const result = !variant.is_available;
       console.log(
@@ -239,9 +213,7 @@ class ProductService {
       return result;
     }
 
-    // For variants without explicit stock info, check quantity only if tracking is enabled
     if (variant.hasOwnProperty("quantity")) {
-      // Only consider quantity if stock tracking is actually enabled
       if (
         parentProduct.track_quantity ||
         parentProduct.enable_stock ||
