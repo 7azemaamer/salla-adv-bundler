@@ -29,7 +29,8 @@ import useSettingsStore from "../stores/useSettingsStore";
 export default function SettingsPage() {
   const { settings, loading, error, fetchSettings, toggleSetting } =
     useSettingsStore();
-  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showButtonsModal, setShowButtonsModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
 
   useEffect(() => {
     fetchSettings().catch((error) => {
@@ -141,7 +142,18 @@ export default function SettingsPage() {
                     }
                     disabled={loading.updating}
                   />
-                  {/* 
+
+                  <Group mt="md">
+                    <Button
+                      variant="light"
+                      size="xs"
+                      leftSection={<IconPhoto size="0.9rem" />}
+                      onClick={() => setShowButtonsModal(true)}
+                    >
+                      عرض مثال توضيحي
+                    </Button>
+                  </Group>
+
                   <Alert
                     icon={<IconInfoCircle size="1rem" />}
                     color="blue"
@@ -154,7 +166,7 @@ export default function SettingsPage() {
                       نشطة فقط. سيظهر بدلاً منها زر الباقة الخاص بك. هذا يساعد
                       على تجنب الارتباك ويشجع العملاء على اختيار الباقات.
                     </Text>
-                  </Alert> */}
+                  </Alert>
                 </div>
 
                 <Divider />
@@ -169,7 +181,8 @@ export default function SettingsPage() {
                           إخفاء نافذة عروض سلة الافتراضية
                         </Text>
                         <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء النافذة المنبثقة الافتراضية من سلة التي تظهر عند وجود عروض خاصة على المنتج
+                          إخفاء النافذة المنبثقة الافتراضية من سلة التي تظهر عند
+                          وجود عروض خاصة على المنتج
                         </Text>
                       </div>
                     }
@@ -188,7 +201,7 @@ export default function SettingsPage() {
                       variant="light"
                       size="xs"
                       leftSection={<IconPhoto size="0.9rem" />}
-                      onClick={() => setShowDemoModal(true)}
+                      onClick={() => setShowOfferModal(true)}
                     >
                       عرض مثال توضيحي
                     </Button>
@@ -201,46 +214,59 @@ export default function SettingsPage() {
                     mt="md"
                   >
                     <Text size="sm">
-                      <strong>ملاحظة:</strong> هذا الخيار يخفي النافذة المنبثقة الافتراضية من سلة (s-offer-modal-type-products) فقط.
+                      <strong>ملاحظة:</strong> هذا الخيار يخفي النافذة المنبثقة
+                      الافتراضية من سلة (s-offer-modal-type-products) فقط.
                       النوافذ الأخرى من سلة ستعمل بشكل طبيعي.
                     </Text>
                   </Alert>
                 </div>
 
                 <Divider />
-
-                {/* Preview Info */}
-                <Alert
-                  icon={<IconInfoCircle size="1rem" />}
-                  color="gray"
-                  variant="light"
-                >
-                  <Text size="sm">
-                    <strong>كيف يعمل؟</strong>
-                    <br />
-                    • المنتجات مع باقات نشطة: يتم إخفاء الأزرار الافتراضية
-                    وإظهار زر الباقة فقط
-                    <br />
-                    • المنتجات بدون باقات: تعمل الأزرار الافتراضية بشكل طبيعي
-                    <br />• يتم تطبيق التغييرات فوراً على المتجر
-                  </Text>
-                </Alert>
               </Stack>
             </div>
           </Stack>
         </Card>
 
-        {/* Demo Modal */}
+        {/* Hide Buttons Demo Modal */}
         <Modal
-          opened={showDemoModal}
-          onClose={() => setShowDemoModal(false)}
+          opened={showButtonsModal}
+          onClose={() => setShowButtonsModal(false)}
+          title="مثال: أزرار سلة الافتراضية"
+          size="lg"
+          centered
+        >
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              هذه هي الأزرار الافتراضية من سلة التي سيتم إخفاؤها عند تفعيل
+              الخيار:
+            </Text>
+            <Image
+              src="/salla-buy-buttons.png"
+              alt="Salla Default Buy Buttons"
+              radius="md"
+              fit="contain"
+            />
+            <Alert color="yellow" variant="light">
+              <Text size="xs">
+                سيتم إخفاء أزرار "إضافة للسلة" و "اشتر الآن" في المنتجات التي
+                لديها باقات نشطة فقط. سيظهر بدلاً منها زر الباقة الخاص بك.
+              </Text>
+            </Alert>
+          </Stack>
+        </Modal>
+
+        {/* Hide Offer Modal Demo */}
+        <Modal
+          opened={showOfferModal}
+          onClose={() => setShowOfferModal(false)}
           title="مثال: نافذة عروض سلة الافتراضية"
           size="lg"
           centered
         >
           <Stack gap="md">
             <Text size="sm" c="dimmed">
-              هذه هي النافذة المنبثقة الافتراضية من سلة التي سيتم إخفاؤها عند تفعيل الخيار:
+              هذه هي النافذة المنبثقة الافتراضية من سلة التي سيتم إخفاؤها عند
+              تفعيل الخيار:
             </Text>
             <Image
               src="/salla-model.png"
@@ -250,7 +276,8 @@ export default function SettingsPage() {
             />
             <Alert color="yellow" variant="light">
               <Text size="xs">
-                سيتم إخفاء هذه النافذة فقط (s-offer-modal-type-products). النوافذ الأخرى من سلة ستبقى تعمل بشكل طبيعي.
+                سيتم إخفاء هذه النافذة فقط (s-offer-modal-type-products).
+                النوافذ الأخرى من سلة ستبقى تعمل بشكل طبيعي.
               </Text>
             </Alert>
           </Stack>

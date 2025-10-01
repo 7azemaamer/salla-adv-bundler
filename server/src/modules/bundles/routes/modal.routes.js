@@ -898,7 +898,7 @@ router.get("/modal.js", (req, res) => {
           <div class="salla-bundle-section">
             <h3>اختر مواصفات \${targetProductData.name}</h3>
             <div class="subtitle">مطلوب لإضافة المنتج للسلة</div>
-            \${this.renderVariantSelectors(targetProductData, this.productId)}
+            \${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
           </div>
         \` : ''}
 
@@ -1221,12 +1221,22 @@ router.get("/modal.js", (req, res) => {
 
           // Add target product(s) to cart
           for (let i = 0; i < targetQuantity; i++) {
+            // If multiple quantities, get options for each specific quantity selector
+            let targetOptionsForThisQuantity;
+            if (targetQuantity > 1 && bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants) {
+              const productIdWithIndex = \`\${this.productId}-qty\${i+1}\`;
+              targetOptionsForThisQuantity = this.getSelectedVariantOptions(productIdWithIndex);
+              console.log(\`[Salla Bundle] Target product #\${i+1} specific options:\`, targetOptionsForThisQuantity);
+            } else {
+              targetOptionsForThisQuantity = targetOptions;
+            }
+
             const targetCartItem = {
               id: this.productId,
               quantity: 1,
-              options: targetOptions
+              options: targetOptionsForThisQuantity
             };
-            
+
             console.log(\`[Salla Bundle] Adding target product #\${i+1} with params:\`, targetCartItem);
             await window.salla.cart.addItem(targetCartItem);
             addedProducts.push({
@@ -1628,20 +1638,41 @@ router.get("/modal.js", (req, res) => {
       // Check target product variants
       if (bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants) {
         console.log(\`[Variant Validation] Checking target product: \${bundleConfig.target_product_data.name}\`);
-        const targetOptions = this.getSelectedVariantOptions(bundleConfig.target_product_id);
-        console.log(\`[Variant Validation] Target product selected options:\`, targetOptions);
-        
-        const missingOption = this.findMissingRequiredVariant(bundleConfig.target_product_data, targetOptions);
-        if (missingOption) {
-          console.log(\`[Variant Validation] Missing target variant: \${missingOption.name}\`);
-          missing.push({
-            productId: bundleConfig.target_product_id,
-            selectorProductId: bundleConfig.target_product_id, // Target uses original product ID
-            optionId: missingOption.id,
-            optionName: missingOption.name,
-            productName: bundleConfig.target_product_data.name,
-            isOffer: false
-          });
+
+        // If buying multiple quantities, check each one separately
+        if (selectedTier.buy_quantity > 1) {
+          for (let i = 1; i <= selectedTier.buy_quantity; i++) {
+            const productIdWithIndex = \`\${bundleConfig.target_product_id}-qty\${i}\`;
+            const targetOptions = this.getSelectedVariantOptions(productIdWithIndex);
+            console.log(\`[Variant Validation] Target product #\${i} selected options:\`, targetOptions);
+
+            const missingOption = this.findMissingRequiredVariant(bundleConfig.target_product_data, targetOptions);
+            if (missingOption) {
+              missing.push({
+                product: bundleConfig.target_product_data.name + \` (#\${i})\`,
+                productId: productIdWithIndex,
+                option: missingOption,
+                type: 'target'
+              });
+            }
+          }
+        } else {
+          // Single quantity - check normally
+          const targetOptions = this.getSelectedVariantOptions(bundleConfig.target_product_id);
+          console.log(\`[Variant Validation] Target product selected options:\`, targetOptions);
+
+          const missingOption = this.findMissingRequiredVariant(bundleConfig.target_product_data, targetOptions);
+          if (missingOption) {
+            console.log(\`[Variant Validation] Missing target variant: \${missingOption.name}\`);
+            missing.push({
+              productId: bundleConfig.target_product_id,
+              selectorProductId: bundleConfig.target_product_id, // Target uses original product ID
+              optionId: missingOption.id,
+              optionName: missingOption.name,
+              productName: bundleConfig.target_product_data.name,
+              isOffer: false
+            });
+          }
         }
       }
 
@@ -2018,6 +2049,34 @@ router.get("/modal.js", (req, res) => {
           \${selectorsHtml}
         </div>
       \`;
+    }
+
+    renderTargetProductVariantSelectors(productData, buyQuantity) {
+      if (!productData || !productData.has_variants || !productData.options || productData.options.length === 0) {
+        return '';
+      }
+
+      // If buying only 1, render single selector
+      if (buyQuantity === 1) {
+        return this.renderVariantSelectors(productData, this.productId);
+      }
+
+      // If buying multiple, render separate selectors for each quantity
+      const quantitySelectorsHtml = Array.from({ length: buyQuantity }, (_, index) => {
+        const quantityNum = index + 1;
+        const productIdWithIndex = \`\${this.productId}-qty\${quantityNum}\`;
+
+        return \`
+          <div class="salla-target-quantity-group" style="margin-bottom: 20px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #374151;">
+              المنتج #\${quantityNum}
+            </h4>
+            \${this.renderVariantSelectors(productData, productIdWithIndex, false)}
+          </div>
+        \`;
+      }).join('');
+
+      return quantitySelectorsHtml;
     }
 
     trackBundleSelection(bundleData) {

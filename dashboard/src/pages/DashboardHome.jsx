@@ -249,7 +249,7 @@ export default function DashboardHome() {
       )}
 
       {/* Stats Grid */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
         <StatCard
           title="إجمالي الباقات"
           value={stats.total}
@@ -273,14 +273,14 @@ export default function DashboardHome() {
           color="violet"
           description={`${stats.totalConversions} من ${stats.totalClicks}`}
         />
-
+{/* 
         <StatCard
           title="إجمالي الإيرادات"
           value={`${stats.totalRevenue.toLocaleString()} ريال`}
           icon={IconCurrencyDollar}
           color="orange"
           trend={25}
-        />
+        /> */}
       </SimpleGrid>
 
       {/* Progress Bar */}

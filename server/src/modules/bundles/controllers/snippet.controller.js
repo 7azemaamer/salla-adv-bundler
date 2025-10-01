@@ -36,26 +36,20 @@ class SnippetController {
                         document.querySelector('.product-details');
 
   if (!isProductPage) {
-    console.log('[Salla Bundle] Not a product page, skipping');
     return;
   }
 
   const storeContext = window.sallaStoreContext || {};
   
-  console.log('[Salla Bundle] Store context:', storeContext);
-  console.log('[Salla Bundle] Current URL:', window.location.href);
-  console.log('[Salla Bundle] Salla config:', window.Salla?.config);
-  console.log('[Salla Bundle] Salla user:', window.Salla?.config?.user);
-  console.log('[Salla Bundle] Salla store:', window.Salla?.config?.store);
 
   // Try to get store ID from Salla events script (most reliable method)
   let sallaStoreId = null;
   try {
-    // Look for Salla events in scripts
+   
+  // Look for Salla events in scripts
     const scripts = document.querySelectorAll('script');
     for (const script of scripts) {
       if (script.textContent && (script.textContent.includes('salla.event.dispatchEvents') || script.textContent.includes('dispatchSallaEvents'))) {
-        console.log('[Salla Bundle] Found Salla events script');
 
         // Multiple patterns to extract store ID
         const patterns = [
@@ -69,7 +63,6 @@ class SnippetController {
           const match = script.textContent.match(pattern);
           if (match && match[1] && match[1].length >= 10) { // Store IDs are typically 10+ digits
             sallaStoreId = match[1];
-            console.log(\`[Salla Bundle] Extracted store ID: \${sallaStoreId}\`);
             break;
           }
         }
@@ -78,15 +71,13 @@ class SnippetController {
       }
     }
   } catch (error) {
-    console.log('[Salla Bundle] Error parsing Salla events:', error);
+    console.error('[Salla Bundle] Error parsing Salla events:', error);
   }
 
   // Fallback: Try to get store ID from URL path
   const urlMatch = window.location.pathname.match(/\\/([a-zA-Z0-9-_]+)\\//);
   const urlStoreId = urlMatch ? urlMatch[1] : null;
 
-  console.log('[Salla Bundle] Salla Events Store ID:', sallaStoreId);
-  console.log('[Salla Bundle] URL Store ID:', urlStoreId);
   
   // Extract actual values from Salla context, handling template variables
   const extractSallaValue = (value) => {
@@ -157,19 +148,6 @@ class SnippetController {
     ]
   };
 
-  console.log('[Salla Bundle] Final CONFIG:', {
-    storeDomain: CONFIG.storeDomain,
-    storeId: CONFIG.storeId,
-    customerId: CONFIG.customerId,
-    customerName: CONFIG.customerName
-  });
-
-  console.log('[Salla Bundle] DEBUG - Values used for storeId:', {
-    sallaStoreId: sallaStoreId,
-    extractedStoreId: extractSallaValue(storeContext.storeId),
-    sallaConfigStoreId: window.Salla?.config?.store?.id,
-    finalStoreId: CONFIG.storeId
-  });
 
   class SallaBundleSystem {
     constructor() {
@@ -233,13 +211,9 @@ class SnippetController {
           return;
         }
 
-        console.log(\`[Salla Bundle] Found product ID: \${this.productId}\`);
-
-
         const hasBundle = await this.checkBundleExists();
 
         if (!hasBundle) {
-          console.log(\`[Salla Bundle] No bundles found for product \${this.productId}\`);
           return;
         }
 
@@ -268,14 +242,12 @@ class SnippetController {
       // Salla product form input
       const productInput = document.querySelector('input[name="id"]');
       if (productInput && productInput.value) {
-        console.log('[Salla Bundle] Found product ID from form input:', productInput.value);
         return productInput.value;
       }
 
       // Salla add-product-button component
       const sallaButton = document.querySelector('salla-add-product-button[product-id]');
       if (sallaButton && sallaButton.getAttribute('product-id')) {
-        console.log('[Salla Bundle] Found product ID from salla-button:', sallaButton.getAttribute('product-id'));
         return sallaButton.getAttribute('product-id');
       }
 
@@ -290,7 +262,6 @@ class SnippetController {
                            element.dataset.id ||
                            element.textContent?.trim();
           if (productId) {
-            console.log(\`[Salla Bundle] Found product ID from \${selector}:\`, productId);
             return productId;
           }
         }
@@ -366,19 +337,10 @@ class SnippetController {
             // Store settings
             if (data.data.settings) {
               this.settings = data.data.settings;
-              console.log('[Salla Bundle] Settings loaded:', this.settings);
             }
             
             // Store bundle data for UI customization
             this.bundleData = data.data;
-            console.log('[Salla Bundle] Bundle data loaded:', {
-              cta_button_text: this.bundleData.cta_button_text,
-              cta_button_bg_color: this.bundleData.cta_button_bg_color,
-              cta_button_text_color: this.bundleData.cta_button_text_color,
-              modal_title: this.bundleData.modal_title,
-              modal_subtitle: this.bundleData.modal_subtitle
-            });
-            console.log('[Salla Bundle] FULL BUNDLE DATA:', JSON.stringify(data.data, null, 2));
           }
           return true;
         }
@@ -392,11 +354,9 @@ class SnippetController {
 
     hideSallaDefaultButtons() {
       if (!this.settings.hide_default_buttons) {
-        console.log('[Salla Bundle] Hide default buttons disabled in settings');
         return;
       }
 
-      console.log('[Salla Bundle] Hiding Salla default buttons...');
 
       // Add CSS to hide default buttons
       const style = document.createElement('style');
@@ -449,23 +409,20 @@ class SnippetController {
         });
       });
 
-      console.log('[Salla Bundle] Default buttons hidden');
     }
 
     hideSallaOfferModal() {
       if (!this.settings.hide_salla_offer_modal) {
-        console.log('[Salla Bundle] Hide Salla offer modal disabled in settings');
         return;
       }
 
-      console.log('[Salla Bundle] Hiding Salla offer modal (s-offer-modal-type-products)...');
 
-      // Add CSS to hide the specific Salla offer modal
+      // Add CSS to hide the specific Salla offer modal by CLASS
       const style = document.createElement('style');
       style.id = 'salla-bundle-hide-offer-modal';
       style.textContent = \`
         /* Hide Salla default offer modal (only s-offer-modal-type-products) */
-        salla-modal[s-offer-modal-type-products] {
+        salla-modal.s-offer-modal-type-products {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -483,24 +440,24 @@ class SnippetController {
 
       // Also hide modal via JS (backup method) and observe for dynamically added modals
       const hideOfferModals = () => {
-        const offerModals = document.querySelectorAll('salla-modal[s-offer-modal-type-products]');
+        const offerModals = document.querySelectorAll('salla-modal.s-offer-modal-type-products');
         offerModals.forEach(modal => {
           modal.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
         });
-        if (offerModals.length > 0) {
-          console.log(\`[Salla Bundle] Hidden \${offerModals.length} Salla offer modal(s)\`);
-        }
+    
       };
 
-      // Hide existing modals
+      // Hide existing modals immediately
       hideOfferModals();
+
+      // Keep checking every 500ms for new modals (Salla might add them dynamically)
+      const intervalId = setInterval(hideOfferModals, 500);
 
       // Observe for new modals being added to DOM
       const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1 && node.tagName === 'SALLA-MODAL' && node.hasAttribute('s-offer-modal-type-products')) {
-              console.log('[Salla Bundle] Detected new Salla offer modal, hiding...');
+            if (node.nodeType === 1 && node.tagName === 'SALLA-MODAL' && node.classList.contains('s-offer-modal-type-products')) {
               node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
             }
           });
@@ -512,7 +469,6 @@ class SnippetController {
         subtree: true
       });
 
-      console.log('[Salla Bundle] Salla offer modal hidden and observer set up');
     }
 
     injectBundleUI() {
@@ -540,7 +496,6 @@ class SnippetController {
       }
 
       if (!targetButton) {
-        console.log('[Salla Bundle] No suitable button found, trying alternative injection');
         this.injectAlternativeUI();
         return;
       }
@@ -556,7 +511,6 @@ class SnippetController {
       sallaButton.parentNode.insertBefore(bundleButton, sallaButton);
 
       this.isInjected = true;
-      console.log('[Salla Bundle] UI injected above Salla button');
     }
 
     injectInProductForm(productForm) {
@@ -572,7 +526,6 @@ class SnippetController {
       }
 
       this.isInjected = true;
-      console.log('[Salla Bundle] UI injected in product form');
     }
 
     injectDefaultBundle(targetButton) {
@@ -582,16 +535,9 @@ class SnippetController {
       targetButton.parentNode.insertBefore(bundleButton, targetButton);
 
       this.isInjected = true;
-      console.log('[Salla Bundle] UI injected using default method');
     }
 
     createBundleButton() {
-      console.log('[Salla Bundle] Creating bundle button...');
-      console.log('[Salla Bundle] Current bundleData:', {
-        cta_button_text: this.bundleData.cta_button_text,
-        cta_button_bg_color: this.bundleData.cta_button_bg_color,
-        cta_button_text_color: this.bundleData.cta_button_text_color
-      });
 
       // Create bundle button container
       const bundleContainer = document.createElement('div');
@@ -608,7 +554,6 @@ class SnippetController {
 
       // Use dynamic button text from bundle configuration
       const buttonText = this.bundleData.cta_button_text || 'اختر الباقة';
-      console.log('[Salla Bundle] Button text resolved to:', buttonText);
 
       bundleButton.innerHTML = buttonText;
 
@@ -736,7 +681,6 @@ class SnippetController {
           
           container.appendChild(notice);
           this.isInjected = true;
-          console.log('[Salla Bundle] Alternative UI injected');
           break;
         }
       }
@@ -745,27 +689,23 @@ class SnippetController {
     async preloadModalScript() {
       try {
         if (!this.modalScriptLoaded && !window.SallaBundleModal) {
-          console.log('[Salla Bundle] Preloading modal script...');
           await this.loadModalScript();
           this.modalScriptLoaded = true;
-          console.log('[Salla Bundle] Modal script preloaded successfully');
         }
       } catch (error) {
-        console.log('[Salla Bundle] Modal preload failed, will load on-demand:', error);
+        console.error('[Salla Bundle] Modal preload failed, will load on-demand:', error);
       }
     }
 
     loadModalScriptAsync() {
       // Load modal script asynchronously without waiting
       if (!this.modalScriptLoaded && !window.SallaBundleModal) {
-        console.log('[Salla Bundle] Loading modal script asynchronously...');
         this.loadModalScript()
           .then(() => {
             this.modalScriptLoaded = true;
-            console.log('[Salla Bundle] Modal script loaded asynchronously');
           })
           .catch(error => {
-            console.log('[Salla Bundle] Async modal load failed, will fallback to on-demand:', error);
+            console.error('[Salla Bundle] Async modal load failed, will fallback to on-demand:', error);
           });
       }
     }
@@ -774,7 +714,6 @@ class SnippetController {
       try {
         // Load modal script if not already loaded (fallback)
         if (!window.SallaBundleModal) {
-          console.log('[Salla Bundle] Modal not preloaded, loading on-demand...');
           await this.loadModalScript();
         }
 

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   AppShell,
@@ -7,7 +6,6 @@ import {
   Group,
   Avatar,
   Menu,
-  rem,
   ScrollArea,
   Button,
   Badge,
@@ -147,10 +145,10 @@ export default function DashboardLayout() {
 
   // Calculate stats directly to avoid infinite re-renders
   const activeBundles = bundles.filter((b) => b.status === "active").length;
-  const totalConversions = bundles.reduce(
-    (sum, b) => sum + (b.total_conversions || 0),
-    0
-  );
+  // const totalConversions = bundles.reduce(
+  //   (sum, b) => sum + (b.total_conversions || 0),
+  //   0
+  // );
 
   return (
     <AppShell
