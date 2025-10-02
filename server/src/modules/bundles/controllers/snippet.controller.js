@@ -16,7 +16,9 @@ class SnippetController {
 
       res.set({
         "Content-Type": "application/javascript",
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "no-cache, no-store, must-revalidate", // Disable caching during development
+        "Pragma": "no-cache",
+        "Expires": "0",
         "Access-Control-Allow-Origin": "*",
       });
 
@@ -156,9 +158,11 @@ class SnippetController {
       this.retryCount = 0;
       this.maxRetries = 10;
       this.modalScriptLoaded = false;
+      this.isModalLoading = false;
       this.settings = {
         hide_default_buttons: false,
-        hide_salla_offer_modal: false
+        hide_salla_offer_modal: false,
+        hide_product_options: false
       };
       this.bundleData = {
         cta_button_text: 'اختر الباقة',
@@ -168,8 +172,9 @@ class SnippetController {
     }
 
     async initialize() {
+      this.addModalPrefetch();
 
-    if (document.readyState === 'loading') {
+      if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => this.start());
       } else {
         this.start();
@@ -180,6 +185,33 @@ class SnippetController {
       }
 
       this.observePageChanges();
+    }
+
+    addModalPrefetch() {
+
+    try {
+        const params = new URLSearchParams();
+        
+        if (CONFIG.storeId) {
+          params.append('store', CONFIG.storeId);
+        } else if (CONFIG.storeDomain) {
+          params.append('store', CONFIG.storeDomain);
+        }
+
+        const prefetchUrl = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
+        
+
+        if (!document.querySelector(\`link[href="\${prefetchUrl}"]\`)) {
+          const prefetchLink = document.createElement('link');
+          prefetchLink.rel = 'prefetch';
+          prefetchLink.href = prefetchUrl;
+          prefetchLink.as = 'script';
+          document.head.appendChild(prefetchLink);
+          
+        }
+      } catch (error) {
+        console.log('[Salla Bundle] Prefetch failed:', error);
+      }
     }
 
     observePageChanges() {
@@ -217,16 +249,12 @@ class SnippetController {
           return;
         }
 
+
+        this.preloadModalScript();
         this.injectBundleUI();
-
-        // Hide Salla default buttons if enabled in settings
         this.hideSallaDefaultButtons();
-
-        // Hide Salla offer modal if enabled in settings
         this.hideSallaOfferModal();
-
-        // Load modal script asynchronously immediately after injection
-        this.loadModalScriptAsync();
+        this.hideProductOptions();
 
       } catch (error) {
         console.error('[Salla Bundle] Error:', error);
@@ -471,6 +499,79 @@ class SnippetController {
 
     }
 
+    hideProductOptions() {
+      if (!this.settings.hide_product_options) {
+        return;
+      }
+
+      // Add CSS to hide salla-product-options within product-form
+      const style = document.createElement('style');
+      style.id = 'salla-bundle-hide-product-options';
+      style.textContent = \`
+        /* Hide Salla product options in product form for target products with bundles */
+        form.product-form salla-product-options {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+      \`;
+
+      // Check if style already exists
+      const existingStyle = document.getElementById('salla-bundle-hide-product-options');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      document.head.appendChild(style);
+
+      // Also hide via JS (backup method)
+      const hideProductOptionElements = () => {
+        const productForms = document.querySelectorAll('form.product-form');
+        productForms.forEach(form => {
+          const optionsElements = form.querySelectorAll('salla-product-options');
+          optionsElements.forEach(element => {
+            element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+          });
+        });
+      };
+
+      // Hide existing elements immediately
+      hideProductOptionElements();
+
+      // Keep checking every 500ms for dynamically loaded elements
+      setInterval(hideProductOptionElements, 500);
+
+      // Observe for new elements being added to DOM
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) {
+              // Check if the node itself is salla-product-options within product-form
+              if (node.tagName === 'SALLA-PRODUCT-OPTIONS') {
+                const productForm = node.closest('form.product-form');
+                if (productForm) {
+                  node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                }
+              }
+              // Check children
+              if (node.querySelectorAll) {
+                const optionsElements = node.querySelectorAll('form.product-form salla-product-options');
+                optionsElements.forEach(element => {
+                  element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                });
+              }
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
     injectBundleUI() {
       if (this.isInjected) return;
 
@@ -689,16 +790,22 @@ class SnippetController {
     async preloadModalScript() {
       try {
         if (!this.modalScriptLoaded && !window.SallaBundleModal) {
+          
+          // Add loading indicator
+          this.isModalLoading = true;
+          
           await this.loadModalScript();
           this.modalScriptLoaded = true;
+          this.isModalLoading = false;
+          
         }
       } catch (error) {
-        console.error('[Salla Bundle] Modal preload failed, will load on-demand:', error);
+        this.isModalLoading = false;
+        console.log('[Salla Bundle] Modal preload failed, will load on-demand:', error);
       }
     }
 
     loadModalScriptAsync() {
-      // Load modal script asynchronously without waiting
       if (!this.modalScriptLoaded && !window.SallaBundleModal) {
         this.loadModalScript()
           .then(() => {
@@ -712,9 +819,12 @@ class SnippetController {
 
     async openBundleModal() {
       try {
-        // Load modal script if not already loaded (fallback)
         if (!window.SallaBundleModal) {
+          this.showLoadingState();
+          
           await this.loadModalScript();
+          
+          this.hideLoadingState();
         }
 
         // Prepare context data using Salla store variables
@@ -755,7 +865,6 @@ class SnippetController {
       return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         
-        // Build modal script URL with store context
         const params = new URLSearchParams();
 
         if (CONFIG.storeId) {
@@ -769,9 +878,57 @@ class SnippetController {
         }
         
         script.src = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
-        script.onload = resolve;
-        script.onerror = reject;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          resolve();
+        };
+        script.onerror = (error) => {
+          console.error('[Salla Bundle] Modal script load failed:', error);
+          reject(error);
+        };
         document.head.appendChild(script);
+      });
+    }
+
+    showLoadingState() {
+      // Add loading state to all bundle buttons
+      const bundleButtons = document.querySelectorAll('.salla-bundle-btn, .salla-bundle-notice');
+      bundleButtons.forEach(button => {
+        if (!button.dataset.originalText) {
+          button.dataset.originalText = button.innerHTML;
+        }
+        button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-left: 8px; animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg> جاري التحميل...';
+        button.style.opacity = '0.7';
+        button.style.cursor = 'wait';
+        button.disabled = true;
+      });
+
+      // Add spinner animation CSS if not already added
+      if (!document.getElementById('salla-bundle-spinner-animation')) {
+        const style = document.createElement('style');
+        style.id = 'salla-bundle-spinner-animation';
+        style.textContent = \`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        \`;
+        document.head.appendChild(style);
+      }
+    }
+
+    hideLoadingState() {
+      // Remove loading state from all bundle buttons
+      const bundleButtons = document.querySelectorAll('.salla-bundle-btn, .salla-bundle-notice');
+      bundleButtons.forEach(button => {
+        if (button.dataset.originalText) {
+          button.innerHTML = button.dataset.originalText;
+          delete button.dataset.originalText;
+        }
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+        button.disabled = false;
       });
     }
   }

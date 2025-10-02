@@ -32,7 +32,10 @@ class BundleService {
     }
 
     // Fetch real product data from Salla API
-    const productData = await this.fetchAndStoreProductData(store_id, bundleData);
+    const productData = await this.fetchAndStoreProductData(
+      store_id,
+      bundleData
+    );
 
     // Validate products exist and are available
     const validation = await this.validateBundleProducts(store_id, bundleData);
@@ -74,7 +77,9 @@ class BundleService {
       created_by: bundleData.created_by || "system",
     });
 
-    console.log(`[Bundle]: Created bundle ${bundle._id} for store ${store_id} with real product data`);
+    console.log(
+      `[Bundle]: Created bundle ${bundle._id} for store ${store_id} with real product data`
+    );
     return bundle;
   }
 
@@ -85,43 +90,60 @@ class BundleService {
     // Collect all unique product IDs
     const allProductIds = [bundleData.target_product_id];
 
-    bundleData.bundles.forEach(tier => {
-      tier.offers.forEach(offer => {
+    bundleData.bundles.forEach((tier) => {
+      tier.offers.forEach((offer) => {
         if (!allProductIds.includes(offer.product_id)) {
           allProductIds.push(offer.product_id);
         }
       });
     });
 
-    console.log(`[Bundle Service] Fetching product data for IDs: ${allProductIds.join(', ')}`);
+    console.log(
+      `[Bundle Service] Fetching product data for IDs: ${allProductIds.join(
+        ", "
+      )}`
+    );
 
     // Fetch all products from Salla API
-    const { products, failed } = await productService.getMultipleProducts(store_id, allProductIds);
+    const { products, failed } = await productService.getMultipleProducts(
+      store_id,
+      allProductIds
+    );
 
     if (failed.length > 0) {
-      console.warn(`[Bundle Service] Failed to fetch products: ${failed.map(f => f.id).join(', ')}`);
+      console.warn(
+        `[Bundle Service] Failed to fetch products: ${failed
+          .map((f) => f.id)
+          .join(", ")}`
+      );
     }
 
     // Create product lookup map
     const productMap = {};
-    products.forEach(product => {
+    products.forEach((product) => {
       productMap[product.id] = productService.extractProductData(product);
     });
 
     // Get target product data
     const targetProduct = productMap[bundleData.target_product_id];
     if (!targetProduct) {
-      throw new AppError(`Target product ${bundleData.target_product_id} not found`, 404);
+      throw new AppError(
+        `Target product ${bundleData.target_product_id} not found`,
+        404
+      );
     }
 
     // Enhance bundle offers with real product data
-    const enhancedBundles = bundleData.bundles.map(tier => ({
+    const enhancedBundles = bundleData.bundles.map((tier) => ({
       tier: tier.tier,
       buy_quantity: tier.buy_quantity,
-      offers: tier.offers.map(offer => {
+      offers: tier.offers.map((offer) => {
         const productData = productMap[offer.product_id];
         if (!productData) {
-          throw new AppError(`Offer product ${offer.product_id} not found`, 404);
+          throw new AppError(
+            `Offer product ${offer.product_id} not found`,
+            404
+          );
         }
 
         return {
@@ -132,15 +154,15 @@ class BundleService {
           discount_amount: offer.discount_amount,
           offer_type: offer.offer_type,
           arabic_message: offer.arabic_message,
-          product_data: productData
+          product_data: productData,
         };
-      })
+      }),
     }));
 
     return {
       targetProduct,
       enhancedBundles,
-      productMap
+      productMap,
     };
   }
 
@@ -497,42 +519,47 @@ class BundleService {
     try {
       // Collect all product IDs from the bundle
       const allProductIds = [bundle.target_product_id];
-      bundle.bundles.forEach(tier => {
-        tier.offers.forEach(offer => {
+      bundle.bundles.forEach((tier) => {
+        tier.offers.forEach((offer) => {
           if (!allProductIds.includes(offer.product_id)) {
             allProductIds.push(offer.product_id);
           }
         });
       });
 
-      console.log(`[Bundle Service] Fetching fresh product data for: ${allProductIds.join(', ')}`);
-
       // Fetch fresh product data from Salla API
-      const { products, failed } = await productService.getMultipleProducts(store_id, allProductIds);
+      const { products, failed } = await productService.getMultipleProducts(
+        store_id,
+        allProductIds
+      );
 
       if (failed.length > 0) {
-        console.warn(`[Bundle Service] Failed to fetch some products: ${failed.map(f => f.id).join(', ')}`);
+        console.warn(
+          `[Bundle Service] Failed to fetch some products: ${failed
+            .map((f) => f.id)
+            .join(", ")}`
+        );
       }
 
       // Create a map for quick lookup
       const productMap = {};
-      products.forEach(product => {
+      products.forEach((product) => {
         productMap[product.id] = productService.extractProductData(product);
       });
 
       // Get fresh target product data
       const targetProductData = productMap[bundle.target_product_id] || {
         id: bundle.target_product_id,
-        name: bundle.target_product_name || 'منتج',
-        price: 100.00,
+        name: bundle.target_product_name || "منتج",
+        price: 100.0,
         image: null,
         options: [],
         variants: [],
-        has_variants: false
+        has_variants: false,
       };
 
       // Enhance bundles with fresh product data
-      const enhancedBundles = bundle.bundles.map(tier => {
+      const enhancedBundles = bundle.bundles.map((tier) => {
         const cleanTier = {
           tier: tier.tier,
           buy_quantity: tier.buy_quantity,
@@ -544,7 +571,7 @@ class BundleService {
           tier_highlight_bg_color: tier.tier_highlight_bg_color,
           tier_highlight_text_color: tier.tier_highlight_text_color,
           is_default: tier.is_default,
-          offers: tier.offers.map(offer => ({
+          offers: tier.offers.map((offer) => ({
             product_id: offer.product_id,
             product_name: offer.product_name,
             quantity: offer.quantity,
@@ -554,14 +581,14 @@ class BundleService {
             arabic_message: offer.arabic_message,
             product_data: productMap[offer.product_id] || {
               id: offer.product_id,
-              name: offer.product_name || 'منتج',
-              price: 100.00,
+              name: offer.product_name || "منتج",
+              price: 100.0,
               image: null,
               options: [],
               variants: [],
-              has_variants: false
-            }
-          }))
+              has_variants: false,
+            },
+          })),
         };
         return cleanTier;
       });
@@ -584,25 +611,9 @@ class BundleService {
         cta_button_text_color: bundle.cta_button_text_color,
       };
 
-      // Log enhanced bundle with tier customization
-      console.log('[Bundle Service] Enhanced bundle UI fields:', {
-        modal_title: result.modal_title,
-        modal_subtitle: result.modal_subtitle,
-        cta_button_text: result.cta_button_text,
-        cta_button_bg_color: result.cta_button_bg_color,
-        cta_button_text_color: result.cta_button_text_color,
-        tiers: result.bundles.map(t => ({
-          tier: t.tier,
-          is_default: t.is_default,
-          tier_title: t.tier_title,
-          tier_bg_color: t.tier_bg_color
-        }))
-      });
-
       return result;
-
     } catch (error) {
-      console.error('[Bundle Service] Error enhancing bundle data:', error);
+      console.error("[Bundle Service] Error enhancing bundle data:", error);
       throw error;
     }
   }

@@ -31,6 +31,7 @@ export default function SettingsPage() {
     useSettingsStore();
   const [showButtonsModal, setShowButtonsModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
 
   useEffect(() => {
     fetchSettings().catch((error) => {
@@ -222,6 +223,60 @@ export default function SettingsPage() {
                 </div>
 
                 <Divider />
+
+                {/* Hide Product Options Toggle */}
+                <div>
+                  <Switch
+                    size="md"
+                    label={
+                      <div>
+                        <Text fw={500} size="sm">
+                          إخفاء خيارات المنتج الافتراضية
+                        </Text>
+                        <Text size="xs" c="dimmed" mt={4}>
+                          إخفاء قسم خيارات المنتج (salla-product-options) في المنتج
+                          المستهدف عند وجود عروض باقات نشطة عليه
+                        </Text>
+                      </div>
+                    }
+                    checked={settings.hide_product_options}
+                    onChange={(event) =>
+                      handleToggleChange(
+                        "hide_product_options",
+                        event.currentTarget.checked
+                      )
+                    }
+                    disabled={loading.updating}
+                  />
+
+                  <Group mt="md">
+                    <Button
+                      variant="light"
+                      size="xs"
+                      leftSection={<IconPhoto size="0.9rem" />}
+                      onClick={() => setShowOptionsModal(true)}
+                    >
+                      عرض مثال توضيحي
+                    </Button>
+                  </Group>
+
+                  <Alert
+                    icon={<IconInfoCircle size="1rem" />}
+                    color="blue"
+                    variant="light"
+                    mt="md"
+                  >
+                    <Text size="sm">
+                      <strong>ملاحظة:</strong> هذا الخيار يخفي قسم خيارات المنتج
+                      الافتراضي (salla-product-options) الموجود داخل النموذج
+                      (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض
+                      باقات عليه. هذا يمنع الارتباك ويوجه العميل لاختيار الخيارات من
+                      نافذة الباقة.
+                    </Text>
+                  </Alert>
+                </div>
+
+                <Divider />
               </Stack>
             </div>
           </Stack>
@@ -278,6 +333,35 @@ export default function SettingsPage() {
               <Text size="xs">
                 سيتم إخفاء هذه النافذة فقط (s-offer-modal-type-products).
                 النوافذ الأخرى من سلة ستبقى تعمل بشكل طبيعي.
+              </Text>
+            </Alert>
+          </Stack>
+        </Modal>
+
+        {/* Hide Product Options Demo Modal */}
+        <Modal
+          opened={showOptionsModal}
+          onClose={() => setShowOptionsModal(false)}
+          title="مثال: قسم خيارات المنتج الافتراضي"
+          size="lg"
+          centered
+        >
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              هذا هو قسم خيارات المنتج (salla-product-options) الذي سيتم إخفاؤه
+              عند تفعيل الخيار:
+            </Text>
+            <Image
+              src="/salla-options.png"
+              alt="Salla Product Options"
+              radius="md"
+              fit="contain"
+            />
+            <Alert color="yellow" variant="light">
+              <Text size="xs">
+                سيتم إخفاء قسم خيارات المنتج الافتراضي في صفحة المنتج المستهدف
+                فقط عند وجود عروض باقات نشطة عليه. سيختار العميل الخيارات من
+                نافذة الباقة بدلاً من ذلك.
               </Text>
             </Alert>
           </Stack>

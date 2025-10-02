@@ -27,13 +27,6 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     });
   }
 
-  // Log context for debugging (useful for analytics)
-  console.log(
-    `[Bundle Check] Store: ${storeDomain}, Customer: ${
-      customerId || "anonymous"
-    }, Product: ${product_id}`
-  );
-
   const bundle = await bundleService.getBundlesByProduct(store_id, product_id);
 
   if (!bundle) {
@@ -47,7 +40,10 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
   await bundleService.trackBundleView(bundle._id);
 
   // Get enhanced bundle data with product information
-  const enhancedBundle = await bundleService.getEnhancedBundleData(store_id, bundle);
+  const enhancedBundle = await bundleService.getEnhancedBundleData(
+    store_id,
+    bundle
+  );
 
   // Get store settings (includes hide_default_buttons)
   const settings = await settingsService.getSettings(store_id);
@@ -60,6 +56,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
       settings: {
         hide_default_buttons: settings.hide_default_buttons,
         hide_salla_offer_modal: settings.hide_salla_offer_modal,
+        hide_product_options: settings.hide_product_options,
       },
     },
   });

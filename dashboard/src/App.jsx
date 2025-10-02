@@ -10,7 +10,7 @@ import useAuthStore from "./stores/useAuthStore";
 // Custom theme for RTL support and Arabic typography
 const theme = createTheme({
   dir: "rtl",
-  fontFamily: "Cairo, Tajawal, sans-serif",
+  fontFamily: "Almarai, Tajawal, sans-serif",
   primaryColor: "blue",
   colors: {
     blue: [

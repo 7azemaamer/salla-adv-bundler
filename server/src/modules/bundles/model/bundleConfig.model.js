@@ -191,7 +191,6 @@ const BundleConfigSchema = new mongoose.Schema(
     config_hash: {
       type: String,
       required: true,
-      index: true,
     },
     status: {
       type: String,

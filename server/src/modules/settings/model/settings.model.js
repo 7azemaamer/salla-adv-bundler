@@ -18,6 +18,11 @@ const settingsSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Hide product options (salla-product-options) for target product when bundle offers are applied
+    hide_product_options: {
+      type: Boolean,
+      default: false,
+    },
     // Future settings can be added here
     // e.g., button_position, custom_colors, etc.
   },

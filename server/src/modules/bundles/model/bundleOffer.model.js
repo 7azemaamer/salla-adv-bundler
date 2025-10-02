@@ -107,7 +107,6 @@ const BundleOfferSchema = new mongoose.Schema(
 // Indexes for efficient querying
 BundleOfferSchema.index({ bundle_id: 1, status: 1 });
 BundleOfferSchema.index({ store_id: 1, status: 1 });
-BundleOfferSchema.index({ offer_id: 1 });
 BundleOfferSchema.index({ gift_product_id: 1 });
 BundleOfferSchema.index({ tier: 1, buy_quantity: 1 });
 BundleOfferSchema.index({ created_at: -1 });

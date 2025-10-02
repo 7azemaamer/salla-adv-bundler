@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import {
   Container,
@@ -24,7 +23,7 @@ import useAuthStore from "../stores/useAuthStore";
 export default function LoginPage() {
   const { isAuthenticated, loginViaSalla, error } = useAuthStore();
 
-  // Redirect if already authenticated
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -35,11 +34,11 @@ export default function LoginPage() {
       title: "إنشاء باقات مخصصة",
       description: "أنشئ باقات مخصصة من منتجاتك مع هدايا مجانية",
     },
-    {
-      icon: <IconGift size="1.2rem" />,
-      title: "عروض تلقائية",
-      description: "إنشاء عروض سلة تلقائياً عبر API للحصول على منتجات مجانية",
-    },
+    // {
+    //   icon: <IconGift size="1.2rem" />,
+    //   title: "عروض تلقائية",
+    //   description: "إنشاء عروض سلة تلقائياً عبر API للحصول على منتجات مجانية",
+    // },
     {
       icon: <IconTrendingUp size="1.2rem" />,
       title: "تحليلات مفصلة",
@@ -53,7 +52,10 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+    <div
+      className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50"
+      style={{ backgroundColor: "#f0f9fa" }}
+    >
       <Container size="lg" className="py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           {/* Left Side - Features */}
@@ -61,7 +63,7 @@ export default function LoginPage() {
             <Title order={1} size="h1" className="mb-6 text-gray-800">
               منصة العروض المتقدمة
               <br />
-              <span className="text-blue-600">لمتاجر سلة</span>
+              <span style={{ color: "#004b58" }}>لمتاجر سلة</span>
             </Title>
 
             <Text size="lg" className="text-gray-600 mb-8 leading-relaxed">
@@ -72,7 +74,11 @@ export default function LoginPage() {
             <Stack gap="md">
               {features.map((feature, index) => (
                 <Group key={index} align="flex-start" gap="md">
-                  <ThemeIcon size="xl" radius="md" color="blue" variant="light">
+                  <ThemeIcon
+                    size="xl"
+                    radius="md"
+                    style={{ backgroundColor: "#004b5820", color: "#004b58" }}
+                  >
                     {feature.icon}
                   </ThemeIcon>
                   <div>
@@ -93,14 +99,13 @@ export default function LoginPage() {
             <Paper shadow="xl" p="xl" radius="lg" className="bg-white">
               <Stack gap="lg">
                 <div className="text-center">
-                  <ThemeIcon
-                    size="4rem"
-                    radius="50%"
-                    color="blue"
-                    className="mx-auto mb-4"
-                  >
-                    <IconShoppingBag size="2rem" />
-                  </ThemeIcon>
+                  <div className="mb-4">
+                    <img
+                      src="/salla-logo.png"
+                      alt="Salla"
+                      className="h-16 mx-auto"
+                    />
+                  </div>
                   <Title order={2} className="text-gray-800 mb-2">
                     تسجيل الدخول
                   </Title>
@@ -124,7 +129,8 @@ export default function LoginPage() {
                   size="lg"
                   fullWidth
                   onClick={loginViaSalla}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  style={{ backgroundColor: "#004b58" }}
+                  className="hover:opacity-90"
                   leftSection={
                     <svg
                       width="20"
@@ -141,11 +147,17 @@ export default function LoginPage() {
 
                 <Text size="xs" className="text-gray-500 text-center">
                   بالمتابعة، أنت توافق على{" "}
-                  <span className="text-blue-600 hover:underline cursor-pointer">
+                  <span
+                    style={{ color: "#004b58" }}
+                    className="hover:underline cursor-pointer"
+                  >
                     شروط الاستخدام
                   </span>{" "}
                   و{" "}
-                  <span className="text-blue-600 hover:underline cursor-pointer">
+                  <span
+                    style={{ color: "#004b58" }}
+                    className="hover:underline cursor-pointer"
+                  >
                     سياسة الخصوصية
                   </span>
                 </Text>
@@ -155,7 +167,7 @@ export default function LoginPage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mt-8">
               <div className="text-center">
-                <Title order={3} className="text-blue-600">
+                <Title order={3} style={{ color: "#004b58" }}>
                   250+
                 </Title>
                 <Text size="sm" className="text-gray-600">
@@ -163,7 +175,7 @@ export default function LoginPage() {
                 </Text>
               </div>
               <div className="text-center">
-                <Title order={3} className="text-blue-600">
+                <Title order={3} style={{ color: "#004b58" }}>
                   40%
                 </Title>
                 <Text size="sm" className="text-gray-600">
@@ -171,7 +183,7 @@ export default function LoginPage() {
                 </Text>
               </div>
               <div className="text-center">
-                <Title order={3} className="text-blue-600">
+                <Title order={3} style={{ color: "#004b58" }}>
                   24/7
                 </Title>
                 <Text size="sm" className="text-gray-600">
