@@ -1399,7 +1399,6 @@ router.get("/modal.js", (req, res) => {
 
         // Validate Salla SDK is available
         if (!window.salla) {
-          console.error('[Salla Bundle] Salla SDK not available');
           alert('عذراً، حدث خطأ في النظام. يرجى المحاولة مرة أخرى.');
           return;
         }
@@ -1538,16 +1537,6 @@ router.get("/modal.js", (req, res) => {
                 const offerOptions = offer.product_data && offer.product_data.has_variants ?
                   this.getSelectedOfferVariantOptions(offer.product_id) : {};
 
-                console.log(\`[Salla Bundle] Processing offer product \${offer.product_id}:\`, {
-                  product_id: offer.product_id,
-                  product_name: offer.product_name,
-                  discount_type: offer.discount_type,
-                  discount_amount: offer.discount_amount,
-                  has_variants: offer.product_data?.has_variants,
-                  selected_options: offerOptions,
-                  options_count: Object.keys(offerOptions).length,
-                  required_options: offer.product_data?.options?.filter(o => o.required).length || 0
-                });
 
                 // Add ALL offer products to cart (including FREE ones)
                 const addToCartParams = {
@@ -1556,10 +1545,8 @@ router.get("/modal.js", (req, res) => {
                   options: offerOptions
                 };
 
-                console.log(\`[Salla Bundle] Adding offer product to cart:\`, JSON.stringify(addToCartParams, null, 2));
 
                 await window.salla.cart.addItem(addToCartParams);
-                console.log(\`[Salla Bundle] Successfully added offer product \${offer.product_id} to cart\`);
 
                 successfulOffers.push(offer);
                 addedProducts.push({
@@ -1571,7 +1558,6 @@ router.get("/modal.js", (req, res) => {
                 });
 
               } catch (offerError) {
-                console.error(\`[Salla Bundle] Failed to add offer product \${offer.product_id}:\`, offerError);
                 failedOffers.push({
                   ...offer,
                   reason: 'add_to_cart_failed',
@@ -1581,7 +1567,7 @@ router.get("/modal.js", (req, res) => {
             }
 
           } else {
-            console.log(\`[Salla Bundle] No offers found in selected tier\`);
+            //console.log(\`[Salla Bundle] No offers found in selected tier\`);
           }
 
           // Show comprehensive success message based on results
@@ -1601,13 +1587,10 @@ router.get("/modal.js", (req, res) => {
           this.showSallaToast(successMessage, failedOffers.length > 0 ? 'warning' : 'success');
 
         } catch (error) {
-          console.error('[Salla Bundle] Failed to add products:', error);
 
-          // Check if it's a variant validation error
           if (error.message && (error.message.includes('options') || error.message.includes('variant') || error.message.includes('required'))) {
             const missingVariants = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
             if (missingVariants.length > 0) {
-              console.error('[Salla Bundle] Validation error, missing variants:', missingVariants);
               this.showSallaToast('يجب اختيار جميع الخيارات المطلوبة قبل المتابعة', 'error');
               this.highlightMissingVariants(missingVariants);
               const firstMissing = missingVariants[0];
@@ -1623,21 +1606,22 @@ router.get("/modal.js", (req, res) => {
         // FINAL CHECK before navigation
         const finalVariantCheck = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
         if (finalVariantCheck.length > 0) {
-          console.error('[Salla Bundle] Final validation failed:', finalVariantCheck);
           this.showSallaToast('لا يمكن المتابعة بدون اختيار جميع الخيارات', 'error');
           this.highlightMissingVariants(finalVariantCheck);
           return;
         }
 
+        const currentPath = window.location.pathname;
+        const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+        const basePath = pathMatch ? pathMatch[1] : '/';
+        const cartUrl = \`\${window.location.origin}\${basePath}cart\`;
 
-        //window.location.href = \`https://\${this.storeDomain}/cart\`;
+         // console.log('[Salla Bundle] Navigating to cart:', cartUrl);
+        window.location.href = cartUrl;
 
       } catch (error) {
-        console.error('[Salla Bundle] Checkout failed:', error);
-
-        // Any error = NO cart navigation
         this.showSallaToast('حدث خطأ. يرجى المحاولة مرة أخرى.', 'error');
-        return; // BLOCK navigation
+        return; 
       }
     }
 
@@ -1679,34 +1663,21 @@ router.get("/modal.js", (req, res) => {
       const isSameAsTarget = productId === this.productId;
       const selectorProductId = isSameAsTarget ? \`\${productId}-offer\` : productId;
 
-      console.log(\`[Offer Variants] Getting options for product \${productId}:\`, {
-        isSameAsTarget,
-        selectorProductId,
-        targetProductId: this.productId
-      });
+    
 
       const selectors = document.querySelectorAll(\`[data-variant-product="\${selectorProductId}"]\`);
 
-      console.log(\`[Offer Variants] Found \${selectors.length} variant selectors for \${selectorProductId}\`);
 
       selectors.forEach((selector, index) => {
         const optionId = selector.getAttribute('data-option-id');
         const value = selector.value;
         const selectId = selector.id;
 
-        console.log(\`[Offer Variants] Selector #\${index + 1}:\`, {
-          id: selectId,
-          optionId,
-          value,
-          hasValue: !!value
-        });
-
+    
         if (value && value !== '') {
           options[optionId] = value;
         }
       });
-
-      console.log(\`[Offer Variants] Final options for \${productId}:\`, options);
 
       return options;
     }
@@ -1943,16 +1914,14 @@ router.get("/modal.js", (req, res) => {
                 isOffer: true
               });
             } else {
-
-              console.log(\`[Variant Validation] ✅ All variants selected for offer: \${offer.product_data.name}\`);
-            
+              //nth
               }
           } else {
-            console.log(\`[Variant Validation] Offer product \${offer.product_name} has no variants or no product data\`);
+            //nth
           }
         }
       } else {
-        console.log(\`[Variant Validation] No offers found in selected tier\`);
+          //nth
       }
 
       return missing;

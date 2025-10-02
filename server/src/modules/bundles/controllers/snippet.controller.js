@@ -801,7 +801,6 @@ class SnippetController {
         }
       } catch (error) {
         this.isModalLoading = false;
-        console.log('[Salla Bundle] Modal preload failed, will load on-demand:', error);
       }
     }
 
