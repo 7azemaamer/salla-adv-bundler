@@ -45,7 +45,7 @@ const BundleOfferSchema = new mongoose.Schema(
     // Enhanced discount tracking
     discount_type: {
       type: String,
-      enum: ["percentage", "fixed_amount", "free"],
+      enum: ["percentage", "fixed_amount", "free", "consolidated"],
       default: "free",
     },
     discount_amount: {
@@ -54,7 +54,7 @@ const BundleOfferSchema = new mongoose.Schema(
     },
     offer_type: {
       type: String,
-      enum: ["gift", "discounted_product", "additional_product"],
+      enum: ["gift", "discounted_product", "additional_product", "bundle", "consolidated_bundle"],
       default: "gift",
     },
     status: {

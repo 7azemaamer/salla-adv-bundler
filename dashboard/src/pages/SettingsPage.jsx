@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [showButtonsModal, setShowButtonsModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
 
   useEffect(() => {
     fetchSettings().catch((error) => {
@@ -277,6 +278,58 @@ export default function SettingsPage() {
                 </div>
 
                 <Divider />
+
+                {/* Hide Quantity Input Toggle */}
+                <div>
+                  <Switch
+                    size="md"
+                    label={
+                      <div>
+                        <Text fw={500} size="sm">
+                          إخفاء حقل الكمية الافتراضي
+                        </Text>
+                        <Text size="xs" c="dimmed" mt={4}>
+                          إخفاء قسم الكمية (parent section of salla-quantity-input) في المنتج
+                          المستهدف عند وجود عروض باقات نشطة عليه
+                        </Text>
+                      </div>
+                    }
+                    checked={settings.hide_quantity_input}
+                    onChange={(event) =>
+                      handleToggleChange(
+                        "hide_quantity_input",
+                        event.currentTarget.checked
+                      )
+                    }
+                    disabled={loading.updating}
+                  />
+
+                  <Group mt="md">
+                    <Button
+                      variant="light"
+                      size="xs"
+                      leftSection={<IconPhoto size="0.9rem" />}
+                      onClick={() => setShowQuantityModal(true)}
+                    >
+                      عرض مثال توضيحي
+                    </Button>
+                  </Group>
+
+                  <Alert
+                    icon={<IconInfoCircle size="1rem" />}
+                    color="blue"
+                    variant="light"
+                    mt="md"
+                  >
+                    <Text size="sm">
+                      <strong>ملاحظة:</strong> هذا الخيار يخفي قسم الكمية
+                      الافتراضي الموجود داخل النموذج (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض
+                      باقات عليه. يتم اختيار الكمية من خلال نافذة الباقة.
+                    </Text>
+                  </Alert>
+                </div>
+
+                <Divider />
               </Stack>
             </div>
           </Stack>
@@ -361,6 +414,35 @@ export default function SettingsPage() {
               <Text size="xs">
                 سيتم إخفاء قسم خيارات المنتج الافتراضي في صفحة المنتج المستهدف
                 فقط عند وجود عروض باقات نشطة عليه. سيختار العميل الخيارات من
+                نافذة الباقة بدلاً من ذلك.
+              </Text>
+            </Alert>
+          </Stack>
+        </Modal>
+
+        {/* Hide Quantity Input Demo Modal */}
+        <Modal
+          opened={showQuantityModal}
+          onClose={() => setShowQuantityModal(false)}
+          title="مثال: قسم الكمية الافتراضي"
+          size="lg"
+          centered
+        >
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              هذا هو قسم الكمية (parent section of salla-quantity-input) الذي سيتم إخفاؤه
+              عند تفعيل الخيار:
+            </Text>
+            <Image
+              src="/salla-qta.png"
+              alt="Salla Quantity Input"
+              radius="md"
+              fit="contain"
+            />
+            <Alert color="yellow" variant="light">
+              <Text size="xs">
+                سيتم إخفاء قسم الكمية الافتراضي في صفحة المنتج المستهدف
+                فقط عند وجود عروض باقات نشطة عليه. يتم اختيار الكمية من خلال
                 نافذة الباقة بدلاً من ذلك.
               </Text>
             </Alert>

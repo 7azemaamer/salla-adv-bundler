@@ -57,6 +57,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         hide_default_buttons: settings.hide_default_buttons,
         hide_salla_offer_modal: settings.hide_salla_offer_modal,
         hide_product_options: settings.hide_product_options,
+        hide_quantity_input: settings.hide_quantity_input,
       },
     },
   });

@@ -84,10 +84,6 @@ class SpecialOffersService {
         },
       });
 
-      console.log(
-        `[SpecialOffers]: Created offer for store ${store_id}:`,
-        response.data.data?.id
-      );
       return response.data;
     } catch (error) {
       console.error(
@@ -218,9 +214,6 @@ class SpecialOffersService {
         },
       });
 
-      console.log(
-        `[SpecialOffers]: Deleted offer ${offer_id} for store ${store_id}`
-      );
       return response.data;
     } catch (error) {
       console.error(
@@ -237,7 +230,199 @@ class SpecialOffersService {
   }
 
   /* ===============
-   * Build offer payload for bundle
+   * Fetch product details from Salla API
+   * ===============*/
+  async fetchProductData(store_id, product_id) {
+    try {
+      const token = await this.getValidToken(store_id);
+      const response = await axios.get(
+        `https://api.salla.dev/admin/v2/products/${product_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const product = response.data.data;
+
+      let price = 0;
+      if (typeof product.price === "number") {
+        price = product.price;
+      } else if (typeof product.price === "object" && product.price !== null) {
+        price =
+          product.price.amount ||
+          product.price.value ||
+          parseFloat(product.price);
+      } else {
+        price = parseFloat(product.price) || 0;
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        price: price,
+        currency: product.currency || "SAR",
+        image: product.main_image || product.thumbnail,
+        sku: product.sku,
+        status: product.status,
+      };
+    } catch (error) {
+      console.error(
+        `[SpecialOffers]: Failed to fetch product ${product_id}:`,
+        error.message
+      );
+      return null;
+    }
+  }
+
+  /* ===============
+   * Build SINGLE consolidated offer payload per tier with fixed-amount discount
+   *
+   * CONSOLIDATED APPROACH:
+   * Instead of creating multiple offers per tier (one for each gift/discount),
+   * we create ONE offer per tier using fixed_amount discount equal to total savings.
+   *
+   * Calculation: Sum of (free products at full price + percentage discounts + fixed discounts)
+   *
+   * Example Tier with 3 offers:
+   * - FREE product A (100 SAR) × 1 = 100 SAR discount
+   * - 50% OFF product B (200 SAR) = 100 SAR discount
+   * - Fixed 30 SAR OFF product C = 30 SAR discount
+   * Total = 230 SAR fixed_amount discount
+   *
+   * Payload structure:
+   * {
+   *   offer_type: "buy_x_get_y",
+   *   buy: { products: [target_product] },
+   *   get: {
+   *     discount_type: "fixed_amount",
+   *     discount_amount: 230,
+   *     products: [productA, productB, productC]
+   *   }
+   * }
+   * ===============*/
+  async buildConsolidatedBundleOfferPayload(bundleConfig, tier, store_id) {
+    // Validate required fields
+    if (!bundleConfig.target_product_id) {
+      throw new Error("Missing target product ID");
+    }
+
+    if (!tier.buy_quantity || tier.buy_quantity < 1) {
+      throw new Error("Invalid buy_quantity");
+    }
+
+    if (!tier.offers || tier.offers.length === 0) {
+      throw new Error("No offers found in tier");
+    }
+
+    // Step 1: Calculate TOTAL fixed discount for this tier
+    let totalDiscountAmount = 0;
+    const allOfferProductIds = [];
+
+    for (const offer of tier.offers) {
+      // Fetch product price if missing
+      let productPrice = offer.product_data?.price || 0;
+
+      if (!productPrice || productPrice === 0) {
+        const productData = await this.fetchProductData(
+          store_id,
+          offer.product_id
+        );
+        if (productData) {
+          productPrice = productData.price;
+        }
+      }
+      const productId = parseInt(offer.product_id);
+      const quantity = offer.quantity || 1;
+
+      if (!allOfferProductIds.includes(productId)) {
+        allOfferProductIds.push(productId);
+      }
+
+      let offerDiscount = 0;
+      if (offer.discount_type === "free") {
+        // FREE = full product price as discount
+        offerDiscount = productPrice * quantity;
+      } else if (offer.discount_type === "percentage") {
+        // Percentage = (price × percentage / 100)
+        const discountValue = (productPrice * offer.discount_amount) / 100;
+        offerDiscount = discountValue * quantity;
+      } else if (offer.discount_type === "fixed_amount") {
+        offerDiscount = offer.discount_amount * quantity;
+      }
+
+      totalDiscountAmount += offerDiscount;
+    }
+
+    // Round to 2 decimal places
+    totalDiscountAmount = Math.round(totalDiscountAmount * 100) / 100;
+
+    // Calculate total quantity of all gifts
+    const totalGiftQuantity = tier.offers.reduce(
+      (sum, offer) => sum + (offer.quantity || 1),
+      0
+    );
+
+    // Step 2: Generate offer name and message
+    const bundleName = bundleConfig.name || "Bundle Offer";
+    const offerName = `${bundleName} T${tier.tier}`;
+    const offerMessage =
+      tier.tier_title ||
+      `اشترِ ${tier.buy_quantity} واحصل على عرض باقة بخصم ${totalDiscountAmount} ريال`;
+
+    // Step 3: Prepare dates
+    const now = new Date();
+    const saudiTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // UTC+3
+    const futureTime = new Date(saudiTime.getTime() + 5 * 60 * 1000); // +5min buffer
+    const effectiveStartDate = futureTime
+      .toISOString()
+      .replace("T", " ")
+      .split(".")[0];
+
+    // Expiry date (if provided)
+    let expiryDate = null;
+    if (bundleConfig.expiry_date) {
+      const expirySaudiTime = new Date(
+        bundleConfig.expiry_date.getTime() + 3 * 60 * 60 * 1000
+      );
+      expiryDate = expirySaudiTime
+        .toISOString()
+        .replace("T", " ")
+        .split(".")[0];
+    }
+
+    // Step 5: Build payload with fixed_amount offer type
+    const payload = {
+      name: offerName.substring(0, 100), // Limit name length
+      message: offerMessage,
+      applied_channel: "browser_and_application",
+      offer_type: "fixed_amount", // Use fixed_amount as the offer type
+      applied_to: "product",
+      start_date: effectiveStartDate,
+      ...(expiryDate && { expiry_date: expiryDate }),
+      buy: {
+        type: "product",
+        min_items: parseInt(tier.buy_quantity),
+        products: [parseInt(bundleConfig.target_product_id)],
+      },
+      get: {
+        discount_amount: totalDiscountAmount,
+        products: allOfferProductIds, // All offer products that get the discount
+      },
+    };
+
+    console.log(
+      `[SpecialOffers]: 📦 CONSOLIDATED PAYLOAD FOR TIER ${tier.tier}:`
+    );
+    console.log(JSON.stringify(payload, null, 2));
+
+    return payload;
+  }
+
+  /* ===============
+   * Build offer payload for bundle (OLD METHOD - KEPT FOR BACKWARDS COMPATIBILITY)
    * ===============*/
   buildBundleOfferPayload(bundleConfig, tier, offer) {
     // Validate required fields
@@ -297,9 +482,6 @@ class SpecialOffersService {
     }
 
     const now = new Date();
-    console.log(
-      `[SpecialOffers]: Current system time (UTC): ${now.toISOString()}`
-    );
 
     // Convert to Saudi Arabia time (UTC+3) and add 5 minutes buffer
     const saudiTime = new Date(now.getTime() + 3 * 60 * 60 * 1000); // +3 hours for Saudi timezone
@@ -309,16 +491,6 @@ class SpecialOffersService {
       .replace("T", " ")
       .split(".")[0];
 
-    console.log(`[SpecialOffers]: Saudi time: ${saudiTime.toISOString()}`);
-    console.log(
-      `[SpecialOffers]: Using future datetime (Saudi+5min): ${effectiveStartDate}`
-    );
-    console.log(
-      `[SpecialOffers]: Bundle original start date: ${
-        bundleConfig.start_date.toISOString().split("T")[0]
-      }`
-    );
-
     const payload = {
       name: offerName,
       message: offerMessage,
@@ -326,9 +498,9 @@ class SpecialOffersService {
       offer_type: "buy_x_get_y",
       applied_to: "product",
       start_date: effectiveStartDate,
-      min_purchase_amount: 0, // Required field - set to 0 for no minimum
-      min_items_count: 0, // Required field - set to 0 for no minimum
-      min_items: 0, // Required field - set to 0 for no minimum
+      min_purchase_amount: 0, 
+      min_items_count: 0, 
+      min_items: 0, 
       discounts_table: [
         // Required field for buy_x_get_y offers
         {
@@ -351,22 +523,14 @@ class SpecialOffersService {
       },
     };
 
-    // Set expiry date - use bundle's expiry or default to 5 years
+
     let expiryDate;
     if (bundleConfig.expiry_date) {
-      // Use bundle's expiry date
       expiryDate = new Date(bundleConfig.expiry_date);
-      console.log(
-        `[SpecialOffers]: Using bundle expiry date: ${bundleConfig.expiry_date.toISOString().split("T")[0]}`
-      );
     } else {
-      // No expiry date set - use 5 years from now (permanent offer)
       expiryDate = new Date(
         futureTime.getTime() + 5 * 365 * 24 * 60 * 60 * 1000
       ); // +5 years
-      console.log(
-        `[SpecialOffers]: No expiry date in bundle - setting to 5 years from now (permanent offer)`
-      );
     }
 
     const effectiveExpiryDate = expiryDate
@@ -374,12 +538,8 @@ class SpecialOffersService {
       .replace("T", " ")
       .split(".")[0]; // YYYY-MM-DD HH:mm:ss format
 
-    console.log(
-      `[SpecialOffers]: Final expiry date: ${effectiveExpiryDate}`
-    );
     payload.expiry_date = effectiveExpiryDate;
 
-    // Validate the final payload
     this.validateOfferPayload(payload);
 
     return payload;
@@ -448,19 +608,6 @@ class SpecialOffersService {
       }
     }
 
-    // Basic payload logging for debugging
-    console.log(
-      `[SpecialOffers]: Final payload start_date: ${payload.start_date}`
-    );
-    console.log(
-      `[SpecialOffers]: Final payload expiry_date: ${
-        payload.expiry_date || "none"
-      }`
-    );
-    console.log(
-      `[SpecialOffers]: Product IDs - Buy: ${payload.buy.products}, Get: ${payload.get.products}`
-    );
-
     if (payload.expiry_date) {
       const expiryDate = new Date(payload.expiry_date);
       const startDate = new Date(payload.start_date);
@@ -503,7 +650,8 @@ class SpecialOffersService {
   }
 
   /* ===============
-   * Batch create offers for bundle
+   * Batch create offers for bundle - NEW CONSOLIDATED APPROACH
+   * Creates ONE offer per tier with fixed-amount discount (total savings)
    * ===============*/
   async createBundleOffers(store_id, bundleConfig) {
     // Validate store scopes first
@@ -513,86 +661,188 @@ class SpecialOffersService {
     const errors = [];
 
     try {
+      // Create ONE consolidated offer per tier
       for (const tier of bundleConfig.bundles) {
-        const tierOffers = tier.offers || tier.gifts || [];
-        for (const offer of tierOffers) {
-          let offerPayload = null;
-          try {
-            offerPayload = this.buildBundleOfferPayload(
-              bundleConfig,
-              tier,
-              offer
-            );
-            const offerResponse = await this.createOffer(
-              store_id,
-              offerPayload
-            );
 
-            // Activate the offer immediately
-            await this.updateOfferStatus(
-              store_id,
-              offerResponse.data.id,
-              "active"
-            );
+        let offerPayload = null;
+        let allGiftProducts = [];
+        let productDetails = [];
 
-            createdOffers.push({
-              offer_id: offerResponse.data.id,
-              tier: tier.tier,
-              gift_product_id: offer.product_id,
-              gift_product_name: offer.product_name,
-              buy_quantity: tier.buy_quantity,
-              gift_quantity: offer.quantity,
-              discount_type: offer.discount_type || "free",
-              discount_amount: offer.discount_amount || 100,
-              offer_type: offer.offer_type || "gift",
-              salla_response: offerResponse.data,
-              offer_config: offerPayload,
-            });
+        try {
+          let totalSavings = 0;
+          let totalGiftProductsPrice = 0;
 
-            console.log(
-              `[SpecialOffers]: Created offer ${offerResponse.data.id} for tier ${tier.tier} (${offer.discount_type}: ${offer.discount_amount})`
-            );
-
-            // Small delay to avoid rate limiting
-            await new Promise((resolve) => setTimeout(resolve, 100));
-          } catch (error) {
-            // Enhanced error logging using preserved response data
-            const responseData =
-              error.originalResponse?.data || error.response?.data;
-            const responseStatus =
-              error.originalResponse?.status || error.response?.status;
-
-     
-
-            if (responseData?.error?.fields) {
-              console.error(
-                `[SpecialOffers]: Detailed field validation errors:`
+          for (const offer of tier.offers) {
+            let productPrice = offer.product_data?.price || 0;
+            if (!productPrice || productPrice === 0) {
+              const productData = await this.fetchProductData(
+                store_id,
+                offer.product_id
               );
-              Object.entries(responseData.error.fields).forEach(
-                ([field, errors]) => {
-                  console.error(
-                    `  - ${field}: ${
-                      Array.isArray(errors) ? errors.join(", ") : errors
-                    }`
-                  );
-                }
-              );
+              if (productData) {
+                productPrice = productData.price;
+              }
             }
-            errors.push({
-              tier: tier.tier,
-              gift_product_id: offer.product_id,
-              error: error.message,
-              details: error.response?.data,
-              payload: offerPayload || "Payload creation failed",
-              offer_data: offer,
+
+            const quantity = offer.quantity || 1;
+            const totalProductPrice = productPrice * quantity;
+
+            // Add to total price of gift products
+            totalGiftProductsPrice += totalProductPrice;
+
+            // Calculate savings for this product
+            let productSaving = 0;
+            if (offer.discount_type === "free") {
+              productSaving = totalProductPrice;
+            } else if (offer.discount_type === "percentage") {
+              productSaving = (totalProductPrice * offer.discount_amount) / 100;
+            } else if (offer.discount_type === "fixed_amount") {
+              productSaving = offer.discount_amount;
+            }
+
+            totalSavings += productSaving;
+            allGiftProducts.push(parseInt(offer.product_id));
+
+            productDetails.push({
+              product_id: offer.product_id,
+              product_name: offer.product_name,
+              price: productPrice,
+              quantity: quantity,
+              saving: productSaving,
             });
           }
+
+          // Calculate single percentage discount that applies to ALL gift products
+          // Percentage = (Total Savings / Total Price of Gift Products) × 100
+          const discountPercentage = Math.min(
+            100,
+            Math.round((totalSavings / totalGiftProductsPrice) * 100)
+          );
+          const actualDiscount =
+            (totalGiftProductsPrice * discountPercentage) / 100;
+
+          // Build consolidated offer payload
+          const bundleName = bundleConfig.name || "Bundle Offer";
+          const uniqueSuffix = `T${tier.tier}-${Date.now()}`;
+          const offerName = `${bundleName} - Tier ${tier.tier} [${uniqueSuffix}]`;
+          const offerMessage =
+            tier.tier_title || `اشترِ ${tier.buy_quantity} واحصل على خصم`;
+
+          // Prepare dates
+          const now = new Date();
+          const saudiTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+          const futureTime = new Date(saudiTime.getTime() + 5 * 60 * 1000);
+          const effectiveStartDate = futureTime
+            .toISOString()
+            .replace("T", " ")
+            .split(".")[0];
+
+          let expiryDate = null;
+          if (bundleConfig.expiry_date) {
+            const expirySaudiTime = new Date(
+              bundleConfig.expiry_date.getTime() + 3 * 60 * 60 * 1000
+            );
+            expiryDate = expirySaudiTime
+              .toISOString()
+              .replace("T", " ")
+              .split(".")[0];
+          }
+
+          offerPayload = {
+            name: offerName.substring(0, 100),
+            message: offerMessage,
+            applied_channel: "browser_and_application",
+            offer_type: "buy_x_get_y",
+            applied_to: "product",
+            start_date: effectiveStartDate,
+            ...(expiryDate && { expiry_date: expiryDate }),
+            buy: {
+              type: "product",
+              quantity: parseInt(tier.buy_quantity),
+              products: [parseInt(bundleConfig.target_product_id)],
+            },
+            get: {
+              type: "product",
+              discount_type: "percentage",
+              discount_amount: discountPercentage,
+              quantity: tier.offers.reduce(
+                (sum, o) => sum + (o.quantity || 1),
+                0
+              ),
+              products: allGiftProducts,
+            },
+          };
+
+          // Create the offer
+          const offerResponse = await this.createOffer(store_id, offerPayload);
+
+          // Activate the offer immediately
+          await this.updateOfferStatus(
+            store_id,
+            offerResponse.data.id,
+            "active"
+          );
+
+          createdOffers.push({
+            offer_id: offerResponse.data.id,
+            tier: tier.tier,
+            gift_product_id: allGiftProducts.join(","),
+            gift_product_name: productDetails
+              .map((p) => p.product_name)
+              .join(", "),
+            buy_quantity: tier.buy_quantity,
+            gift_quantity: tier.offers.reduce(
+              (sum, o) => sum + (o.quantity || 1),
+              0
+            ),
+            discount_type: "consolidated",
+            discount_amount: actualDiscount,
+            offer_type: "consolidated_bundle",
+            salla_response: offerResponse.data,
+            offer_config: offerPayload,
+            product_details: productDetails,
+          });
+
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } catch (error) {
+
+          const responseData =
+            error.originalResponse?.data || error.response?.data;
+
+
+          if (responseData?.error?.fields) {
+            Object.entries(responseData.error.fields).forEach(
+              ([field, errors]) => {
+                console.error(
+                  `  - ${field}: ${
+                    Array.isArray(errors) ? errors.join(", ") : errors
+                  }`
+                );
+              }
+            );
+          }
+
+          errors.push({
+            tier: tier.tier,
+            product_id: allGiftProducts?.join(",") || "unknown",
+            product_name:
+              productDetails?.map((p) => p.product_name).join(", ") ||
+              "unknown",
+            error: error.message,
+            details: responseData,
+            payload: offerPayload || "Payload creation failed",
+          });
         }
       }
 
       if (createdOffers.length === 0 && errors.length > 0) {
         throw new AppError("Failed to create any offers", 500);
       }
+
+      const totalDiscount = createdOffers.reduce(
+        (sum, offer) => sum + offer.discount_amount,
+        0
+      );
 
       return {
         success: true,

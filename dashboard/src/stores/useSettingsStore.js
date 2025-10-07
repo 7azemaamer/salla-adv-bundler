@@ -7,6 +7,7 @@ const useSettingsStore = create((set, get) => ({
     hide_default_buttons: false,
     hide_salla_offer_modal: false,
     hide_product_options: false,
+    hide_quantity_input: false,
   },
   loading: {
     fetching: false,

@@ -255,6 +255,7 @@ class SnippetController {
         this.hideSallaDefaultButtons();
         this.hideSallaOfferModal();
         this.hideProductOptions();
+        this.hideQuantityInput();
 
       } catch (error) {
         console.error('[Salla Bundle] Error:', error);
@@ -572,6 +573,121 @@ class SnippetController {
       });
     }
 
+    hideQuantityInput() {
+      if (!this.settings.hide_quantity_input) {
+        return;
+      }
+
+      // Add CSS to hide the parent section of salla-quantity-input within product-form
+      const style = document.createElement('style');
+      style.id = 'salla-bundle-hide-quantity-input';
+      style.textContent = \`
+        /* Hide quantity input section in product form for target products with bundles */
+        form.product-form salla-quantity-input {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        /* Also hide the parent section if it contains salla-quantity-input */
+        form.product-form section:has(> salla-quantity-input) {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        /* ALWAYS keep bundle UI visible - override any hiding */
+        .salla-bundle-container,
+        .salla-bundle-ui,
+        [data-salla-bundle="true"],
+        .salla-bundle-btn {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+      \`;
+
+      // Check if style already exists
+      const existingStyle = document.getElementById('salla-bundle-hide-quantity-input');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      document.head.appendChild(style);
+
+      // Also hide via JS (backup method)
+      const hideQuantityElements = () => {
+        const productForms = document.querySelectorAll('form.product-form');
+        productForms.forEach(form => {
+          // Find salla-quantity-input elements
+          const quantityInputs = form.querySelectorAll('salla-quantity-input');
+          quantityInputs.forEach(element => {
+            element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+
+            // Also hide parent section BUT NOT if it contains bundle UI
+            const parentSection = element.closest('section');
+            if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
+              parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+            }
+          });
+
+          // Ensure bundle UI is always visible
+          const bundleContainers = form.querySelectorAll('.salla-bundle-container, [data-salla-bundle="true"]');
+          bundleContainers.forEach(container => {
+            container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;';
+          });
+        });
+      };
+
+      // Hide existing elements immediately
+      hideQuantityElements();
+
+      // Keep checking every 500ms for dynamically loaded elements
+      setInterval(hideQuantityElements, 500);
+
+      // Observe for new elements being added to DOM
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) {
+              // Check if the node itself is salla-quantity-input within product-form
+              if (node.tagName === 'SALLA-QUANTITY-INPUT') {
+                const productForm = node.closest('form.product-form');
+                if (productForm) {
+                  node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+
+                  // Hide parent section BUT NOT if it contains bundle UI
+                  const parentSection = node.closest('section');
+                  if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
+                    parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                  }
+                }
+              }
+              // Check children
+              if (node.querySelectorAll) {
+                const quantityInputs = node.querySelectorAll('form.product-form salla-quantity-input');
+                quantityInputs.forEach(element => {
+                  element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+
+                  // Hide parent section BUT NOT if it contains bundle UI
+                  const parentSection = element.closest('section');
+                  if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
+                    parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                  }
+                });
+              }
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
     injectBundleUI() {
       if (this.isInjected) return;
 
@@ -617,14 +733,8 @@ class SnippetController {
     injectInProductForm(productForm) {
       const bundleButton = this.createBundleButton();
 
-      // Look for the last section in the form to inject before it
-      const lastSection = productForm.querySelector('section:last-of-type');
-      if (lastSection) {
-        productForm.insertBefore(bundleButton, lastSection);
-      } else {
-        // Fallback: append to form
-        productForm.appendChild(bundleButton);
-      }
+      // Inject at the END of the form (tail)
+      productForm.appendChild(bundleButton);
 
       this.isInjected = true;
     }
@@ -642,11 +752,15 @@ class SnippetController {
 
       // Create bundle button container
       const bundleContainer = document.createElement('div');
-      bundleContainer.className = 'salla-bundle-container';
+      bundleContainer.className = 'salla-bundle-container salla-bundle-ui';
+      bundleContainer.setAttribute('data-salla-bundle', 'true');
       bundleContainer.style.cssText = \`
         margin: 15px 0;
         position: relative;
         z-index: 10;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       \`;
 
       const bundleButton = document.createElement('button');

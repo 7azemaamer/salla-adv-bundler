@@ -19,5 +19,5 @@ export const config = {
   // Webhook Security
   webhookSecret: process.env.WEBHOOK_SECRET,
   //dashboard
-  dashboard: process.env.DASHBOARD_URL || "http://localhost:5173",
+  dashboard: process.env.DASHBOARD_URL || "http://localhost:3999",
 };

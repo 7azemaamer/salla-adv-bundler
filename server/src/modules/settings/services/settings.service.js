@@ -16,6 +16,7 @@ class SettingsService {
           hide_default_buttons: false,
           hide_salla_offer_modal: false,
           hide_product_options: false,
+          hide_quantity_input: false,
         });
       }
 
@@ -32,7 +33,7 @@ class SettingsService {
   async updateSettings(store_id, updates) {
     try {
       // Validate updates
-      const allowedFields = ["hide_default_buttons", "hide_salla_offer_modal", "hide_product_options"];
+      const allowedFields = ["hide_default_buttons", "hide_salla_offer_modal", "hide_product_options", "hide_quantity_input"];
       const filteredUpdates = {};
 
       for (const field of allowedFields) {
