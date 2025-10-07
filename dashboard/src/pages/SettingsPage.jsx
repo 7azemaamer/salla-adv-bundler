@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [showPriceModal, setShowPriceModal] = useState(false);
 
   useEffect(() => {
     fetchSettings().catch((error) => {
@@ -330,6 +331,58 @@ export default function SettingsPage() {
                 </div>
 
                 <Divider />
+
+                {/* Hide Product Price Toggle */}
+                <div>
+                  <Switch
+                    size="md"
+                    label={
+                      <div>
+                        <Text fw={500} size="sm">
+                          إخفاء قسم السعر الافتراضي
+                        </Text>
+                        <Text size="xs" c="dimmed" mt={4}>
+                          إخفاء قسم السعر (price section) في المنتج
+                          المستهدف عند وجود عروض باقات نشطة عليه
+                        </Text>
+                      </div>
+                    }
+                    checked={settings.hide_product_price}
+                    onChange={(event) =>
+                      handleToggleChange(
+                        "hide_product_price",
+                        event.currentTarget.checked
+                      )
+                    }
+                    disabled={loading.updating}
+                  />
+
+                  <Group mt="md">
+                    <Button
+                      variant="light"
+                      size="xs"
+                      leftSection={<IconPhoto size="0.9rem" />}
+                      onClick={() => setShowPriceModal(true)}
+                    >
+                      عرض مثال توضيحي
+                    </Button>
+                  </Group>
+
+                  <Alert
+                    icon={<IconInfoCircle size="1rem" />}
+                    color="blue"
+                    variant="light"
+                    mt="md"
+                  >
+                    <Text size="sm">
+                      <strong>ملاحظة:</strong> هذا الخيار يخفي قسم السعر
+                      الافتراضي الموجود داخل النموذج (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض
+                      باقات عليه. يتم عرض السعر من خلال نافذة الباقة بدلاً من ذلك.
+                    </Text>
+                  </Alert>
+                </div>
+
+                <Divider />
               </Stack>
             </div>
           </Stack>
@@ -443,6 +496,35 @@ export default function SettingsPage() {
               <Text size="xs">
                 سيتم إخفاء قسم الكمية الافتراضي في صفحة المنتج المستهدف
                 فقط عند وجود عروض باقات نشطة عليه. يتم اختيار الكمية من خلال
+                نافذة الباقة بدلاً من ذلك.
+              </Text>
+            </Alert>
+          </Stack>
+        </Modal>
+
+        {/* Hide Product Price Demo Modal */}
+        <Modal
+          opened={showPriceModal}
+          onClose={() => setShowPriceModal(false)}
+          title="مثال: قسم السعر الافتراضي"
+          size="lg"
+          centered
+        >
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              هذا هو قسم السعر (price section) الذي سيتم إخفاؤه
+              عند تفعيل الخيار:
+            </Text>
+            <Image
+              src="/salla-price.png"
+              alt="Salla Product Price"
+              radius="md"
+              fit="contain"
+            />
+            <Alert color="yellow" variant="light">
+              <Text size="xs">
+                سيتم إخفاء قسم السعر الافتراضي في صفحة المنتج المستهدف
+                فقط عند وجود عروض باقات نشطة عليه. يتم عرض السعر من خلال
                 نافذة الباقة بدلاً من ذلك.
               </Text>
             </Alert>
