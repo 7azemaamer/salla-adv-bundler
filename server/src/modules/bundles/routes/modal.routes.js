@@ -1926,6 +1926,11 @@ router.get("/modal.js", (req, res) => {
 
     async initialize() {
       try {
+        // Wait for any ongoing preload to complete
+        if (SallaBundleModal.preloadPromise) {
+          await SallaBundleModal.preloadPromise;
+        }
+
         // Check if bundle data is already cached
         if (SallaBundleModal.dataCache.bundleData[this.productId]) {
           this.bundleData = SallaBundleModal.dataCache.bundleData[this.productId];
@@ -1972,7 +1977,7 @@ router.get("/modal.js", (req, res) => {
           }
         }
 
-        // Use cached data if available, otherwise fetch
+        // Use cached data (should already be loaded by preload)
         if (SallaBundleModal.dataCache.timerSettings) {
           this.timerSettings = SallaBundleModal.dataCache.timerSettings;
           // Initialize timer if enabled
@@ -1988,15 +1993,6 @@ router.get("/modal.js", (req, res) => {
 
         if (SallaBundleModal.dataCache.paymentMethods) {
           this.paymentMethods = SallaBundleModal.dataCache.paymentMethods;
-        }
-
-        // If cache is empty, fetch data in parallel (fallback)
-        if (!this.timerSettings && !this.reviews.length && !this.paymentMethods.length) {
-          await Promise.all([
-            this.fetchTimerSettings(),
-            this.fetchReviews(),
-            this.fetchPaymentMethods()
-          ]);
         }
 
         // Create modal element
@@ -2883,12 +2879,19 @@ router.get("/modal.js", (req, res) => {
 
     renderMobileFooter(summary, selectedBundleData, bundleConfig) {
       const totalPrice = selectedBundleData ? selectedBundleData.price : 0;
-      
+      const originalTotal = selectedBundleData ? (selectedBundleData.price + (selectedBundleData.savings || 0)) : 0;
+      const hasSavings = selectedBundleData && selectedBundleData.savings > 0;
+
       summary.innerHTML = \`
         \${''/* this.renderDiscountCode() */}
         <div class="salla-footer-compact">
           <div>
             <div class="salla-footer-total">المجموع</div>
+            \${hasSavings ? \`
+              <div style="font-size: 11px; color: #10b981; text-decoration: line-through; margin-bottom: 2px;">
+                \${formatPrice(originalTotal)}
+              </div>
+            \` : ''}
             <div class="salla-footer-price">\${formatPrice(totalPrice)}</div>
           </div>
         </div>

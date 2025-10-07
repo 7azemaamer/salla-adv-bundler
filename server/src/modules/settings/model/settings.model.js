@@ -28,6 +28,11 @@ const settingsSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Hide price section (price-wrapper and related elements) inside product-form
+    hide_price_section: {
+      type: Boolean,
+      default: false,
+    },
     // Future settings can be added here
     // e.g., button_position, custom_colors, etc.
   },

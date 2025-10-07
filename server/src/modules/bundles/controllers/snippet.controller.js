@@ -162,7 +162,9 @@ class SnippetController {
       this.settings = {
         hide_default_buttons: false,
         hide_salla_offer_modal: false,
-        hide_product_options: false
+        hide_product_options: false,
+        hide_quantity_input: false,
+        hide_price_section: false
       };
       this.bundleData = {
         cta_button_text: 'اختر الباقة',
@@ -260,6 +262,7 @@ class SnippetController {
         this.hideSallaOfferModal();
         this.hideProductOptions();
         this.hideQuantityInput();
+        this.hidePriceSection();
 
       } catch (error) {
         console.error('[Salla Bundle] Error:', error);
@@ -679,6 +682,121 @@ class SnippetController {
                   if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
                     parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
                   }
+                });
+              }
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    hidePriceSection() {
+      if (!this.settings.hide_price_section) {
+        return;
+      }
+
+      // Add CSS to hide the price section within product-form
+      const style = document.createElement('style');
+      style.id = 'salla-bundle-hide-price-section';
+      style.textContent = \`
+        /* Hide price section in product form for target products with bundles */
+        /* Target various price-related selectors */
+        form.product-form .price-wrapper,
+        form.product-form .price_is_on_sale,
+        form.product-form .starting-or-normal-price,
+        form.product-form .total-price,
+        form.product-form .before-price,
+        form.product-form section:has(.price-wrapper),
+        form.product-form section:has(.total-price),
+        form.product-form section:has(.price_is_on_sale) {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        /* ALWAYS keep bundle UI visible - override any hiding */
+        .salla-bundle-container,
+        .salla-bundle-ui,
+        [data-salla-bundle="true"],
+        .salla-bundle-btn {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+      \`;
+
+      // Check if style already exists
+      const existingStyle = document.getElementById('salla-bundle-hide-price-section');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      document.head.appendChild(style);
+
+      // Also hide via JS (backup method)
+      const hidePriceElements = () => {
+        const productForms = document.querySelectorAll('form.product-form');
+        productForms.forEach(form => {
+          // Find price-related elements
+          const priceElements = form.querySelectorAll(
+            '.price-wrapper, .price_is_on_sale, .starting-or-normal-price, .total-price, .before-price'
+          );
+          priceElements.forEach(element => {
+            element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+          });
+
+          // Also hide parent sections that contain price elements BUT NOT if they contain bundle UI
+          const priceSections = form.querySelectorAll('section');
+          priceSections.forEach(section => {
+            const hasPrice = section.querySelector('.price-wrapper, .total-price, .price_is_on_sale');
+            const hasBundle = section.querySelector('[data-salla-bundle]');
+            if (hasPrice && !hasBundle) {
+              section.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+            }
+          });
+
+          // Ensure bundle UI is always visible
+          const bundleContainers = form.querySelectorAll('.salla-bundle-container, [data-salla-bundle="true"]');
+          bundleContainers.forEach(container => {
+            container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;';
+          });
+        });
+      };
+
+      // Hide existing elements immediately
+      hidePriceElements();
+
+      // Keep checking every 500ms for dynamically loaded elements
+      setInterval(hidePriceElements, 500);
+
+      // Observe for new elements being added to DOM
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) {
+              // Check if the node contains price elements within product-form
+              if (node.closest && node.closest('form.product-form')) {
+                if (node.classList && (
+                  node.classList.contains('price-wrapper') ||
+                  node.classList.contains('total-price') ||
+                  node.classList.contains('price_is_on_sale') ||
+                  node.classList.contains('before-price') ||
+                  node.classList.contains('starting-or-normal-price')
+                )) {
+                  node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                }
+              }
+              // Check children
+              if (node.querySelectorAll) {
+                const priceElements = node.querySelectorAll('form.product-form .price-wrapper, form.product-form .total-price, form.product-form .price_is_on_sale, form.product-form .before-price');
+                priceElements.forEach(element => {
+                  element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
                 });
               }
             }

@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [showPriceModal, setShowPriceModal] = useState(false);
 
   useEffect(() => {
     fetchSettings().catch((error) => {
@@ -235,8 +236,8 @@ export default function SettingsPage() {
                           إخفاء خيارات المنتج الافتراضية
                         </Text>
                         <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء قسم خيارات المنتج (salla-product-options) في المنتج
-                          المستهدف عند وجود عروض باقات نشطة عليه
+                          إخفاء قسم خيارات المنتج (salla-product-options) في
+                          المنتج المستهدف عند وجود عروض باقات نشطة عليه
                         </Text>
                       </div>
                     }
@@ -271,8 +272,8 @@ export default function SettingsPage() {
                       <strong>ملاحظة:</strong> هذا الخيار يخفي قسم خيارات المنتج
                       الافتراضي (salla-product-options) الموجود داخل النموذج
                       (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض
-                      باقات عليه. هذا يمنع الارتباك ويوجه العميل لاختيار الخيارات من
-                      نافذة الباقة.
+                      باقات عليه. هذا يمنع الارتباك ويوجه العميل لاختيار
+                      الخيارات من نافذة الباقة.
                     </Text>
                   </Alert>
                 </div>
@@ -289,8 +290,9 @@ export default function SettingsPage() {
                           إخفاء حقل الكمية الافتراضي
                         </Text>
                         <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء قسم الكمية (parent section of salla-quantity-input) في المنتج
-                          المستهدف عند وجود عروض باقات نشطة عليه
+                          إخفاء قسم الكمية (parent section of
+                          salla-quantity-input) في المنتج المستهدف عند وجود عروض
+                          باقات نشطة عليه
                         </Text>
                       </div>
                     }
@@ -323,8 +325,64 @@ export default function SettingsPage() {
                   >
                     <Text size="sm">
                       <strong>ملاحظة:</strong> هذا الخيار يخفي قسم الكمية
-                      الافتراضي الموجود داخل النموذج (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض
-                      باقات عليه. يتم اختيار الكمية من خلال نافذة الباقة.
+                      الافتراضي الموجود داخل النموذج (product-form) في صفحة
+                      المنتج المستهدف فقط عند وجود عروض باقات عليه. يتم اختيار
+                      الكمية من خلال نافذة الباقة.
+                    </Text>
+                  </Alert>
+                </div>
+
+                <Divider />
+
+                {/* Hide Price Section Toggle */}
+                <div>
+                  <Switch
+                    size="md"
+                    label={
+                      <div>
+                        <Text fw={500} size="sm">
+                          إخفاء قسم السعر الافتراضي
+                        </Text>
+                        <Text size="xs" c="dimmed" mt={4}>
+                          إخفاء قسم السعر (price-wrapper وعناصر السعر) الموجود
+                          داخل النموذج (product-form) في المنتج المستهدف عند
+                          وجود عروض باقات نشطة عليه
+                        </Text>
+                      </div>
+                    }
+                    checked={settings.hide_price_section}
+                    onChange={(event) =>
+                      handleToggleChange(
+                        "hide_price_section",
+                        event.currentTarget.checked
+                      )
+                    }
+                    disabled={loading.updating}
+                  />
+
+                  <Group mt="md">
+                    <Button
+                      variant="light"
+                      size="xs"
+                      leftSection={<IconPhoto size="0.9rem" />}
+                      onClick={() => setShowPriceModal(true)}
+                    >
+                      عرض مثال توضيحي
+                    </Button>
+                  </Group>
+
+                  <Alert
+                    icon={<IconInfoCircle size="1rem" />}
+                    color="blue"
+                    variant="light"
+                    mt="md"
+                  >
+                    <Text size="sm">
+                      <strong>ملاحظة:</strong> هذا الخيار يخفي قسم السعر
+                      الافتراضي (price-wrapper, total-price, before-price)
+                      الموجود داخل النموذج (product-form) في صفحة المنتج
+                      المستهدف فقط عند وجود عروض باقات عليه. يتم عرض السعر من
+                      خلال نافذة الباقة بدلاً من ذلك.
                     </Text>
                   </Alert>
                 </div>
@@ -430,8 +488,8 @@ export default function SettingsPage() {
         >
           <Stack gap="md">
             <Text size="sm" c="dimmed">
-              هذا هو قسم الكمية (parent section of salla-quantity-input) الذي سيتم إخفاؤه
-              عند تفعيل الخيار:
+              هذا هو قسم الكمية (parent section of salla-quantity-input) الذي
+              سيتم إخفاؤه عند تفعيل الخيار:
             </Text>
             <Image
               src="/salla-qta.png"
@@ -441,9 +499,38 @@ export default function SettingsPage() {
             />
             <Alert color="yellow" variant="light">
               <Text size="xs">
-                سيتم إخفاء قسم الكمية الافتراضي في صفحة المنتج المستهدف
-                فقط عند وجود عروض باقات نشطة عليه. يتم اختيار الكمية من خلال
-                نافذة الباقة بدلاً من ذلك.
+                سيتم إخفاء قسم الكمية الافتراضي في صفحة المنتج المستهدف فقط عند
+                وجود عروض باقات نشطة عليه. يتم اختيار الكمية من خلال نافذة
+                الباقة بدلاً من ذلك.
+              </Text>
+            </Alert>
+          </Stack>
+        </Modal>
+
+        {/* Hide Price Section Demo Modal */}
+        <Modal
+          opened={showPriceModal}
+          onClose={() => setShowPriceModal(false)}
+          title="مثال: قسم السعر الافتراضي"
+          size="lg"
+          centered
+        >
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              هذا هو قسم السعر (price-wrapper, total-price, before-price) الذي
+              سيتم إخفاؤه عند تفعيل الخيار:
+            </Text>
+            <Image
+              src="/salla-price.png"
+              alt="Salla Price Section"
+              radius="md"
+              fit="contain"
+            />
+            <Alert color="yellow" variant="light">
+              <Text size="xs">
+                سيتم إخفاء قسم السعر الافتراضي الموجود داخل النموذج
+                (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض باقات
+                نشطة عليه. يتم عرض السعر من خلال نافذة الباقة بدلاً من ذلك.
               </Text>
             </Alert>
           </Stack>
