@@ -17,8 +17,8 @@ class SnippetController {
       res.set({
         "Content-Type": "application/javascript",
         "Cache-Control": "no-cache, no-store, must-revalidate", // Disable caching during development
-        "Pragma": "no-cache",
-        "Expires": "0",
+        Pragma: "no-cache",
+        Expires: "0",
         "Access-Control-Allow-Origin": "*",
       });
 
@@ -249,8 +249,12 @@ class SnippetController {
           return;
         }
 
-
+        // Preload modal script and data immediately
         this.preloadModalScript();
+
+        // Preload bundle data in background (after modal script loads)
+        this.preloadBundleDataInBackground();
+
         this.injectBundleUI();
         this.hideSallaDefaultButtons();
         this.hideSallaOfferModal();
@@ -904,18 +908,43 @@ class SnippetController {
     async preloadModalScript() {
       try {
         if (!this.modalScriptLoaded && !window.SallaBundleModal) {
-          
+
           // Add loading indicator
           this.isModalLoading = true;
-          
+
           await this.loadModalScript();
           this.modalScriptLoaded = true;
           this.isModalLoading = false;
-          
+
+          // Preload global data (reviews, payments, timer) immediately after modal script loads
+          if (window.SallaBundleModal && window.SallaBundleModal.preloadGlobalData) {
+            window.SallaBundleModal.preloadGlobalData(CONFIG.storeId, CONFIG.storeDomain)
+              .catch(err => console.error('[Bundle] Preload global data failed:', err));
+          }
+
         }
       } catch (error) {
         this.isModalLoading = false;
       }
+    }
+
+    preloadBundleDataInBackground() {
+      // Wait for modal script to load, then preload bundle data
+      const waitAndPreload = () => {
+        if (window.SallaBundleModal && window.SallaBundleModal.preloadBundleData) {
+          window.SallaBundleModal.preloadBundleData(
+            this.productId,
+            CONFIG.storeId,
+            CONFIG.storeDomain,
+            CONFIG.customerId
+          ).catch(err => console.error('[Bundle] Preload bundle data failed:', err));
+        } else {
+          // Modal script not loaded yet, retry in 100ms
+          setTimeout(waitAndPreload, 100);
+        }
+      };
+
+      waitAndPreload();
     }
 
     loadModalScriptAsync() {
@@ -955,6 +984,12 @@ class SnippetController {
           userPhone: CONFIG.userPhone
         };
 
+        // Check if modal is already open/initializing - prevent multiple instances
+        if (window.sallaBundleModal && window.sallaBundleModal.isInitializing) {
+          console.log('[Bundle] Modal is already initializing, ignoring duplicate click');
+          return;
+        }
+
         // Clear any existing modal instance
         if (window.sallaBundleModal) {
           window.sallaBundleModal.hide();
@@ -964,8 +999,14 @@ class SnippetController {
         // Initialize and show modal with full context
         const modal = new window.SallaBundleModal(this.productId, contextData);
         window.sallaBundleModal = modal; // Set global reference for button callbacks
-        await modal.initialize();
-        modal.show();
+        modal.isInitializing = true; // Flag to prevent duplicate initialization
+        
+        try {
+          await modal.initialize();
+          modal.show();
+        } finally {
+          modal.isInitializing = false;
+        }
 
       } catch (error) {
         console.error('[Salla Bundle] Modal error:', error);

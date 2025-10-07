@@ -43,7 +43,15 @@ const StoreSchema = new mongoose.Schema(
       analytics_enabled: {
         type: Boolean,
         default: true,
-      }
+      },
+    },
+    // Cached payment methods
+    payment_methods: {
+      type: Array,
+      default: [],
+    },
+    payment_methods_updated_at: {
+      type: Date,
     },
     // Track store status for bundle system
     status: {
@@ -51,15 +59,25 @@ const StoreSchema = new mongoose.Schema(
       enum: ["active", "inactive", "uninstalled"],
       default: "active",
     },
+    // Soft deletion flag
+    is_deleted: {
+      type: Boolean,
+      default: false,
+    },
+    deleted_at: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
 
-
 // Pre-save middleware to set bundle limits based on plan
 StoreSchema.pre("save", function (next) {
   // Set max_bundles_per_store based on plan
-  if (this.plan && (!this.bundle_settings || !this.bundle_settings.max_bundles_per_store)) {
+  if (
+    this.plan &&
+    (!this.bundle_settings || !this.bundle_settings.max_bundles_per_store)
+  ) {
     if (!this.bundle_settings) {
       this.bundle_settings = {};
     }
@@ -86,18 +104,23 @@ StoreSchema.pre("save", function (next) {
 });
 
 // Instance method to get bundle limit
-StoreSchema.methods.getBundleLimit = function() {
+StoreSchema.methods.getBundleLimit = function () {
   if (this.bundle_settings && this.bundle_settings.max_bundles_per_store) {
     return this.bundle_settings.max_bundles_per_store;
   }
 
   // Fallback based on plan
   switch (this.plan) {
-    case "basic": return 3;
-    case "pro": return 10;
-    case "enterprise": return 50;
-    case "special": return 100;
-    default: return 3;
+    case "basic":
+      return 3;
+    case "pro":
+      return 10;
+    case "enterprise":
+      return 50;
+    case "special":
+      return 100;
+    default:
+      return 3;
   }
 };
 

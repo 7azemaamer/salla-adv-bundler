@@ -8,6 +8,7 @@ import modalRoutes from "../modules/bundles/routes/modal.routes.js";
 import docsRoutes from "../modules/bundles/routes/docs.routes.js";
 import snippetRoutes from "../modules/bundles/routes/snippet.routes.js";
 import settingsRoutes from "../modules/settings/routes/settings.routes.js";
+import timerSettingsRoutes from "../modules/settings/routes/timerSettings.routes.js";
 
 const router = Router();
 
@@ -25,6 +26,9 @@ router.use("/bundles", bundleRoutes);
 
 // Settings routes (protected)
 router.use("/settings", settingsRoutes);
+
+// Timer settings routes (protected)
+router.use("/timer-settings", timerSettingsRoutes);
 
 // Storefront routes (public)
 router.use("/storefront", storefrontRoutes);
