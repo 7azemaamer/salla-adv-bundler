@@ -21,6 +21,9 @@ app.use(
       if (origin === config.dashboard) {
         return callback(null, true);
       }
+      if (origin === "https://*.salla.sa") {
+        return callback(null, true);
+      }
 
       // Allow requests from any Salla store domain (*.salla.sa)
       if (origin && origin.includes('.salla.sa')) {

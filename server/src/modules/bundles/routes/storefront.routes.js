@@ -3,6 +3,9 @@ import {
   getBundlesByProduct,
   getBundleConfig,
   trackBundleInteraction,
+  getStoreReviews,
+  getPaymentMethods,
+  validateDiscountCode,
 } from "../controllers/storefront.controller.js";
 
 const router = Router();
@@ -23,5 +26,14 @@ router.get("/bundles/:bundle_id/config", getBundleConfig);
 
 // Track bundle interactions (analytics)
 router.post("/bundles/:bundle_id/track", trackBundleInteraction);
+
+// Get store reviews (for modal display)
+router.get("/stores/:store_id/reviews", getStoreReviews);
+
+// Get store payment methods
+router.get("/stores/:store_id/payment-methods", getPaymentMethods);
+
+// Validate discount/coupon code
+router.post("/stores/:store_id/validate-coupon", validateDiscountCode);
 
 export default router;

@@ -4,13 +4,11 @@ const router = Router();
 
 // Bundle modal script - loaded on demand when bundle button is clicked
 router.get("/modal.js", (req, res) => {
-  const { store } = req.query;
-
   res.set({
     "Content-Type": "application/javascript",
     "Cache-Control": "no-cache, no-store, must-revalidate", // Disable caching during development
-    "Pragma": "no-cache",
-    "Expires": "0",
+    Pragma: "no-cache",
+    Expires: "0",
     "Access-Control-Allow-Origin": "*",
   });
 
@@ -35,6 +33,15 @@ router.get("/modal.js", (req, res) => {
       --brand:    #0E1012;
       --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 1px 1px rgba(16,24,40,.04);
       --shadow-2: 0 10px 28px rgba(15,17,19,.08);
+    }
+
+    button, .salla-bundle-button, .salla-step-btn, .salla-checkout-button,
+    .salla-bundle-card, .salla-review-dot, .salla-bundle-details-toggle,
+    [onclick], .salla-bundle-close {
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     .salla-bundle-modal {
@@ -110,6 +117,16 @@ router.get("/modal.js", (req, res) => {
         background: var(--bg-panel);
         border-bottom: 1px solid var(--border);
         border-radius: 16px 16px 0 0;
+      }
+      
+      .salla-bundle-header-row {
+        flex-wrap: wrap;
+      }
+      
+      .salla-bundle-title {
+        font-size: 14px;
+        flex: 1;
+        min-width: 0;
       }
     }
 
@@ -238,30 +255,23 @@ router.get("/modal.js", (req, res) => {
 
     /* Compact variant selectors */
     .salla-variant-compact {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 640px) {
-      .salla-variant-compact {
-        grid-template-columns: 1fr;
-      }
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
 
     .salla-variant-compact-group {
       display: flex;
-      flex-direction: column;
-      gap: 4px;
+      align-items: center;
+      gap: 8px;
     }
 
     .salla-variant-compact-label {
       font-size: 11px;
       font-weight: 500;
       color: var(--text-2);
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+      white-space: nowrap;
+      min-width: 50px;
     }
 
     .salla-variant-compact-label.required:after {
@@ -270,18 +280,19 @@ router.get("/modal.js", (req, res) => {
     }
 
     .salla-variant-compact-select {
-      width: 100%;
-      padding: 8px 10px;
+      flex: 1;
+      padding: 5px 8px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
       background: white;
       color: var(--text-1);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       font-family: inherit;
       outline: none;
       transition: all 0.2s ease;
       cursor: pointer;
+      min-width: 0;
     }
 
     .salla-variant-compact-select:hover {
@@ -290,89 +301,34 @@ router.get("/modal.js", (req, res) => {
 
     .salla-variant-compact-select:focus {
       border-color: var(--text-1);
-      box-shadow: 0 0 0 3px rgba(14, 16, 18, 0.1);
+      box-shadow: 0 0 0 2px rgba(14, 16, 18, 0.08);
     }
 
     /* Multiple quantity accordion */
-    .salla-quantity-accordion {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 8px;
+    /* Direct Variant Display - Clean & Minimal */
+    .salla-quantity-direct {
+      margin-bottom: 12px;
     }
 
-    .salla-quantity-header {
+    .salla-quantity-direct-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      background: var(--bg-elev);
-      cursor: pointer;
-      transition: background 0.2s;
-      border-bottom: 1px solid transparent;
-    }
-
-    .salla-quantity-header:hover {
-      background: var(--bg-thumb);
-    }
-
-    .salla-quantity-header.active {
-      border-bottom-color: var(--border);
-      background: var(--bg-card);
-    }
-
-    .salla-quantity-header-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-1);
+      margin-bottom: 6px;
     }
 
     .salla-quantity-badge {
       font-size: 10px;
-      padding: 2px 6px;
+      padding: 3px 8px;
       border-radius: 4px;
-      background: var(--text-1);
+      background: var(--brand);
       color: white;
       font-weight: 600;
     }
 
-    .salla-quantity-arrow {
-      font-size: 12px;
-      color: var(--text-2);
-      transition: transform 0.2s;
-    }
-
-    .salla-quantity-header.active .salla-quantity-arrow {
-      transform: rotate(180deg);
-    }
-
-    .salla-quantity-body {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-
-    .salla-quantity-body.active {
-      max-height: 500px;
-      padding: 12px 14px;
-      background: var(--bg-card);
-    }
-
-    .salla-quantity-status {
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: #d1fae5;
-      color: #065f46;
-      font-weight: 500;
-    }
-
-    .salla-quantity-status.incomplete {
-      background: #fee2e2;
-      color: #991b1b;
+    .salla-quantity-direct-variants {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
 
     .salla-bundle-grid {
@@ -589,6 +545,54 @@ router.get("/modal.js", (req, res) => {
       box-shadow: var(--shadow-1);
     }
 
+    /* Desktop Summary - Collapsible */
+    .salla-summary-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 12px;
+      background: var(--bg-panel);
+      border: none;
+      width: 100%;
+      text-align: right;
+      transition: background 0.2s;
+    }
+
+    .salla-summary-toggle:hover {
+      background: var(--bg-card);
+    }
+
+    .salla-summary-toggle-icon {
+      display: inline-block;
+      transition: transform 0.3s ease;
+      font-size: 16px;
+      color: var(--text-2);
+    }
+
+    .salla-summary-toggle.expanded .salla-summary-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .salla-summary-total {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+
+    .salla-summary-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .salla-summary-details.expanded {
+      max-height: 1000px;
+      opacity: 1;
+      padding: 12px;
+    }
+
     /* Mobile sticky summary adjustments */
     @media (max-width: 640px) {
       .salla-sticky-summary {
@@ -597,6 +601,18 @@ router.get("/modal.js", (req, res) => {
         border-top: 1px solid var(--border);
         border-radius: 0 0 16px 16px;
         box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Mobile: Hide toggle button - summary always expanded */
+      .salla-summary-toggle {
+        display: none !important;
+      }
+
+      .salla-summary-details {
+        max-height: none !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+        padding: 12px !important;
       }
     }
 
@@ -845,6 +861,896 @@ router.get("/modal.js", (req, res) => {
       transform: none;
       box-shadow: none;
     }
+
+    /* ============================================
+       MOBILE-ONLY STEPPER REDESIGN (≤640px)
+       ============================================ */
+
+    @media (max-width: 640px) {
+      
+      /* ===== HEADER: Sticky with Progress Bar ===== */
+      .salla-bundle-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        padding: 12px 16px 8px;
+      }
+
+      .salla-bundle-title {
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+
+      .salla-mobile-progress {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+      }
+
+      .salla-progress-step {
+        flex: 1;
+        height: 3px;
+        background: var(--border);
+        border-radius: 2px;
+        transition: background 0.3s;
+      }
+
+      .salla-progress-step.active {
+        background: var(--brand);
+      }
+
+      .salla-progress-step.completed {
+        background: #10b981;
+      }
+
+      /* ===== BODY: Scrollable Steps ===== */
+      .salla-bundle-body {
+        padding: 8px 12px 16px;
+      }
+
+      .salla-bundle-section {
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 10px;
+      }
+
+      .salla-bundle-section h3 {
+        font-size: 16px;
+        margin-bottom: 4px;
+      }
+
+      .salla-bundle-section .subtitle {
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      /* ===== STEP 1: Compact Bundle Radio List ===== */
+      .salla-bundle-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .salla-bundle-card {
+        display: flex;
+        align-items: flex-start;
+        padding: 10px 12px;
+        border-radius: 10px;
+        gap: 10px;
+        position: relative;
+        min-height: auto;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-direction: row-reverse; /* RTL: Radio on right */
+      }
+
+      .salla-bundle-card:active {
+        transform: scale(0.98);
+      }
+
+      .salla-bundle-card.active {
+        border-color: var(--brand);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      }
+
+      /* Radio indicator - on RIGHT side for RTL */
+      .salla-bundle-radio {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+        position: relative;
+        transition: all 0.2s;
+        margin-top: 2px;
+      }
+
+      .salla-bundle-card.active .salla-bundle-radio {
+        border-color: var(--brand);
+        background: var(--brand);
+      }
+
+      .salla-bundle-card.active .salla-bundle-radio::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 8px;
+        height: 8px;
+        background: white;
+        border-radius: 50%;
+      }
+
+      /* Compact content */
+      .salla-bundle-card-compact {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .salla-bundle-card-summary {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-1);
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .salla-bundle-card-pricing {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-1);
+      }
+
+      .salla-bundle-savings-badge {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #d1fae5;
+        color: #065f46;
+        font-weight: 600;
+      }
+
+      .salla-bundle-details-toggle {
+        font-size: 11px;
+        color: var(--text-2);
+        text-decoration: underline;
+        margin-top: 4px;
+        cursor: pointer;
+      }
+
+      /* Collapsible full list */
+      .salla-bundle-items {
+        display: none;
+        font-size: 12px;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+
+      .salla-bundle-items.expanded {
+        display: block;
+      }
+
+      .salla-bundle-items li {
+        margin-bottom: 3px;
+      }
+
+      /* Hide desktop-only elements in mobile cards */
+      .salla-bundle-card .salla-bundle-card-header,
+      .salla-bundle-card .salla-bundle-card-footer,
+      .salla-bundle-card .salla-bundle-card-title,
+      .salla-bundle-card .salla-bundle-card-value,
+      .salla-bundle-card .salla-bundle-badge,
+      .salla-bundle-card .salla-bundle-price,
+      .salla-bundle-card .salla-bundle-button {
+        display: none;
+      }
+
+      /* ===== STEP 2: Target Product Variants (Compressed) ===== */
+      .salla-product-header {
+        padding: 8px;
+        margin-bottom: 8px;
+        border-radius: 8px;
+      }
+
+      .salla-product-image {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+      }
+
+      .salla-product-name {
+        font-size: 14px;
+      }
+
+      .salla-product-meta {
+        font-size: 11px;
+      }
+
+      /* Quantity direct display - mobile */
+      .salla-quantity-direct {
+        margin-bottom: 8px;
+      }
+
+      .salla-quantity-direct-variants {
+        gap: 4px;
+      }
+
+      /* Compact variant selectors - mobile */
+      .salla-variant-compact {
+        gap: 4px;
+      }
+
+      .salla-variant-compact-select {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+
+      /* ===== STEP 3: Free Gifts (Compact Grid) ===== */
+      .salla-gifts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .salla-gift-card {
+        display: flex;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 10px;
+      }
+
+      .salla-gift-image {
+        width: 64px;
+        height: 64px;
+        min-width: 64px;
+        border-radius: 8px;
+        background-size: cover;
+        background-position: center;
+      }
+
+      .salla-gift-content {
+        flex: 1;
+        padding: 0;
+        min-width: 0;
+      }
+
+      .salla-gift-badges {
+        gap: 4px;
+        margin-bottom: 3px;
+      }
+
+      .salla-gift-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+      }
+
+      .salla-gift-free {
+        font-size: 11px;
+      }
+
+      .salla-gift-title {
+        font-size: 13px;
+        margin-bottom: 3px;
+        line-height: 1.3;
+      }
+
+      .salla-gift-value {
+        font-size: 11px;
+        margin-bottom: 6px;
+      }
+
+      /* ===== STEP 4: Free Shipping Banner & Discounted Products ===== */
+
+      .salla-free-shipping-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 16px;
+        margin: 0 0 12px 0;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 12px;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+      }
+
+      .salla-free-shipping-banner svg {
+        flex-shrink: 0;
+      }
+
+      .salla-free-shipping-banner span {
+        line-height: 1.4;
+      }
+
+      .salla-discounted-scroll {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 4px 2px 8px;
+        scrollbar-width: none;
+      }
+
+      .salla-discounted-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      .salla-discounted-card {
+        min-width: 160px;
+        max-width: 160px;
+        border-radius: 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .salla-discounted-image {
+        width: 100%;
+        height: 120px;
+        border-radius: 8px;
+        background-size: cover;
+        background-position: center;
+        margin-bottom: 6px;
+      }
+
+      .salla-discounted-title {
+        font-size: 12px;
+        font-weight: 500;
+        margin-bottom: 4px;
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .salla-discounted-pricing {
+        font-size: 11px;
+        margin-bottom: 6px;
+      }
+
+      .salla-discounted-pricing .original {
+        text-decoration: line-through;
+        color: var(--text-2);
+      }
+
+      .salla-discounted-pricing .final {
+        font-weight: 600;
+        color: var(--text-1);
+        margin-right: 4px;
+      }
+
+      /* ===== STEP 5: Review Summary (Collapsible Invoice) ===== */
+      /* Mobile Review Summary - Always Expanded */
+      .salla-review-static {
+        background: var(--bg-soft);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        padding: 12px;
+      }
+
+      .salla-review-content {
+        /* Content always visible */
+      }
+
+      .salla-summary-row {
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+
+      /* ===== STICKY FOOTER: Minimal Total + CTA ===== */
+      .salla-sticky-summary {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        padding: 12px 16px;
+      }
+
+      .salla-footer-compact {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .salla-footer-total {
+        font-size: 13px;
+        color: var(--text-2);
+      }
+
+      .salla-footer-price {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-1);
+      }
+
+      .salla-checkout-button {
+        height: 48px;
+        font-size: 15px;
+        font-weight: 600;
+        border-radius: 10px;
+        margin-top: 0;
+      }
+
+      .salla-checkout-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Navigation buttons */
+      .salla-step-navigation {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .salla-step-btn {
+        flex: 1;
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: white;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .salla-step-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .salla-step-btn.primary {
+        background: var(--brand);
+        color: white;
+        border-color: var(--brand);
+      }
+
+      /* ===== STEP VISIBILITY ===== */
+      .salla-step-container {
+        display: none;
+      }
+
+      .salla-step-container.active {
+        display: block;
+      }
+
+      /* ===== RESPONSIVE TWEAKS ===== */
+      .salla-bundle-body {
+        font-size: 13px;
+      }
+
+      .salla-bundle-price {
+        font-size: 18px;
+      }
+
+      /* Hide currency icons on mobile for cleaner look */
+      .salla-hide-icon-mobile svg {
+        display: none;
+      }
+    }
+    /* ============================================
+       END MOBILE-ONLY STEPPER REDESIGN
+       ============================================ */
+
+    /* ============================================
+       TIMER, REVIEWS, DISCOUNT & PAYMENT STYLES
+       ============================================ */
+    
+    /* Timer Component - Compact (Always in header) */
+    .salla-timer-container {
+      background: var(--timer-bg-color, var(--bg-card));
+      border: 1px solid var(--timer-border-color, var(--border));
+      border-radius: var(--timer-border-radius, 8px);
+      padding: 6px 12px;
+      margin: 0;
+      text-align: center;
+      transition: all 0.3s ease;
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .salla-timer-label {
+      font-size: var(--timer-font-size, 11px);
+      color: var(--timer-label-color, var(--text-2));
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .salla-timer-display {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--timer-text-color, var(--brand));
+      font-family: 'Courier New', monospace;
+      letter-spacing: 1px;
+      direction: ltr;
+    }
+
+    .salla-timer-display.pulse {
+      animation: timerPulse 2s infinite;
+    }
+
+    .salla-timer-display.glow {
+      animation: timerGlow 2s infinite;
+    }
+
+    /* Mobile timer adjustments - show on smaller screens */
+    @media (max-width: 640px) {
+      .salla-timer-container {
+        padding: 8px 12px;
+        margin: 0;
+      }
+      
+      .salla-timer-label {
+        font-size: 10px;
+      }
+      
+      .salla-timer-display {
+        font-size: 16px;
+      }
+    }
+
+    @keyframes timerPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes timerGlow {
+      0%, 100% { filter: drop-shadow(0 0 0px currentColor); }
+      50% { filter: drop-shadow(0 0 8px currentColor); }
+    }
+
+    /* Reviews Carousel */
+    .salla-reviews-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .salla-reviews-header {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-1);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .salla-reviews-carousel {
+      position: relative;
+      overflow: hidden;
+      padding: 12px 0;
+    }
+
+    .salla-reviews-track {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .salla-reviews-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .salla-review-card {
+      flex: 0 0 280px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .salla-review-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-1);
+    }
+
+    .salla-review-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .salla-review-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-thumb);
+      object-fit: cover;
+    }
+
+    .salla-review-customer {
+      flex: 1;
+    }
+
+    .salla-review-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-1);
+      margin-bottom: 2px;
+    }
+
+    .salla-review-rating {
+      color: #f59e0b;
+      font-size: 12px;
+    }
+
+    .salla-review-content {
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .salla-review-time {
+      font-size: 11px;
+      color: var(--text-2);
+      opacity: 0.7;
+    }
+
+    .salla-reviews-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .salla-review-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .salla-review-dot.active {
+      background: var(--brand);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    /* Discount Code Section */
+    .salla-discount-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .salla-discount-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .salla-discount-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .salla-discount-toggle {
+      font-size: 12px;
+      color: var(--text-2);
+      transition: transform 0.3s;
+    }
+
+    .salla-discount-toggle.expanded {
+      transform: rotate(180deg);
+    }
+
+    .salla-discount-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .salla-discount-body.expanded {
+      max-height: 200px;
+      margin-top: 12px;
+    }
+
+    /* Desktop: Discount always visible */
+    @media (min-width: 641px) {
+      .salla-discount-header {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .salla-discount-toggle {
+        display: none;
+      }
+
+      .salla-discount-body {
+        max-height: none;
+        overflow: visible;
+        margin-top: 12px;
+      }
+    }
+
+    .salla-discount-input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .salla-discount-input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      direction: ltr;
+      text-align: right;
+      transition: all 0.2s;
+    }
+
+    .salla-discount-input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(14, 16, 18, 0.1);
+    }
+
+    .salla-discount-apply-btn {
+      padding: 10px 20px;
+      background: var(--brand);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .salla-discount-apply-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .salla-discount-apply-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .salla-discount-message {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .salla-discount-message.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .salla-discount-message.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    /* Payment Methods - Minimal Gray Slider */
+    .salla-payment-methods {
+      margin-top: 12px;
+      padding: 0;
+    }
+
+    .salla-payment-slider {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding: 6px 2px;
+      align-items: center;
+      will-change: scroll-position;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .salla-payment-slider::-webkit-scrollbar {
+      display: none;
+    }
+
+    .salla-payment-badge {
+      flex: 0 0 auto;
+      width: 40px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      transition: opacity 0.2s;
+      opacity: 0.6;
+    }
+
+    .salla-payment-badge:hover {
+      opacity: 1;
+    }
+
+    .salla-payment-logo,
+    .salla-payment-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: grayscale(100%);
+      transition: filter 0.2s;
+    }
+
+    .salla-payment-badge:hover .salla-payment-logo,
+    .salla-payment-badge:hover .salla-payment-icon {
+      filter: grayscale(0%);
+    }
+
+    .salla-payment-icon {
+      font-size: 24px;
+    }
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 640px) {
+      .salla-timer-container {
+        margin: 12px 0;
+        padding: 12px;
+      }
+
+      .salla-timer-display {
+        font-size: 20px;
+      }
+
+      .salla-review-card {
+        flex: 0 0 240px;
+      }
+
+      .salla-reviews-section {
+        padding: 16px;
+        margin: 16px 0;
+      }
+
+      .salla-discount-input-group {
+        flex-direction: column;
+      }
+
+      .salla-discount-apply-btn {
+        width: 100%;
+      }
+    }
   \`;
 
   // Inject styles
@@ -872,6 +1778,18 @@ router.get("/modal.js", (req, res) => {
 
   // Bundle Modal Class - Modern Boxy Design
   class SallaBundleModal {
+    // Static cache for preloaded data (shared across all instances)
+    static dataCache = {
+      timerSettings: null,
+      reviews: null,
+      paymentMethods: null,
+      bundleData: {}  // keyed by productId
+    };
+
+    // Static flag to track if preloading is in progress
+    static isPreloading = false;
+    static preloadPromise = null;
+
     constructor(productId, contextData = {}) {
       this.productId = productId;
       this.contextData = contextData;
@@ -880,48 +1798,205 @@ router.get("/modal.js", (req, res) => {
       this.bundleData = null;
       this.modalElement = null;
       this.selectedBundle = null;
+      this.isInitializing = false; // Prevent duplicate initialization
+
+      // Mobile stepper state
+      this.currentStep = 1;
+      this.totalSteps = 5;
+      this.stepLabels = [
+        'اختر الباقة',
+        'الخيارات',
+        'الهدايا',
+        'المنتجات المخفضة',
+        'المراجعة'
+      ];
+
+      // New features state
+      this.timerSettings = null;
+      this.timerEndTime = null;
+      this.timerInterval = null;
+      this.reviews = [];
+      this.paymentMethods = [];
+      this.currentReviewIndex = 0;
+      this.reviewsInterval = null;
+      this.modernReviewsInterval = null;
+      this.discountCode = '';
+      this.appliedDiscount = null;
     }
 
-    async initialize() {
+    // Static method to preload all common data (called from snippet on page load)
+    static async preloadGlobalData(storeId, storeDomain) {
+      // If already preloading, return the existing promise
+      if (SallaBundleModal.isPreloading) {
+        return SallaBundleModal.preloadPromise;
+      }
+
+      SallaBundleModal.isPreloading = true;
+      SallaBundleModal.preloadPromise = (async () => {
+        try {
+          const apiUrl = 'https://${req.get("host")}/api/v1';
+          const storeIdentifier = storeId || storeDomain;
+
+          // Fetch all common data in parallel (non-product-specific)
+          const [timerResult, reviewsResult, paymentResult] = await Promise.allSettled([
+            fetch(\`\${apiUrl}/timer-settings/\${storeIdentifier}\`, {
+              headers: { 'ngrok-skip-browser-warning': 'true' }
+            }).then(r => r.ok ? r.json() : null),
+
+            fetch(\`\${apiUrl}/storefront/stores/\${storeIdentifier}/reviews?limit=10\`, {
+              headers: { 'ngrok-skip-browser-warning': 'true' }
+            }).then(r => r.ok ? r.json() : null),
+
+            fetch(\`\${apiUrl}/storefront/stores/\${storeIdentifier}/payment-methods\`, {
+              headers: { 'ngrok-skip-browser-warning': 'true' }
+            }).then(r => r.ok ? r.json() : null)
+          ]);
+
+          // Store results in cache
+          if (timerResult.status === 'fulfilled' && timerResult.value) {
+            SallaBundleModal.dataCache.timerSettings = timerResult.value.data;
+          }
+
+          if (reviewsResult.status === 'fulfilled' && reviewsResult.value) {
+            SallaBundleModal.dataCache.reviews = reviewsResult.value.data || [];
+          }
+
+          if (paymentResult.status === 'fulfilled' && paymentResult.value) {
+            SallaBundleModal.dataCache.paymentMethods = paymentResult.value.data || [];
+          }
+
+        } catch (error) {
+          console.error('[Bundle Modal] Preload failed:', error);
+        } finally {
+          SallaBundleModal.isPreloading = false;
+        }
+      })();
+
+      return SallaBundleModal.preloadPromise;
+    }
+
+    // Static method to preload bundle data for a specific product
+    static async preloadBundleData(productId, storeId, storeDomain, customerId) {
       try {
-        // Build query parameters with context - prioritize store ID over domain
+        // Check if already cached
+        if (SallaBundleModal.dataCache.bundleData[productId]) {
+          return SallaBundleModal.dataCache.bundleData[productId];
+        }
+
+        const apiUrl = 'https://${req.get("host")}/api/v1';
         const params = new URLSearchParams();
 
-        if (this.contextData.storeId) {
-          params.append('store', this.contextData.storeId);
-        } else if (this.storeDomain) {
-          params.append('store', this.storeDomain);
+        if (storeId) {
+          params.append('store', storeId);
+        } else if (storeDomain) {
+          params.append('store', storeDomain);
         }
 
-        if (this.contextData.customerId) {
-          params.append('customer_id', this.contextData.customerId);
+        if (customerId) {
+          params.append('customer_id', customerId);
         }
 
-        // Fetch bundle data with context headers
-        const response = await fetch(\`\${this.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`, {
+        const response = await fetch(\`\${apiUrl}/storefront/bundles/\${productId}?\${params}\`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
             'ngrok-skip-browser-warning': 'true',
-            'X-Store-Domain': this.storeDomain,
-            'X-Store-ID': this.contextData.storeId || '',
-            'X-Customer-ID': this.contextData.customerId || ''
+            'X-Store-Domain': storeDomain || '',
+            'X-Store-ID': storeId || '',
+            'X-Customer-ID': customerId || ''
           }
         });
 
+        if (response.ok) {
+          const responseText = await response.text();
+          const bundleData = JSON.parse(responseText);
 
-        const responseText = await response.text();
+          // Cache the bundle data
+          SallaBundleModal.dataCache.bundleData[productId] = bundleData;
 
-        if (!response.ok) {
-          throw new Error(\`Bundle API error: \${response.status} - \${responseText}\`);
+          return bundleData;
         }
 
-        try {
-          this.bundleData = JSON.parse(responseText);
-        } catch (jsonError) {
-          console.error('[Salla Bundle Modal] JSON parse error:', jsonError);
-          console.error('[Salla Bundle Modal] Response text:', responseText);
-          throw new Error(\`Invalid JSON response: \${jsonError.message}\`);
+        return null;
+      } catch (error) {
+        console.error('[Bundle Modal] Bundle preload failed:', error);
+        return null;
+      }
+    }
+
+    async initialize() {
+      try {
+        // Check if bundle data is already cached
+        if (SallaBundleModal.dataCache.bundleData[this.productId]) {
+          this.bundleData = SallaBundleModal.dataCache.bundleData[this.productId];
+        } else {
+          // Fetch bundle data if not cached
+          const params = new URLSearchParams();
+
+          if (this.contextData.storeId) {
+            params.append('store', this.contextData.storeId);
+          } else if (this.storeDomain) {
+            params.append('store', this.storeDomain);
+          }
+
+          if (this.contextData.customerId) {
+            params.append('customer_id', this.contextData.customerId);
+          }
+
+          // Fetch bundle data with context headers
+          const response = await fetch(\`\${this.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+              'X-Store-Domain': this.storeDomain,
+              'X-Store-ID': this.contextData.storeId || '',
+              'X-Customer-ID': this.contextData.customerId || ''
+            }
+          });
+
+          const responseText = await response.text();
+
+          if (!response.ok) {
+            throw new Error(\`Bundle API error: \${response.status} - \${responseText}\`);
+          }
+
+          try {
+            this.bundleData = JSON.parse(responseText);
+            // Cache it for future use
+            SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
+          } catch (jsonError) {
+            console.error('[Salla Bundle Modal] JSON parse error:', jsonError);
+            console.error('[Salla Bundle Modal] Response text:', responseText);
+            throw new Error(\`Invalid JSON response: \${jsonError.message}\`);
+          }
+        }
+
+        // Use cached data if available, otherwise fetch
+        if (SallaBundleModal.dataCache.timerSettings) {
+          this.timerSettings = SallaBundleModal.dataCache.timerSettings;
+          // Initialize timer if enabled
+          if (this.timerSettings && this.timerSettings.enabled) {
+            const duration = this.timerSettings.duration || 21600;
+            this.timerEndTime = Date.now() + (duration * 1000);
+          }
+        }
+
+        if (SallaBundleModal.dataCache.reviews) {
+          this.reviews = SallaBundleModal.dataCache.reviews;
+        }
+
+        if (SallaBundleModal.dataCache.paymentMethods) {
+          this.paymentMethods = SallaBundleModal.dataCache.paymentMethods;
+        }
+
+        // If cache is empty, fetch data in parallel (fallback)
+        if (!this.timerSettings && !this.reviews.length && !this.paymentMethods.length) {
+          await Promise.all([
+            this.fetchTimerSettings(),
+            this.fetchReviews(),
+            this.fetchPaymentMethods()
+          ]);
         }
 
         // Create modal element
@@ -933,20 +2008,107 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Fetch timer settings
+    async fetchTimerSettings() {
+      try {
+        const storeId = this.contextData.storeId || this.storeDomain;
+        const response = await fetch(\`\${this.apiUrl}/timer-settings/\${storeId}\`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          this.timerSettings = result.data;
+          
+          // Initialize timer if enabled
+          if (this.timerSettings && this.timerSettings.enabled) {
+            const duration = this.timerSettings.duration || 21600; // Default 6 hours
+            this.timerEndTime = Date.now() + (duration * 1000);
+          }
+        }
+      } catch (error) {
+        console.error('[Timer] Fetch failed:', error);
+      }
+    }
+
+    // Fetch store reviews
+    async fetchReviews() {
+      try {
+        const storeId = this.contextData.storeId || this.storeDomain;
+        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          this.reviews = result.data || [];
+        }
+      } catch (error) {
+        console.error('[Reviews] Fetch failed:', error);
+      }
+    }
+
+    // Fetch payment methods
+    async fetchPaymentMethods() {
+      try {
+        const storeId = this.contextData.storeId || this.storeDomain;
+        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/payment-methods\`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          this.paymentMethods = result.data || [];
+        }
+      } catch (error) {
+        console.error('[Payment Methods] Fetch failed:', error);
+      }
+    }
+
     createModal() {
+      // Prevent multiple modal instances
+      if (this.modalElement && document.body.contains(this.modalElement)) {
+        console.log('[Bundle Modal] Modal already exists, showing existing modal');
+        this.show();
+        return;
+      }
+
       this.modalElement = document.createElement('div');
       this.modalElement.className = 'salla-bundle-modal';
 
       const bundleConfig = this.bundleData.data || this.bundleData;
-      const modalTitle = bundleConfig.modal_title || 'اختر باقتك';
+      const modalTitle = bundleConfig.modal_title || bundleConfig.name || 'اختر باقتك';
+      
+      // Detect mobile
+      const isMobile = window.innerWidth <= 640;
+
+      // Apply timer CSS variables if timer is enabled
+      const timerStyles = this.timerSettings && this.timerSettings.enabled ? \`
+        --timer-text-color: \${this.timerSettings.style.text_color};
+        --timer-bg-color: \${this.timerSettings.style.bg_color};
+        --timer-border-color: \${this.timerSettings.style.border_color};
+        --timer-border-radius: \${this.timerSettings.style.border_radius}px;
+        --timer-label-color: \${this.timerSettings.style.label_color};
+        --timer-font-size: \${this.timerSettings.style.font_size}px;
+      \` : '';
 
       this.modalElement.innerHTML = \`
-        <div class="salla-bundle-panel">
+        <div class="salla-bundle-panel" style="\${timerStyles}">
           <div class="salla-bundle-header">
             <div class="salla-bundle-header-row">
               <h2 class="salla-bundle-title">\${modalTitle}</h2>
-              <button class="salla-bundle-close">&times;</button>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                \${!isMobile ? this.renderTimer() : ''}
+                <button class="salla-bundle-close">&times;</button>
+              </div>
             </div>
+            \${isMobile ? \`
+              <div class="salla-mobile-progress">
+                \${Array.from({length: this.totalSteps}, (_, i) =>
+                  \`<div class="salla-progress-step"></div>\`
+                ).join('')}
+              </div>
+            \` : ''}
           </div>
           <div class="salla-bundle-body">
             <!-- Content will be rendered here -->
@@ -972,8 +2134,12 @@ router.get("/modal.js", (req, res) => {
       const closeBtn = this.modalElement.querySelector('.salla-bundle-close');
       closeBtn.onclick = () => this.hide();
 
-      // Render content
-      this.renderContent();
+      // Render content (mobile or desktop)
+      if (isMobile) {
+        this.renderContentMobile();
+      } else {
+        this.renderContent();
+      }
     }
 
     renderContent() {
@@ -1118,13 +2284,13 @@ router.get("/modal.js", (req, res) => {
       const hasAnyUnavailableProducts = bundleDisplayData.some(bundle => bundle.hasUnavailableProducts);
       const allBundlesUnavailable = bundleDisplayData.every(bundle => bundle.hasUnavailableProducts);
 
-      // Get modal subtitle from bundle config (optional)
-      const modalSubtitle = bundleConfig.modal_subtitle || '';
+      // Get modal subtitle from bundle config (check multiple possible fields)
+      const modalSubtitle = bundleConfig.modal_subtitle || bundleConfig.modalSubtitle || bundleConfig.subtitle || '';
 
       let html = \`
         <!-- Bundles Section -->
         <div class="salla-bundle-section">
-          <h3>باقاتنا</h3>
+          <h3>\${bundleConfig.section_title || bundleConfig.sectionTitle || 'باقاتنا'}</h3>
           \${modalSubtitle ? \`<div class="subtitle">\${modalSubtitle}</div>\` : ''}
           \${hasAnyUnavailableProducts ? \`
             <div style="background: #fef3cd; border: 1px solid #f6d55c; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #d97706;">
@@ -1206,8 +2372,8 @@ router.get("/modal.js", (req, res) => {
       const offersPrice = selectedBundle.offersCost || 0; // What customer pays for offers
       const bundleSavings = selectedBundle.savings || 0; // What customer saves
 
-
-      let summaryHtml = \`
+      // Desktop: Collapsible summary (collapsed by default)
+      let summaryDetailsHtml = \`
         <div class="salla-summary-row">
           <span class="salla-summary-label">المنتج الأساسي</span>
           <span class="salla-summary-value">\${formatPrice(originalValue)}</span>
@@ -1215,7 +2381,7 @@ router.get("/modal.js", (req, res) => {
       \`;
 
       if (offersPrice > 0) {
-        summaryHtml += \`
+        summaryDetailsHtml += \`
           <div class="salla-summary-row">
             <span class="salla-summary-label">المنتجات الإضافية</span>
             <span class="salla-summary-value">\${formatPrice(offersPrice)}</span>
@@ -1223,7 +2389,7 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
-      summaryHtml += \`
+      summaryDetailsHtml += \`
         <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px;">
           <span class="salla-summary-label" style="font-weight: 600;">المجموع الفرعي</span>
           <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
@@ -1231,7 +2397,7 @@ router.get("/modal.js", (req, res) => {
       \`;
 
       if (bundleSavings > 0) {
-        summaryHtml += \`
+        summaryDetailsHtml += \`
           <div class="salla-summary-row">
             <span class="salla-summary-label">توفير الباقة</span>
             <span class="salla-summary-value salla-summary-savings">\${formatPrice(bundleSavings)}</span>
@@ -1239,16 +2405,506 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
-      summaryHtml += \`
+      // Add discount code section (always visible on desktop)
+      // summaryDetailsHtml += this.renderDiscountCode();
+
+      // Build full summary with collapsible structure
+      let summaryHtml = \`
+        <button class="salla-summary-toggle" onclick="if(window.sallaBundleModal) window.sallaBundleModal.toggleSummary();">
+          <span class="salla-summary-toggle-icon">▼</span>
+          <span class="salla-summary-total">\${formatPrice(totalPrice)}</span>
+        </button>
+        <div class="salla-summary-details">
+          \${summaryDetailsHtml}
+        </div>
         <button class="salla-checkout-button"
                 style="background-color: \${bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.cta_button_text_color || '#ffffff'};"
                 onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
           <span>إتمام الطلب — \${formatPrice(totalPrice)}</span>
         </button>
+        \${this.renderPaymentMethods()}
       \`;
 
       summary.innerHTML = summaryHtml;
     }
+
+    // ===== MOBILE-SPECIFIC RENDER METHODS =====
+
+    renderContentMobile() {
+      const body = this.modalElement.querySelector('.salla-bundle-body');
+      const summary = this.modalElement.querySelector('.salla-sticky-summary');
+      
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const bundles = bundleConfig.bundles || [];
+      
+      if (bundles.length === 0) {
+        body.innerHTML = \`<div class="salla-bundle-section">لا توجد عروض متاحة</div>\`;
+        return;
+      }
+      
+      // Calculate bundle data (same as desktop)
+      const targetProductData = bundleConfig.target_product_data;
+      const baseProductPrice = targetProductData?.price || 100.00;
+      
+      const bundleDisplayData = bundles.map((tier, index) => {
+        const buyQuantity = tier.buy_quantity || 1;
+        const subtotal = buyQuantity * baseProductPrice;
+        const unavailableProducts = this.getUnavailableProducts(bundleConfig, tier);
+        const hasUnavailableProducts = unavailableProducts.length > 0;
+        const targetProductUnavailable = bundleConfig.target_product_data ? 
+          this.isProductCompletelyUnavailable(bundleConfig.target_product_data) : false;
+
+        let giftValue = 0;
+        let offersCost = 0;
+        
+        if (tier.offers) {
+          tier.offers.forEach(offer => {
+            if (offer.product_data && this.isProductCompletelyUnavailable(offer.product_data)) {
+              return;
+            }
+
+            const productPrice = offer.product_data?.price || 100.00;
+
+            if (offer.discount_type === 'free') {
+              giftValue += productPrice;
+              offersCost += 0;
+            } else if (offer.discount_type === 'percentage') {
+              const discountAmount = productPrice * (offer.discount_amount / 100);
+              const customerPays = productPrice - discountAmount;
+              giftValue += discountAmount;
+              offersCost += customerPays;
+            } else if (offer.discount_type === 'fixed_amount') {
+              const customerPays = Math.max(0, productPrice - offer.discount_amount);
+              giftValue += offer.discount_amount;
+              offersCost += customerPays;
+            } else {
+              offersCost += productPrice;
+            }
+          });
+        }
+
+        const items = [
+          \`\${buyQuantity} × \${targetProductData?.name || 'منتج'}\${targetProductUnavailable ? ' (غير متوفر)' : ''}\`,
+          ...(tier.offers || []).map(offer => {
+            const productName = offer.product_data?.name || offer.product_name;
+            const isUnavailable = offer.product_data ? this.isProductCompletelyUnavailable(offer.product_data) : false;
+            const unavailableText = isUnavailable ? ' (غير متوفر)' : '';
+            
+            if (offer.discount_type === 'free') {
+              return \`\${productName} — مجاناً\${unavailableText}\`;
+            } else if (offer.discount_type === 'percentage') {
+              return \`\${productName} — خصم \${offer.discount_amount}%\${unavailableText}\`;
+            } else if (offer.discount_type === 'fixed_amount') {
+              return \`\${productName} — خصم \${offer.discount_amount} ر.س\${unavailableText}\`;
+            }
+            return \`\${productName} — خصم\${unavailableText}\`;
+          })
+        ];
+
+        const totalCustomerPays = subtotal + offersCost;
+
+        return {
+          id: \`tier-\${tier.tier}\`,
+          name: tier.tier_title || \`المستوى \${tier.tier}\`,
+          price: totalCustomerPays,
+          originalPrice: subtotal,
+          offersCost: offersCost,
+          jugCount: buyQuantity,
+          value: subtotal + giftValue + offersCost,
+          badge: hasUnavailableProducts || targetProductUnavailable ?
+            'منتجات غير متوفرة' :
+            (tier.tier_highlight_text || ''),
+          items: items,
+          tier: tier,
+          savings: giftValue,
+          hasUnavailableProducts: hasUnavailableProducts || targetProductUnavailable,
+          unavailableProducts: unavailableProducts,
+          bgColor: tier.tier_bg_color || '#f8f9fa',
+          textColor: tier.tier_text_color || '#212529',
+          highlightBgColor: tier.tier_highlight_bg_color || '#ffc107',
+          highlightTextColor: tier.tier_highlight_text_color || '#000000',
+          isDefault: tier.is_default || false
+        };
+      });
+      
+      // Set default bundle
+      if (!this.selectedBundle && bundleDisplayData.length > 0) {
+        const defaultBundle = bundleDisplayData.find(b => b.isDefault === true);
+        if (defaultBundle) {
+          this.selectedBundle = defaultBundle.id;
+        } else {
+          const availableBundle = bundleDisplayData.find(b => !b.hasUnavailableProducts);
+          this.selectedBundle = availableBundle ? availableBundle.id : bundleDisplayData[0].id;
+        }
+      }
+      
+      const selectedBundleData = bundleDisplayData.find(b => b.id === this.selectedBundle);
+      const selectedTier = selectedBundleData ? selectedBundleData.tier : bundles[0];
+      
+      // ===== DETERMINE WHICH STEPS TO SHOW =====
+      const freeGifts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type === 'free') : [];
+      const discountedProducts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type !== 'free') : [];
+      const hasTargetVariants = targetProductData && targetProductData.has_variants;
+      
+      // Build step array dynamically
+      const steps = [];
+      let stepNumber = 1;
+      
+      // Step 1: Bundle selection (always present)
+      steps.push({
+        number: stepNumber++,
+        label: 'اختر الباقة',
+        html: this.renderStep1BundleSelection(bundleDisplayData, bundleConfig),
+        type: 'bundles'
+      });
+      
+      // Step 2: Target variants (only if has variants)
+      if (hasTargetVariants) {
+        steps.push({
+          number: stepNumber++,
+          label: 'الخيارات',
+          html: this.renderStep2TargetVariants(targetProductData, selectedTier),
+          type: 'target_variants'
+        });
+      }
+      
+      // Step 3: Free gifts (only if has free gifts)
+      if (freeGifts.length > 0) {
+        steps.push({
+          number: stepNumber++,
+          label: 'الهدايا',
+          html: this.renderStep3FreeGifts(selectedTier, selectedBundleData),
+          type: 'free_gifts'
+        });
+      }
+      
+      // Step 4: Discounted products (only if has discounted products)
+      if (discountedProducts.length > 0) {
+        steps.push({
+          number: stepNumber++,
+          label: 'منتجات مخفضة',
+          html: this.renderStep4DiscountedProducts(selectedTier, selectedBundleData),
+          type: 'discounted'
+        });
+      }
+      
+      // Step 5: Review (always present)
+      steps.push({
+        number: stepNumber++,
+        label: 'المراجعة',
+        html: this.renderStep5Review(selectedBundleData),
+        type: 'review'
+      });
+      
+      // Update total steps and labels
+      this.totalSteps = steps.length;
+      this.stepLabels = steps.map(s => s.label);
+      this.stepTypes = steps.map(s => s.type);
+      
+      // Render all steps with corrected data-step numbers
+      let mobileContent = steps.map(step => 
+        step.html.replace(/data-step="\d+"/, \`data-step="\${step.number}"\`)
+      ).join('');
+
+      body.innerHTML = mobileContent;
+      
+      // Render footer with navigation (includes discount code & payment methods)
+      this.renderMobileFooter(summary, selectedBundleData, bundleConfig);
+      
+      // Initialize stepper UI
+      this.updateStepUI();
+      
+      // Auto-select single variants and initialize listeners
+      setTimeout(() => {
+        this.autoSelectSingleVariants();
+        this.initializeVariantListeners();
+      }, 100);
+    }
+
+    renderStep1BundleSelection(bundleDisplayData, bundleConfig) {
+      const modalSubtitle = bundleConfig.modal_subtitle || bundleConfig.modalSubtitle || bundleConfig.subtitle || '';
+
+      return \`
+        <div class="salla-step-container" data-step="1">
+          <div class="salla-bundle-section">
+            <h3>\${bundleConfig.section_title || bundleConfig.sectionTitle || this.stepLabels[0]}</h3>
+            \${modalSubtitle ? \`<div class="subtitle">\${modalSubtitle}</div>\` : ''}
+            <div class="salla-bundle-grid">
+              \${bundleDisplayData.map((bundle, index) => {
+                const isSelected = this.selectedBundle === bundle.id;
+                const summaryText = bundle.items.slice(0, 2).join(' + ') + (bundle.items.length > 2 ? \` +\${bundle.items.length - 2}\` : '');
+
+                return \`
+                  <div class="salla-bundle-card \${isSelected ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
+                       style="background-color: \${bundle.bgColor};"
+                       onclick="window.sallaBundleModal.selectBundle('\${bundle.id}')">
+                    <div class="salla-bundle-radio"></div>
+                    <div class="salla-bundle-card-compact">
+                      <div class="salla-bundle-card-title" style="color: \${bundle.textColor}; font-size: 15px; font-weight: 600; margin-bottom: 4px;">\${bundle.name}</div>
+                      <div class="salla-bundle-card-summary" style="font-size: 12px; color: var(--text-2); margin-bottom: 6px;">\${summaryText}</div>
+                      <div class="salla-bundle-card-pricing">
+                        <span>\${formatPrice(bundle.price)}</span>
+                        \${bundle.savings > 0 ? \`<span class="salla-bundle-savings-badge">وفر \${formatPrice(bundle.savings)}</span>\` : ''}
+                      </div>
+                      <div class="salla-bundle-details-toggle" id="toggle-\${bundle.id}" onclick="event.stopPropagation(); window.sallaBundleModal.toggleBundleDetails('\${bundle.id}')">
+                        \${isSelected ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+                      </div>
+                      <ul class="salla-bundle-items \${isSelected ? 'expanded' : ''}" id="bundle-items-\${bundle.id}">
+                        \${bundle.items.map(item => \`<li>\${item}</li>\`).join('')}
+                      </ul>
+                    </div>
+                  </div>
+                \`;
+              }).join('')}
+            </div>
+          </div>
+
+          \${this.renderReviews()}
+        </div>
+      \`;
+    }
+
+    renderStep2TargetVariants(targetProductData, selectedTier) {
+      if (!targetProductData || !targetProductData.has_variants) {
+        return \`
+          <div class="salla-step-container" data-step="2">
+            <div class="salla-bundle-section">
+              <h3>\${this.stepLabels[1]}</h3>
+              <div class="subtitle">لا توجد خيارات للمنتج الأساسي</div>
+            </div>
+          </div>
+        \`;
+      }
+      
+      return \`
+        <div class="salla-step-container" data-step="2">
+          <div class="salla-bundle-section">
+            <div class="salla-product-header">
+              <img src="\${targetProductData.image || 'https://via.placeholder.com/56'}" alt="\${targetProductData.name}" class="salla-product-image" />
+              <div class="salla-product-info">
+                <h3 class="salla-product-name">\${targetProductData.name}</h3>
+                <div class="salla-product-meta">
+                  <span>الكمية: \${selectedTier.buy_quantity}</span>
+                  <span>•</span>
+                  <span>\${formatPrice(targetProductData.price)}</span>
+                </div>
+              </div>
+            </div>
+            \${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
+          </div>
+        </div>
+      \`;
+    }
+
+    renderStep3FreeGifts(selectedTier, selectedBundleData) {
+      const freeGifts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type === 'free') : [];
+      
+      if (freeGifts.length === 0) {
+        return \`
+          <div class="salla-step-container" data-step="3">
+            <div class="salla-bundle-section">
+              <h3>\${this.stepLabels[2]}</h3>
+              <div class="subtitle">لا توجد هدايا في هذه الباقة</div>
+            </div>
+          </div>
+        \`;
+      }
+      
+      const totalSavings = freeGifts.reduce((sum, o) => sum + (o.product_data?.price || 100), 0);
+      
+      return \`
+        <div class="salla-step-container" data-step="3">
+          <div class="salla-bundle-section">
+            <h3>\${this.stepLabels[2]}</h3>
+            <div class="subtitle">توفر \${formatPrice(totalSavings)}</div>
+            <div class="salla-gifts-grid">
+              \${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
+            </div>
+          </div>
+        </div>
+      \`;
+    }
+
+    renderMobileFreeGiftCard(offer) {
+      const productData = offer.product_data;
+      const productName = productData?.name || offer.product_name;
+      const productImage = productData?.image || 'https://via.placeholder.com/64';
+      const productPrice = productData?.price || 100;
+      const isUnavailable = productData ? this.isProductCompletelyUnavailable(productData) : false;
+      
+      return \`
+        <div class="salla-gift-card \${isUnavailable ? 'salla-gift-unavailable' : ''}">
+          <div class="salla-gift-image" style="background-image: url('\${productImage}')">
+            \${isUnavailable ? \`
+              <div class="salla-gift-overlay">
+                <span style="font-size: 11px; color: white; font-weight: 600;">نفد المخزون</span>
+              </div>
+            \` : ''}
+          </div>
+          <div class="salla-gift-content">
+            <div class="salla-gift-badges">
+              <span class="salla-gift-badge">هدية</span>
+              <span class="salla-gift-free">مجاناً</span>
+            </div>
+            <div class="salla-gift-title">\${productName}</div>
+            <div class="salla-gift-value">\${formatPrice(productPrice)}</div>
+            \${this.renderCompactVariantSelectors(productData, offer.product_id, true)}
+          </div>
+        </div>
+      \`;
+    }
+
+    renderStep4DiscountedProducts(selectedTier, selectedBundleData) {
+      const discountedProducts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type !== 'free') : [];
+
+      const freeShippingMessage = \`
+        <div class="salla-free-shipping-banner">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="3" width="15" height="13"></rect>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+          </svg>
+          <span>شحن مجاني لطلبك 🎉</span>
+        </div>
+      \`;
+
+      if (discountedProducts.length === 0) {
+        return \`
+          <div class="salla-step-container" data-step="4">
+            \${freeShippingMessage}
+            <div class="salla-bundle-section">
+              <h3>منتجات مخفضة</h3>
+              <div class="subtitle">لا توجد منتجات مخفضة في هذه الباقة</div>
+            </div>
+          </div>
+        \`;
+      }
+
+      const discountSavings = discountedProducts.reduce((sum, offer) => {
+        const productPrice = offer.product_data?.price || 100;
+        if (offer.discount_type === 'percentage') {
+          return sum + (productPrice * (offer.discount_amount / 100));
+        } else if (offer.discount_type === 'fixed_amount') {
+          return sum + offer.discount_amount;
+        }
+        return sum;
+      }, 0);
+
+      return \`
+        <div class="salla-step-container" data-step="4">
+          \${freeShippingMessage}
+          <div class="salla-bundle-section">
+            <h3>منتجات مخفضة</h3>
+            <div class="subtitle">وفر \${formatPrice(discountSavings)} إضافية</div>
+            <div class="salla-discounted-scroll">
+              \${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
+            </div>
+          </div>
+        </div>
+      \`;
+    }
+
+    renderMobileDiscountedCard(offer) {
+      const productData = offer.product_data;
+      const productName = productData?.name || offer.product_name;
+      const productImage = productData?.image || 'https://via.placeholder.com/160x120';
+      const originalPrice = productData?.price || 100;
+      
+      let discountedPrice = originalPrice;
+      if (offer.discount_type === 'percentage') {
+        discountedPrice = originalPrice * (1 - offer.discount_amount / 100);
+      } else if (offer.discount_type === 'fixed_amount') {
+        discountedPrice = originalPrice - offer.discount_amount;
+      }
+      
+      return \`
+        <div class="salla-discounted-card">
+          <div class="salla-discounted-image" style="background-image: url('\${productImage}')"></div>
+          <div class="salla-discounted-title">\${productName}</div>
+          <div class="salla-discounted-pricing">
+            <span class="final">\${formatPrice(discountedPrice)}</span>
+            <span class="original">\${formatPrice(originalPrice)}</span>
+          </div>
+          \${this.renderCompactVariantSelectors(productData, offer.product_id, true)}
+        </div>
+      \`;
+    }
+
+    renderStep5Review(selectedBundleData) {
+      if (!selectedBundleData) return '';
+
+      const totalPrice = selectedBundleData.price;
+      const originalValue = selectedBundleData.originalPrice;
+      const offersPrice = selectedBundleData.offersCost;
+      const bundleSavings = selectedBundleData.savings;
+
+      return \`
+        <div class="salla-step-container" data-step="5">
+          \${this.renderTimer() ? \`
+            <div style="margin-bottom: 12px; display: flex; justify-content: center;">
+              \${this.renderTimer()}
+            </div>
+          \` : ''}
+
+          <div class="salla-bundle-section">
+            <h3>\${this.stepLabels[4]}</h3>
+            <div class="subtitle">تأكد من طلبك قبل الإتمام</div>
+
+            <div class="salla-review-static">
+              <h3 style="font-size: 14px; margin-bottom: 10px;">تفاصيل الفاتورة</h3>
+              <div class="salla-review-content">
+                <div class="salla-summary-row">
+                  <span class="salla-summary-label">المنتج الأساسي</span>
+                  <span class="salla-summary-value">\${formatPrice(originalValue)}</span>
+                </div>
+                \${offersPrice > 0 ? \`
+                  <div class="salla-summary-row">
+                    <span class="salla-summary-label">المنتجات الإضافية</span>
+                    <span class="salla-summary-value">\${formatPrice(offersPrice)}</span>
+                  </div>
+                \` : ''}
+                \${bundleSavings > 0 ? \`
+                  <div class="salla-summary-row">
+                    <span class="salla-summary-label">توفير الباقة</span>
+                    <span class="salla-summary-value salla-summary-savings">\${formatPrice(bundleSavings)}</span>
+                  </div>
+                \` : ''}
+                <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
+                  <span class="salla-summary-label" style="font-weight: 600;">المجموع</span>
+                  <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      \`;
+    }
+
+    renderMobileFooter(summary, selectedBundleData, bundleConfig) {
+      const totalPrice = selectedBundleData ? selectedBundleData.price : 0;
+      
+      summary.innerHTML = \`
+        \${''/* this.renderDiscountCode() */}
+        <div class="salla-footer-compact">
+          <div>
+            <div class="salla-footer-total">المجموع</div>
+            <div class="salla-footer-price">\${formatPrice(totalPrice)}</div>
+          </div>
+        </div>
+        <div class="salla-step-navigation">
+          <button id="salla-step-prev" class="salla-step-btn" onclick="window.sallaBundleModal.goPrev()">
+            السابق
+          </button>
+          <button id="salla-step-next" class="salla-step-btn primary" onclick="window.sallaBundleModal.goNext()">
+            التالي
+          </button>
+        </div>
+        \${this.renderPaymentMethods()}
+      \`;
+    }
+
+    // ===== END MOBILE-SPECIFIC RENDER METHODS =====
 
     renderOffersSection(selectedTier, selectedBundleData) {
       if (!selectedTier || !selectedTier.offers || selectedTier.offers.length === 0) {
@@ -1391,15 +3047,92 @@ router.get("/modal.js", (req, res) => {
 
     selectBundle(bundleId) {
       this.selectedBundle = bundleId;
-      this.renderContent();
+
+      // Stop payment slider animation before re-rendering
+      if (this.paymentSliderAnimationFrame) {
+        cancelAnimationFrame(this.paymentSliderAnimationFrame);
+        this.paymentSliderAnimationFrame = null;
+      }
+
+      // Store payment methods HTML before re-render to prevent reload
+      const paymentSlider = document.getElementById('salla-payment-slider');
+      const paymentMethodsHTML = paymentSlider ? paymentSlider.parentElement.outerHTML : null;
+
+      // Detect mobile and render accordingly
+      const isMobile = window.innerWidth <= 640;
+      if (isMobile) {
+        this.renderContentMobile();
+      } else {
+        this.renderContent();
+      }
+
+      // Restore payment methods HTML if it existed (prevents image reload)
+      if (paymentMethodsHTML) {
+        const newPaymentSection = document.querySelector('.salla-payment-methods');
+        if (newPaymentSection && newPaymentSection.outerHTML !== paymentMethodsHTML) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = paymentMethodsHTML;
+          newPaymentSection.replaceWith(tempDiv.firstChild);
+
+          // Restart auto-scroll after restoration
+          setTimeout(() => this.startPaymentSliderAutoScroll(), 100);
+        }
+      }
+
+      // Auto-advance on mobile if step 1 complete
+      if (isMobile && this.currentStep === 1) {
+        setTimeout(() => {
+          if (this.canProceedToNextStep()) {
+            this.updateNavigationButtons();
+          }
+        }, 100);
+      }
+    }
+
+    // Check if user is logged in
+    isUserLoggedIn() {
+      // Check if Salla is available and customer is logged in
+      if (window.salla && window.salla.config && window.salla.config.get) {
+        const isGuest = window.salla.config.get('user.guest');
+        return !isGuest; // User is logged in if not a guest
+      }
+      return false;
+    }
+
+    // Trigger Salla login modal
+    showLoginModal() {
+      if (window.salla && window.salla.event) {
+        // Trigger Salla's login event
+        window.salla.event.emit('login::open');
+      } else {
+        // Fallback: redirect to login page
+        window.location.href = '/login';
+      }
     }
 
     async handleCheckout() {
       try {
+        // Check if summary is collapsed on desktop - expand it first
+        const isMobile = window.innerWidth <= 640;
+        if (!isMobile) {
+          const summaryDetails = document.querySelector('.salla-summary-details');
+          if (summaryDetails && !summaryDetails.classList.contains('expanded')) {
+            this.showSallaToast('يرجى مراجعة الملخص قبل إتمام الطلب', 'info');
+            this.toggleSummary();
+            return; // Stop checkout, user needs to review and click again
+          }
+        }
 
         // Validate Salla SDK is available
         if (!window.salla) {
           alert('عذراً، حدث خطأ في النظام. يرجى المحاولة مرة أخرى.');
+          return;
+        }
+
+        // Check if user is logged in
+        if (!this.isUserLoggedIn()) {
+          this.showSallaToast('يجب تسجيل الدخول أولاً لإتمام الطلب', 'warning');
+          this.showLoginModal();
           return;
         }
 
@@ -2267,93 +4000,27 @@ router.get("/modal.js", (req, res) => {
         return this.renderCompactVariantSelectors(productData, this.productId, false);
       }
 
-      // If buying multiple, render accordion-style selectors for each quantity
+      // Show variants directly - clean, minimal, line by line
       const quantitySelectorsHtml = Array.from({ length: buyQuantity }, (_, index) => {
         const quantityNum = index + 1;
         const productIdWithIndex = \`\${this.productId}-qty\${quantityNum}\`;
-        const accordionId = \`accordion-\${productIdWithIndex}\`;
-        const isFirst = index === 0;
 
         return \`
-          <div class="salla-quantity-accordion">
-            <div class="salla-quantity-header \${isFirst ? 'active' : ''}" onclick="window.sallaBundleModal.toggleAccordion('\${accordionId}')">
-              <div class="salla-quantity-header-title">
-                <span class="salla-quantity-badge">#\${quantityNum}</span>
-                <span>المنتج رقم \${quantityNum}</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="salla-quantity-status incomplete" id="status-\${accordionId}">لم يُختر</span>
-                <span class="salla-quantity-arrow">▼</span>
-              </div>
+          <div class="salla-quantity-direct">
+            <div class="salla-quantity-direct-header">
+              <span class="salla-quantity-badge">#\${quantityNum}</span>
             </div>
-            <div class="salla-quantity-body \${isFirst ? 'active' : ''}" id="\${accordionId}">
+            <div class="salla-quantity-direct-variants">
               \${this.renderCompactVariantSelectors(productData, productIdWithIndex, false)}
             </div>
           </div>
         \`;
       }).join('');
 
-      // Add accordion toggle script
-      setTimeout(() => {
-        if (window.sallaBundleModal) {
-          window.sallaBundleModal.initializeAccordionValidation(buyQuantity);
-        }
-      }, 100);
-
       return quantitySelectorsHtml;
     }
 
-    toggleAccordion(accordionId) {
-      const header = document.querySelector(\`[onclick*="\${accordionId}"]\`);
-      const body = document.getElementById(accordionId);
 
-      if (header && body) {
-        const isActive = body.classList.contains('active');
-
-        // Toggle active state
-        if (isActive) {
-          header.classList.remove('active');
-          body.classList.remove('active');
-        } else {
-          header.classList.add('active');
-          body.classList.add('active');
-        }
-      }
-    }
-
-    initializeAccordionValidation(buyQuantity) {
-      // Monitor variant selection changes and update accordion status
-      for (let i = 1; i <= buyQuantity; i++) {
-        const productIdWithIndex = \`\${this.productId}-qty\${i}\`;
-        const accordionId = \`accordion-\${productIdWithIndex}\`;
-        const selectors = document.querySelectorAll(\`[data-variant-product="\${productIdWithIndex}"]\`);
-
-        selectors.forEach(select => {
-          select.addEventListener('change', () => {
-            this.updateAccordionStatus(accordionId, productIdWithIndex);
-          });
-        });
-
-        // Initial status check
-        this.updateAccordionStatus(accordionId, productIdWithIndex);
-      }
-    }
-
-    updateAccordionStatus(accordionId, productId) {
-      const statusEl = document.getElementById(\`status-\${accordionId}\`);
-      if (!statusEl) return;
-
-      const selectors = document.querySelectorAll(\`[data-variant-product="\${productId}"]\`);
-      const allSelected = Array.from(selectors).every(s => s.value && s.value !== '');
-
-      if (allSelected && selectors.length > 0) {
-        statusEl.textContent = '✓ تم الاختيار';
-        statusEl.classList.remove('incomplete');
-      } else {
-        statusEl.textContent = 'لم يُختر';
-        statusEl.classList.add('incomplete');
-      }
-    }
 
     renderCompactVariantSelectors(productData, productId, isOffer = false) {
       if (!productData || !productData.has_variants || !productData.options || productData.options.length === 0) {
@@ -2450,10 +4117,927 @@ router.get("/modal.js", (req, res) => {
 
     }
 
+    // ===== MOBILE STEPPER NAVIGATION METHODS =====
+    
+    goNext() {
+      if (!this.canProceedToNextStep()) {
+        this.showStepValidationError();
+        return;
+      }
+      
+      if (this.currentStep < this.totalSteps) {
+        this.currentStep++;
+        this.updateStepUI();
+        this.scrollToTop();
+      } else if (this.currentStep === this.totalSteps) {
+        // Final step: trigger checkout
+        this.handleCheckout();
+      }
+    }
+
+    goPrev() {
+      if (this.currentStep > 1) {
+        this.currentStep--;
+        this.updateStepUI();
+        this.scrollToTop();
+      }
+    }
+
+    canProceedToNextStep() {
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const selectedBundleData = this.getSelectedBundleData();
+      
+      if (!selectedBundleData && this.currentStep !== 1) {
+        return false;
+      }
+      
+      // Get current step type
+      const currentStepType = this.stepTypes ? this.stepTypes[this.currentStep - 1] : null;
+      
+      if (!currentStepType) {
+        // Fallback: if no step types defined yet, allow first step
+        return this.currentStep === 1 && this.selectedBundle !== null;
+      }
+      
+      // Validate based on step type (not hardcoded step number)
+      switch (currentStepType) {
+        case 'bundles': // Bundle selection
+          return this.selectedBundle !== null;
+          
+        case 'target_variants': // Target product variants
+          if (!bundleConfig.target_product_data || !bundleConfig.target_product_data.has_variants) {
+            return true; // No variants, auto-pass
+          }
+          const targetMissing = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData)
+            .filter(m => !m.isOffer);
+          return targetMissing.length === 0;
+          
+        case 'free_gifts': // Free gifts variants
+          if (!selectedBundleData || !selectedBundleData.tier || !selectedBundleData.tier.offers) {
+            return true;
+          }
+          const freeGifts = selectedBundleData.tier.offers.filter(o => o.discount_type === 'free');
+          if (freeGifts.length === 0) {
+            return true; // No free gifts, auto-pass
+          }
+
+          // Check if free gifts have variants
+          const freeGiftsWithVariants = freeGifts.filter(g =>
+            g.product_data && g.product_data.has_variants
+          );
+
+          if (freeGiftsWithVariants.length === 0) {
+            return true; // No variants in free gifts, auto-pass
+          }
+
+          // Get all missing variants and filter only for free gifts
+          const freeGiftMissing = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData)
+            .filter(m => m.isOffer && freeGifts.some(o => o.product_id === m.productId));
+
+          return freeGiftMissing.length === 0;
+          
+        case 'discounted': // Discounted products (optional)
+          return true; // Always allow skip
+          
+        case 'review': // Review
+          return this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData).length === 0;
+          
+        default:
+          return true;
+      }
+    }
+
+    showStepValidationError() {
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const selectedBundleData = this.getSelectedBundleData();
+      const currentStepType = this.stepTypes ? this.stepTypes[this.currentStep - 1] : null;
+      
+      switch (currentStepType) {
+        case 'bundles':
+          this.showSallaToast('يرجى اختيار باقة أولاً', 'error');
+          break;
+          
+        case 'target_variants':
+        case 'free_gifts':
+          const missing = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
+          if (missing.length > 0) {
+            const missingDetails = missing.map(m => \`\${m.productName}: \${m.optionName}\`).join('، ');
+            this.showSallaToast(\`يجب اختيار: \${missingDetails}\`, 'error');
+            this.highlightMissingVariants(missing);
+            const first = missing[0];
+            this.scrollToVariantInputAggressively(first.selectorProductId || first.productId, first.optionId);
+          }
+          break;
+          
+        default:
+          this.showSallaToast('يرجى إكمال الخطوة الحالية', 'error');
+      }
+    }
+
+    updateStepUI() {
+      // Update progress bar
+      this.updateProgressUI();
+      
+      // Show/hide step containers
+      const allSteps = document.querySelectorAll('.salla-step-container');
+      allSteps.forEach((step, index) => {
+        if (index + 1 === this.currentStep) {
+          step.classList.add('active');
+        } else {
+          step.classList.remove('active');
+        }
+      });
+      
+      // Update navigation buttons
+      this.updateNavigationButtons();
+
+      // Start modern reviews auto-scroll if on final step
+      if (this.currentStep === this.totalSteps) {
+        setTimeout(() => {
+          this.startModernReviewsAutoScroll();
+        }, 500);
+      }
+    }
+
+    updateProgressUI() {
+      const progressSteps = document.querySelectorAll('.salla-progress-step');
+      progressSteps.forEach((step, index) => {
+        step.classList.remove('active', 'completed');
+        if (index + 1 < this.currentStep) {
+          step.classList.add('completed');
+        } else if (index + 1 === this.currentStep) {
+          step.classList.add('active');
+        }
+      });
+    }
+
+    updateNavigationButtons() {
+      const prevBtn = document.getElementById('salla-step-prev');
+      const nextBtn = document.getElementById('salla-step-next');
+      
+      if (prevBtn) {
+        prevBtn.disabled = this.currentStep === 1;
+        prevBtn.style.display = this.currentStep === 1 ? 'none' : 'block';
+      }
+      
+      if (nextBtn) {
+        const canProceed = this.canProceedToNextStep();
+        nextBtn.disabled = !canProceed;
+        
+        if (this.currentStep === this.totalSteps) {
+          nextBtn.textContent = 'إتمام الطلب';
+          nextBtn.classList.add('primary');
+        } else {
+          nextBtn.textContent = 'التالي';
+          nextBtn.classList.add('primary');
+        }
+      }
+    }
+
+    scrollToTop() {
+      const modalBody = document.querySelector('.salla-bundle-body');
+      if (modalBody) {
+        modalBody.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }
+    }
+
+    toggleBundleDetails(bundleId) {
+      const itemsList = document.querySelector(\`#bundle-items-\${bundleId}\`);
+      const toggleBtn = document.querySelector(\`#toggle-\${bundleId}\`);
+
+      if (itemsList) {
+        const isExpanded = itemsList.classList.toggle('expanded');
+
+        // Update button text
+        if (toggleBtn) {
+          toggleBtn.textContent = isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل';
+        }
+      }
+    }
+
+    toggleDiscountedSection() {
+      const header = document.querySelector('.salla-discounted-header');
+      const body = document.querySelector('.salla-discounted-body');
+      
+      if (header && body) {
+        header.classList.toggle('expanded');
+        body.classList.toggle('expanded');
+      }
+    }
+
+    autoSelectSingleVariants() {
+      const selects = document.querySelectorAll('.salla-variant-compact-select, .salla-variant-select');
+      
+      selects.forEach(select => {
+        // Skip if already selected or disabled
+        if (select.value || select.disabled) return;
+        
+        // Count available options (excluding placeholder)
+        const availableOptions = Array.from(select.options).filter(opt => 
+          opt.value && !opt.disabled
+        );
+        
+        // Auto-select if only one option available
+        if (availableOptions.length === 1) {
+          select.value = availableOptions[0].value;
+          select.dispatchEvent(new Event('change'));
+        }
+      });
+      
+      // Update navigation buttons after auto-selection
+      setTimeout(() => this.updateNavigationButtons(), 50);
+    }
+    
+    initializeVariantListeners() {
+      // Add change listeners to all variant selects to update navigation state
+      const selects = document.querySelectorAll('.salla-variant-compact-select, .salla-variant-select');
+      
+      selects.forEach(select => {
+        select.addEventListener('change', () => {
+          // Update navigation buttons when variants change
+          setTimeout(() => this.updateNavigationButtons(), 50);
+        });
+      });
+    }
+
+    // ===== END MOBILE STEPPER METHODS =====
+
+    // ===== NEW FEATURE COMPONENTS =====
+
+    // Render Timer Component (Always in header)
+    renderTimer() {
+      if (!this.timerSettings || !this.timerSettings.enabled) return '';
+      
+      const effectClass = this.timerSettings.effect !== 'none' ? this.timerSettings.effect : '';
+      
+      return \`
+        <div class="salla-timer-container" id="salla-timer">
+          <div class="salla-timer-label">\${this.timerSettings.style.label}</div>
+          <div class="salla-timer-display \${effectClass}" id="salla-timer-display">00:00:00</div>
+        </div>
+      \`;
+    }
+
+    // Start Timer Countdown
+    startTimer() {
+      if (!this.timerEndTime) return;
+      
+      this.updateTimerDisplay();
+      
+      this.timerInterval = setInterval(() => {
+        this.updateTimerDisplay();
+      }, 1000);
+    }
+
+    // Update Timer Display
+    updateTimerDisplay() {
+      const display = document.getElementById('salla-timer-display');
+      if (!display) return;
+      
+      const now = Date.now();
+      const remaining = Math.max(0, this.timerEndTime - now);
+      
+      if (remaining === 0) {
+        if (this.timerSettings.auto_restart) {
+          // Restart timer
+          const duration = this.timerSettings.duration || 21600;
+          this.timerEndTime = Date.now() + (duration * 1000);
+        } else {
+          clearInterval(this.timerInterval);
+          display.textContent = '00:00:00';
+          return;
+        }
+      }
+      
+      const hours = Math.floor(remaining / 3600000);
+      const minutes = Math.floor((remaining % 3600000) / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
+      
+      display.textContent = \`\${String(hours).padStart(2, '0')}:\${String(minutes).padStart(2, '0')}:\${String(seconds).padStart(2, '0')}\`;
+    }
+
+    // Render Reviews Carousel (Modern Boxy Style)
+    renderReviewsCarousel() {
+      if (!this.reviews || this.reviews.length === 0) return '';
+      
+      // Calculate average rating
+      const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
+      const avgRating = (totalRating / this.reviews.length).toFixed(1);
+      
+      return \`
+        <div class="salla-reviews-modern" style="margin-top: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h3 style="font-size: 15px; font-weight: 600; margin: 0;">آراء العملاء</h3>
+            <div style="font-size: 13px; color: var(--text-2);">\${avgRating} ★ متوسط</div>
+          </div>
+          <div style="position: relative;">
+            <div class="salla-reviews-track-modern" id="salla-reviews-track-modern" style="display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+              \${this.reviews.map((review, index) => \`
+                <article style="min-width: 80%; max-width: 320px; flex-shrink: 0; scroll-snap-align: center; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-card); padding: 16px; box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 1px rgba(16,24,40,.04);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <div style="font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 12px;">\${review.customerName}</div>
+                    <div style="font-size: 12px; color: var(--text-2); white-space: nowrap;">\${review.timeAgo}</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px;">
+                    \${Array.from({ length: 5 }).map((_, i) => \`
+                      <svg width="14" height="14" viewBox="0 0 24 24" style="\${i < review.rating ? 'fill: var(--text-1);' : 'fill: none;'}">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" stroke="var(--text-1)" stroke-width="1" />
+                      </svg>
+                    \`).join('')}
+                  </div>
+                  <p style="font-size: 14px; color: var(--text-1); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">\${review.content}</p>
+                </article>
+              \`).join('')}
+            </div>
+            <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none;">
+              <button onclick="window.sallaBundleModal.scrollReviewBy(-1)" aria-label="السابق" style="pointer-events: auto; margin-left: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+              </button>
+              <button onclick="window.sallaBundleModal.scrollReviewBy(1)" aria-label="التالي" style="pointer-events: auto; margin-right: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+          <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;" id="salla-reviews-dots-modern">
+            \${this.reviews.map((_, index) => \`
+              <span style="height: 6px; border-radius: 3px; transition: all 0.3s; \${index === 0 ? 'width: 24px; background: var(--text-1);' : 'width: 8px; background: var(--border);'}" data-dot-index="\${index}"></span>
+            \`).join('')}
+          </div>
+        </div>
+        <style>
+          .salla-reviews-track-modern::-webkit-scrollbar {
+            display: none;
+          }
+        </style>
+      \`;
+    }
+
+    // Render Reviews Carousel (Old Style - Keep for backward compatibility)
+    renderReviews() {
+      if (!this.reviews || this.reviews.length === 0) return '';
+      
+      // Calculate average rating
+      const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
+      const avgRating = (totalRating / this.reviews.length).toFixed(1);
+      
+      return \`
+        <div class="salla-reviews-section">
+          <div class="salla-reviews-header">
+            <span>⭐ آراء العملاء</span>
+            <span style="font-size: 13px; color: var(--text-2); font-weight: normal;">\${avgRating} ★ متوسط</span>
+          </div>
+          <div class="salla-reviews-carousel">
+            <div class="salla-reviews-track" id="salla-reviews-track">
+              \${this.reviews.map(review => \`
+                <div class="salla-review-card">
+                  <div class="salla-review-header">
+                    <img src="\${review.customerAvatar || 'https://via.placeholder.com/40'}" 
+                         alt="\${review.customerName}" 
+                         class="salla-review-avatar"
+                         onerror="this.src='https://via.placeholder.com/40'" />
+                    <div class="salla-review-customer">
+                      <div class="salla-review-name">\${review.customerName}</div>
+                      <div class="salla-review-rating">\${'⭐'.repeat(review.rating)}</div>
+                    </div>
+                  </div>
+                  <div class="salla-review-content">\${review.content}</div>
+                  <div class="salla-review-time">\${review.timeAgo}</div>
+                </div>
+              \`).join('')}
+            </div>
+          </div>
+          <div class="salla-reviews-dots" id="salla-reviews-dots">
+            \${this.reviews.map((_, index) => \`
+              <div class="salla-review-dot \${index === 0 ? 'active' : ''}" 
+                   onclick="window.sallaBundleModal.scrollToReview(\${index})"></div>
+            \`).join('')}
+          </div>
+        </div>
+      \`;
+    }
+
+    // Start Reviews Auto-Scroll
+    startReviewsAutoScroll() {
+      if (!this.reviews || this.reviews.length <= 1) return;
+
+      const track = document.getElementById('salla-reviews-track');
+      if (!track) return;
+
+      // Clear existing interval
+      if (this.reviewsInterval) {
+        clearInterval(this.reviewsInterval);
+      }
+
+      // State management
+      let userIsInteracting = false;
+      let interactionTimeout;
+      let scrollSyncTimeout;
+
+      // Sync dots with scroll position
+      const syncDotsWithScroll = () => {
+        const dots = document.querySelectorAll('.salla-review-dot');
+        if (!dots.length) return;
+
+        const scrollLeft = track.scrollLeft;
+        const cardWidth = track.scrollWidth / this.reviews.length;
+        const scrollIndex = Math.round(scrollLeft / cardWidth);
+
+        // For RTL, reverse the index
+        const currentIndex = this.reviews.length - 1 - scrollIndex;
+
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === currentIndex);
+        });
+
+        this.currentReviewIndex = currentIndex;
+      };
+
+      // Listen to scroll events to update dots
+      track.addEventListener('scroll', () => {
+        clearTimeout(scrollSyncTimeout);
+        scrollSyncTimeout = setTimeout(syncDotsWithScroll, 100);
+      }, { passive: true });
+
+      // Detect user interaction
+      const pauseAutoScroll = () => {
+        userIsInteracting = true;
+        clearTimeout(interactionTimeout);
+
+        // Resume 3 seconds after last interaction
+        interactionTimeout = setTimeout(() => {
+          userIsInteracting = false;
+        }, 3000);
+      };
+
+      // Add interaction listeners
+      track.addEventListener('touchstart', pauseAutoScroll, { passive: true, once: false });
+      track.addEventListener('mousedown', pauseAutoScroll, { passive: true, once: false });
+      track.addEventListener('wheel', pauseAutoScroll, { passive: true, once: false });
+
+      // Auto-scroll function
+      const autoScroll = () => {
+        if (!userIsInteracting && track && document.body.contains(track)) {
+          this.scrollToNextReview();
+        }
+      };
+
+      // Start interval - scroll every 4 seconds
+      this.reviewsInterval = setInterval(autoScroll, 4000);
+    }
+
+    // Scroll to Next Review
+    scrollToNextReview() {
+      // For RTL, we need to go backwards (decrement index)
+      this.currentReviewIndex = (this.currentReviewIndex - 1 + this.reviews.length) % this.reviews.length;
+      this.scrollToReview(this.currentReviewIndex);
+    }
+
+    // Scroll to Specific Review
+    scrollToReview(index) {
+      const track = document.getElementById('salla-reviews-track');
+      const dots = document.querySelectorAll('.salla-review-dot');
+
+      if (!track || !dots.length || !this.reviews) return;
+
+      // Calculate card width dynamically based on scroll width
+      const totalScrollWidth = track.scrollWidth;
+      const cardWidth = totalScrollWidth / this.reviews.length;
+
+      // For RTL layout, calculate from the right side
+      // In RTL, index 0 is at the rightmost position
+      const scrollPosition = (this.reviews.length - 1 - index) * cardWidth;
+
+      // Scroll to the calculated position
+      track.scrollTo({
+        left: scrollPosition,
+        behavior: 'smooth'
+      });
+
+      // Update dots
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+      });
+
+      this.currentReviewIndex = index;
+    }
+
+    // Scroll Modern Reviews by Step (for navigation buttons)
+    scrollReviewBy(step) {
+      if (!this.reviews || this.reviews.length === 0) return;
+
+      const track = document.getElementById('salla-reviews-track-modern');
+      const dots = document.querySelectorAll('[data-dot-index]');
+
+      if (!track) return;
+
+      // Calculate current index based on scroll position
+      const scrollLeft = track.scrollLeft;
+      const cardWidth = track.scrollWidth / this.reviews.length;
+      let scrollIndex = Math.round(scrollLeft / cardWidth);
+
+      // For RTL, reverse the scroll index to get the actual review index
+      let currentIndex = this.reviews.length - 1 - scrollIndex;
+
+      // Calculate next index with wrapping (step is already negative for "next" in RTL)
+      let nextIndex = currentIndex - step; // Reverse step for RTL
+      if (nextIndex < 0) nextIndex = this.reviews.length - 1;
+      if (nextIndex >= this.reviews.length) nextIndex = 0;
+
+      // Convert back to scroll index for RTL
+      const nextScrollIndex = this.reviews.length - 1 - nextIndex;
+
+      // Scroll to the review
+      const child = track.children[nextScrollIndex];
+      if (child) {
+        const containerWidth = track.clientWidth;
+        const childLeft = child.offsetLeft;
+        const childWidth = child.clientWidth;
+        const centerLeft = childLeft - (containerWidth - childWidth) / 2;
+
+        track.scrollTo({
+          left: Math.max(0, centerLeft),
+          behavior: 'smooth'
+        });
+
+        // Update dots
+        dots.forEach((dot, i) => {
+          const dotIndex = parseInt(dot.getAttribute('data-dot-index'));
+          if (dotIndex === nextIndex) {
+            dot.style.width = '24px';
+            dot.style.background = 'var(--text-1)';
+          } else {
+            dot.style.width = '8px';
+            dot.style.background = 'var(--border)';
+          }
+        });
+      }
+    }
+
+    // Start Modern Reviews Auto-Scroll (for final step)
+    startModernReviewsAutoScroll() {
+      if (!this.reviews || this.reviews.length <= 1) return;
+
+      const track = document.getElementById('salla-reviews-track-modern');
+      if (!track) return;
+
+      // Clear any existing interval
+      if (this.modernReviewsInterval) {
+        clearInterval(this.modernReviewsInterval);
+      }
+
+      // State management
+      let userIsInteracting = false;
+      let interactionTimeout;
+      let scrollSyncTimeout;
+
+      // Sync dots with scroll position
+      const syncDotsWithScroll = () => {
+        const dots = document.querySelectorAll('[data-dot-index]');
+        if (!dots.length) return;
+
+        const scrollLeft = track.scrollLeft;
+        const cardWidth = track.scrollWidth / this.reviews.length;
+        const scrollIndex = Math.round(scrollLeft / cardWidth);
+
+        // For RTL, reverse the index
+        const currentIndex = this.reviews.length - 1 - scrollIndex;
+
+        dots.forEach((dot, i) => {
+          const dotIndex = parseInt(dot.getAttribute('data-dot-index'));
+          if (dotIndex === currentIndex) {
+            dot.style.width = '24px';
+            dot.style.background = 'var(--text-1)';
+          } else {
+            dot.style.width = '8px';
+            dot.style.background = 'var(--border)';
+          }
+        });
+      };
+
+      // Listen to scroll events to update dots
+      track.addEventListener('scroll', () => {
+        clearTimeout(scrollSyncTimeout);
+        scrollSyncTimeout = setTimeout(syncDotsWithScroll, 100);
+      }, { passive: true });
+
+      // Detect user interaction
+      const pauseAutoScroll = () => {
+        userIsInteracting = true;
+        clearTimeout(interactionTimeout);
+
+        // Resume 3 seconds after last interaction
+        interactionTimeout = setTimeout(() => {
+          userIsInteracting = false;
+        }, 3000);
+      };
+
+      // Add interaction listeners
+      track.addEventListener('touchstart', pauseAutoScroll, { passive: true, once: false });
+      track.addEventListener('mousedown', pauseAutoScroll, { passive: true, once: false });
+      track.addEventListener('wheel', pauseAutoScroll, { passive: true, once: false });
+
+      // Auto-scroll function
+      const autoScroll = () => {
+        if (!userIsInteracting && track && document.body.contains(track)) {
+          this.scrollReviewBy(1);
+        }
+      };
+
+      // Start interval - scroll every 4 seconds
+      this.modernReviewsInterval = setInterval(autoScroll, 4000);
+    }
+
+    // Render Discount Code Section
+    renderDiscountCode() {
+      return \`
+        <div class="salla-discount-section">
+          <div class="salla-discount-header" onclick="window.sallaBundleModal.toggleDiscountSection()">
+            <div class="salla-discount-title">
+              🎟️ لديك كود خصم؟
+            </div>
+            <span class="salla-discount-toggle" id="salla-discount-toggle">▼</span>
+          </div>
+          <div class="salla-discount-body" id="salla-discount-body">
+            <div class="salla-discount-input-group">
+              <input type="text" 
+                     class="salla-discount-input" 
+                     id="salla-discount-input"
+                     placeholder="أدخل كود الخصم"
+                     value="\${this.discountCode}" />
+              <button class="salla-discount-apply-btn" 
+                      onclick="window.sallaBundleModal.applyDiscountCode()">
+                تطبيق
+              </button>
+            </div>
+            <div id="salla-discount-message"></div>
+          </div>
+        </div>
+      \`;
+    }
+
+    // Toggle Discount Section
+    toggleDiscountSection() {
+      const body = document.getElementById('salla-discount-body');
+      const toggle = document.getElementById('salla-discount-toggle');
+      
+      if (body && toggle) {
+        body.classList.toggle('expanded');
+        toggle.classList.toggle('expanded');
+      }
+    }
+
+    // Toggle Desktop Summary
+    toggleSummary() {
+      const toggle = document.querySelector('.salla-summary-toggle');
+      const details = document.querySelector('.salla-summary-details');
+      
+      if (toggle && details) {
+        toggle.classList.toggle('expanded');
+        details.classList.toggle('expanded');
+      }
+    }
+
+    // Apply Discount Code
+    async applyDiscountCode() {
+      const input = document.getElementById('salla-discount-input');
+      const messageEl = document.getElementById('salla-discount-message');
+      
+      if (!input || !messageEl) return;
+      
+      // Check if user is logged in
+      if (!this.isUserLoggedIn()) {
+        messageEl.innerHTML = '<div class="salla-discount-message error">يجب تسجيل الدخول لتطبيق كود الخصم</div>';
+        setTimeout(() => {
+          this.showLoginModal();
+        }, 1500);
+        return;
+      }
+      
+      const code = input.value.trim();
+      
+      if (!code) {
+        messageEl.innerHTML = '<div class="salla-discount-message error">الرجاء إدخل كود الخصم</div>';
+        return;
+      }
+      
+      try {
+        messageEl.innerHTML = '<div class="salla-discount-message">جاري التحقق...</div>';
+        
+        const storeId = this.contextData.storeId || this.storeDomain;
+        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/validate-coupon\`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ code })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.valid) {
+          this.appliedDiscount = result.data;
+          this.discountCode = code;
+          messageEl.innerHTML = \`<div class="salla-discount-message success">\${result.data.message}</div>\`;
+          
+          // Update summary to reflect discount
+          setTimeout(() => this.updateSummaryWithDiscount(), 300);
+        } else {
+          messageEl.innerHTML = \`<div class="salla-discount-message error">\${result.message || 'كود الخصم غير صالح'}</div>\`;
+        }
+      } catch (error) {
+        console.error('[Discount] Apply error:', error);
+        messageEl.innerHTML = '<div class="salla-discount-message error">حدث خطأ، حاول مرة أخرى</div>';
+      }
+    }
+
+    // Update Summary with Discount
+    updateSummaryWithDiscount() {
+      // This will recalculate the summary including the discount
+      // Implementation depends on existing summary logic
+      console.log('Discount applied:', this.appliedDiscount);
+    }
+
+    renderPaymentMethods() {
+      if (!this.paymentMethods || this.paymentMethods.length === 0) return '';
+
+      // Icon map - ONLY these payment methods will be shown
+      const iconMap = {
+        'cod': 'cod.svg',
+        'apple_pay': 'apple.svg',
+        'stc_pay': 'stc.svg',
+        'tamara_installment': 'tamara.svg',
+        'tabby_installment': 'tabby.svg',
+        'knet': 'knet.png',
+        'mispay_installment': 'mispay.svg',
+        'google_pay': 'google.svg',
+        'mokafaa_alrajhi_loyalty': 'rajhy.svg',
+        'madfu_installment': 'madfu.svg',
+        'emkan_installment': 'emkano.svg',
+        'mada': 'mada.svg'
+      };
+
+      // Filter to only show payment methods that have icons in the map
+      const validMethods = this.paymentMethods.filter(method =>
+        method && method.slug && iconMap.hasOwnProperty(method.slug)
+      );
+
+      // If no valid methods, don't render anything
+      if (validMethods.length === 0) return '';
+
+      const baseUrl = this.apiUrl.replace('/api/v1', '');
+      const paymentBadges = validMethods.map(method => {
+        const iconFile = iconMap[method.slug];
+        const iconPath = baseUrl + '/icons/' + iconFile;
+
+        return \`
+          <div class="salla-payment-badge" title="\${method.name || ''}">
+            <img src="\${iconPath}" alt="\${method.name || method.slug}" class="salla-payment-logo" />
+          </div>
+        \`;
+      }).join('');
+
+      // Triple duplicate for smoother infinite scroll effect
+      const duplicatedBadges = paymentBadges + paymentBadges + paymentBadges;
+
+      return \`
+        <div class="salla-payment-methods">
+          <div class="salla-payment-slider" id="salla-payment-slider">
+            \${duplicatedBadges}
+          </div>
+        </div>
+      \`;
+    }
+
+    getPaymentIconSVG(slug) {
+      // This method is now deprecated but kept for backward compatibility
+      if (!slug) return '';
+
+      const baseUrl = this.apiUrl.replace('/api/v1', '');
+      const iconMap = {
+        'cod': 'cod.svg',
+        'apple_pay': 'apple.svg',
+        'stc_pay': 'stc.svg',
+        'tamara_installment': 'tamara.svg',
+        'tabby_installment': 'tabby.svg',
+        'knet': 'knet.png',
+        'mispay_installment': 'mispay.svg',
+        'google_pay': 'google.svg',
+        'mokafaa_alrajhi_loyalty': 'rajhy.svg',
+        'madfu_installment': 'madfu.svg',
+        'emkan_installment': 'emkano.svg',
+        'mada': 'mada.svg'
+      };
+
+      if (!iconMap.hasOwnProperty(slug)) {
+        return ''; // Don't return anything if icon doesn't exist
+      }
+
+      const iconFile = iconMap[slug];
+      const iconPath = baseUrl + '/icons/' + iconFile;
+
+      return '<img src="' + iconPath + '" alt="' + slug + '" class="salla-payment-logo" />';
+    }
+
+    // Start Payment Slider Auto-Scroll
+    startPaymentSliderAutoScroll() {
+      // Clear existing animation frame if any
+      if (this.paymentSliderAnimationFrame) {
+        cancelAnimationFrame(this.paymentSliderAnimationFrame);
+        this.paymentSliderAnimationFrame = null;
+      }
+
+      const slider = document.getElementById('salla-payment-slider');
+      if (!slider) {
+        return;
+      }
+
+      // Check if slider has content
+      if (slider.scrollWidth <= slider.clientWidth) {
+        return;
+      }
+
+      // Disable smooth scrolling for seamless loop
+      slider.style.scrollBehavior = 'auto';
+
+      // Calculate the width of one set (we have 3 copies)
+      const oneSetWidth = slider.scrollWidth / 3;
+
+      let lastTime = performance.now();
+      const scrollSpeed = 15; // pixels per second
+      let isPaused = false;
+      let interactionTimeout;
+
+      // Pause on interaction
+      const pauseScroll = () => {
+        isPaused = true;
+        clearTimeout(interactionTimeout);
+
+        // Resume after 2 seconds
+        interactionTimeout = setTimeout(() => {
+          isPaused = false;
+          lastTime = performance.now(); // Reset to prevent jump
+        }, 2000);
+      };
+
+      // Add event listeners
+      slider.addEventListener('touchstart', pauseScroll, { passive: true, once: false });
+      slider.addEventListener('mousedown', pauseScroll, { passive: true, once: false });
+      slider.addEventListener('wheel', pauseScroll, { passive: true, once: false });
+
+      // Pause on hover
+      slider.addEventListener('mouseenter', () => { isPaused = true; });
+      slider.addEventListener('mouseleave', () => {
+        isPaused = false;
+        lastTime = performance.now();
+      });
+
+      const animate = (currentTime) => {
+        if (!slider || !document.body.contains(slider)) {
+          if (this.paymentSliderAnimationFrame) {
+            cancelAnimationFrame(this.paymentSliderAnimationFrame);
+            this.paymentSliderAnimationFrame = null;
+          }
+          return;
+        }
+
+        if (!isPaused) {
+          const deltaTime = (currentTime - lastTime) / 1000;
+          lastTime = currentTime;
+
+          // Scroll smoothly
+          slider.scrollLeft += scrollSpeed * deltaTime;
+
+          // Infinite loop: reset when reaching end of first set
+          if (slider.scrollLeft >= oneSetWidth) {
+            slider.scrollLeft = slider.scrollLeft - oneSetWidth;
+          }
+        } else {
+          lastTime = currentTime;
+        }
+
+        this.paymentSliderAnimationFrame = requestAnimationFrame(animate);
+      };
+
+      this.paymentSliderAnimationFrame = requestAnimationFrame(animate);
+    }
+
+    // ===== END NEW FEATURE COMPONENTS =====
+
     show() {
       if (this.modalElement) {
         this.modalElement.classList.add('show');
         document.body.style.overflow = 'hidden';
+        
+        // Start timer, reviews, and payment slider after modal shows
+        setTimeout(() => {
+          this.startTimer();
+          this.startReviewsAutoScroll();
+          this.startPaymentSliderAutoScroll();
+        }, 300);
       }
     }
 
@@ -2461,6 +5045,27 @@ router.get("/modal.js", (req, res) => {
       if (this.modalElement) {
         this.modalElement.classList.remove('show');
         document.body.style.overflow = '';
+
+        // Clear intervals
+        if (this.timerInterval) {
+          clearInterval(this.timerInterval);
+          this.timerInterval = null;
+        }
+
+        if (this.reviewsInterval) {
+          clearInterval(this.reviewsInterval);
+          this.reviewsInterval = null;
+        }
+
+        if (this.modernReviewsInterval) {
+          clearInterval(this.modernReviewsInterval);
+          this.modernReviewsInterval = null;
+        }
+
+        if (this.paymentSliderAnimationFrame) {
+          cancelAnimationFrame(this.paymentSliderAnimationFrame);
+          this.paymentSliderAnimationFrame = null;
+        }
 
         // Clear global reference
         if (window.sallaBundleModal === this) {

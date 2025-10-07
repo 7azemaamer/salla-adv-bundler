@@ -8,39 +8,58 @@ export const registerNewStore = asyncWrapper(async (req, res) => {
   const { event, merchant } = req.body;
   const payload = req.body?.data;
 
-  // Enhanced logging for debugging
-  console.log(`[Webhook]: Received event ${event} for merchant ${merchant}`);
-  console.log(`[Webhook]: Full payload:`, JSON.stringify(req.body, null, 2));
-  console.log(`[Webhook]: Headers:`, JSON.stringify(req.headers, null, 2));
-
   switch (event) {
     case "app.store.authorize":
+    case "app.installed":
       await storeService.saveStore({ store_id: merchant, payload });
-      console.log(`[Webhook]: Store ${merchant} installed & saved`);
+      console.log(
+        `[Webhook]: Store ${merchant} installed & saved (event: ${event})`
+      );
       break;
-
+    case "app.uninstalled":
+      await storeService.deleteStore(merchant);
+      console.log(
+        `[Webhook]: Store ${merchant} uninstalled (soft deleted - bundles disabled)`
+      );
+      break;
     case "app.subscription.started":
-      await storeService.updateStorePlan(merchant, payload.plan_type || "basic");
-      console.log(`[Webhook]: Store ${merchant} subscription started with plan: ${payload.plan_type}`);
+      await storeService.updateStorePlan(
+        merchant,
+        payload.plan_type || "basic"
+      );
+      console.log(
+        `[Webhook]: Store ${merchant} subscription started with plan: ${payload.plan_type}`
+      );
       break;
 
     case "app.subscription.renewed":
-      await storeService.updateStorePlan(merchant, payload.plan_type || "basic");
-      console.log(`[Webhook]: Store ${merchant} subscription renewed with plan: ${payload.plan_type}`);
+      await storeService.updateStorePlan(
+        merchant,
+        payload.plan_type || "basic"
+      );
+      console.log(
+        `[Webhook]: Store ${merchant} subscription renewed with plan: ${payload.plan_type}`
+      );
       break;
 
     case "app.subscription.canceled":
       await storeService.updateStorePlan(merchant, "basic");
-      console.log(`[Webhook]: Store ${merchant} subscription canceled, reverted to basic plan`);
+      console.log(
+        `[Webhook]: Store ${merchant} subscription canceled, reverted to basic plan`
+      );
       break;
 
     case "app.subscription.expired":
       await storeService.updateStorePlan(merchant, "basic");
-      console.log(`[Webhook]: Store ${merchant} subscription expired, reverted to basic plan`);
+      console.log(
+        `[Webhook]: Store ${merchant} subscription expired, reverted to basic plan`
+      );
       break;
 
     default:
-      console.log(`[Webhook]: Unhandled event ${event} for merchant ${merchant}`);
+      console.log(
+        `[Webhook]: Unhandled event ${event} for merchant ${merchant}`
+      );
   }
 
   res.status(200).send("ok");

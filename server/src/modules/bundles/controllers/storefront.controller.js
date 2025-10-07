@@ -1,6 +1,14 @@
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import bundleService from "../services/bundle.service.js";
 import settingsService from "../../settings/services/settings.service.js";
+import {
+  fetchStoreReviews,
+  formatReview,
+} from "../services/reviews.service.js";
+import { fetchPaymentMethods } from "../services/payment.service.js";
+import axios from "axios";
+import storeService from "../../stores/services/store.service.js";
+import { getValidAccessToken } from "../../../utils/tokenHelper.js";
 
 /* ===============================================
  * Get bundles for a specific product (public endpoint)
@@ -130,4 +138,227 @@ export const trackBundleInteraction = asyncWrapper(async (req, res) => {
     success: true,
     message: `${action} tracked successfully`,
   });
+});
+
+/* ===============================================
+ * Get Store Reviews (Public endpoint for modal)
+ * =============================================== */
+export const getStoreReviews = asyncWrapper(async (req, res) => {
+  const { store_id } = req.params;
+  const { limit = 10 } = req.query;
+
+  try {
+    // Get valid access token (will refresh if needed)
+    const accessToken = await getValidAccessToken(store_id);
+
+    if (!accessToken) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "No access token configured",
+      });
+    }
+
+    // Fetch reviews from Salla API
+    const reviewsResult = await fetchStoreReviews(accessToken, {
+      type: "rating",
+      is_published: true,
+      per_page: parseInt(limit),
+    });
+
+    // Format reviews for display
+    const formattedReviews = reviewsResult.data.map(formatReview);
+
+    res.status(200).json({
+      success: true,
+      data: formattedReviews,
+      total: formattedReviews.length,
+    });
+  } catch (error) {
+    console.error("Error fetching reviews:", error.message);
+    return res.status(200).json({
+      success: true,
+      data: [],
+      message: "Failed to fetch reviews",
+    });
+  }
+});
+
+/* ===============================================
+ * Get Payment Methods (Public endpoint for modal)
+ * =============================================== */
+export const getPaymentMethods = asyncWrapper(async (req, res) => {
+  const { store_id } = req.params;
+
+  try {
+    // First, try to get cached payment methods from store
+    const store = await storeService.getStoreByStoreId(store_id);
+
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: "Store not found",
+      });
+    }
+
+    // Check if cached payment methods exist and are fresh (less than 24 hours old)
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+    const isCacheFresh =
+      store.payment_methods_updated_at &&
+      Date.now() - new Date(store.payment_methods_updated_at).getTime() <
+        CACHE_DURATION;
+
+    if (
+      isCacheFresh &&
+      store.payment_methods &&
+      store.payment_methods.length > 0
+    ) {
+      console.log("[Payment Methods] Using cached data for store:", store_id);
+      return res.status(200).json({
+        success: true,
+        data: store.payment_methods,
+        cached: true,
+      });
+    }
+
+    // If cache is stale or doesn't exist, fetch fresh data
+    console.log("[Payment Methods] Fetching fresh data for store:", store_id);
+    const accessToken = await getValidAccessToken(store_id);
+
+    if (!accessToken) {
+      return res.status(200).json({
+        success: true,
+        data: store.payment_methods || [],
+        message: "No access token configured, using cached data",
+      });
+    }
+
+    const methodsResult = await fetchPaymentMethods(accessToken);
+
+    // Update cache in store
+    store.payment_methods = methodsResult.data;
+    store.payment_methods_updated_at = new Date();
+    await store.save();
+
+    console.log(
+      "[Payment Methods] Cached",
+      methodsResult.data.length,
+      "payment methods"
+    );
+
+    res.status(200).json({
+      success: true,
+      data: methodsResult.data,
+      cached: false,
+    });
+  } catch (error) {
+    console.error("Error fetching payment methods:", error.message);
+
+    // Fallback to cached data if available
+    const store = await storeService.getStoreByStoreId(store_id);
+    if (store && store.payment_methods && store.payment_methods.length > 0) {
+      return res.status(200).json({
+        success: true,
+        data: store.payment_methods,
+        message: "Using cached payment methods due to error",
+        cached: true,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: [],
+      message: "Failed to fetch payment methods",
+    });
+  }
+});
+
+/* ===============================================
+ * Validate Discount/Coupon Code (Public endpoint for modal)
+ * =============================================== */
+export const validateDiscountCode = asyncWrapper(async (req, res) => {
+  const { store_id } = req.params;
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({
+      success: false,
+      message: "Coupon code is required",
+    });
+  }
+
+  try {
+    // Get valid access token (will refresh if needed)
+    const accessToken = await getValidAccessToken(store_id);
+
+    if (!accessToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Store not configured",
+      });
+    }
+
+    // Try to get coupon by code - Salla API approach
+    // First, try to list coupons with search by code
+    const response = await axios.get("https://api.salla.dev/admin/v2/coupons", {
+      params: {
+        code: code,
+        per_page: 1,
+      },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+      },
+    });
+    console.log("[Coupon Validation] Response:", JSON.stringify(response.data));
+
+    if (response.data && response.data.data && response.data.data.length > 0) {
+      const coupon = response.data.data[0];
+
+      // Check if coupon is active and not expired
+      const now = new Date();
+      const isActive = coupon.status === "active" || coupon.status === 1;
+      const isExpired = coupon.expires_at
+        ? new Date(coupon.expires_at) < now
+        : false;
+
+      if (!isActive || isExpired) {
+        return res.status(200).json({
+          success: false,
+          valid: false,
+          message: isExpired
+            ? "كود الخصم منتهي الصلاحية"
+            : "كود الخصم غير فعال",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        valid: true,
+        data: {
+          code: coupon.code,
+          discount_type: coupon.discount_type,
+          discount_amount: coupon.discount_amount || coupon.amount,
+          expires_at: coupon.expires_at,
+          message: `تم تطبيق كود الخصم: ${coupon.code}`,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: false,
+      valid: false,
+      message: "كود الخصم غير صالح",
+    });
+  } catch (error) {
+    console.error(
+      "Validate coupon error:",
+      error.response?.data || error.message
+    );
+    return res.status(200).json({
+      success: false,
+      valid: false,
+      message: error.response?.data?.message || "كود الخصم غير صالح",
+    });
+  }
 });
