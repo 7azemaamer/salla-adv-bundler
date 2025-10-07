@@ -256,6 +256,7 @@ class SnippetController {
         this.hideSallaOfferModal();
         this.hideProductOptions();
         this.hideQuantityInput();
+        this.hideProductPrice();
 
       } catch (error) {
         console.error('[Salla Bundle] Error:', error);
@@ -674,6 +675,189 @@ class SnippetController {
                   const parentSection = element.closest('section');
                   if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
                     parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                  }
+                });
+              }
+            }
+          });
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    hideProductPrice() {
+      if (!this.settings.hide_product_price) {
+        return;
+      }
+
+      // Add CSS to hide the price section within product-form
+      const style = document.createElement('style');
+      style.id = 'salla-bundle-hide-product-price';
+      style.textContent = \`
+        /* Hide product price section in product form for target products with bundles */
+        /* Method 1: Hide sections containing price-wrapper */
+        form.product-form section:has(.price-wrapper),
+        form.product-form section:has(.total-price),
+        form.product-form section:has(.before-price),
+        form.product-form section:has(.price_is_on_sale),
+        form.product-form section:has(.starting-or-normal-price) {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        
+        /* Method 2: Hide direct price elements */
+        form.product-form .price-wrapper,
+        form.product-form .total-price,
+        form.product-form .before-price,
+        form.product-form .price_is_on_sale,
+        form.product-form .starting-or-normal-price {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        
+        /* Method 3: Hide sections with price-related labels */
+        form.product-form section:has(.form-label b:contains("السعر")),
+        form.product-form section:has(.form-label:contains("السعر")),
+        form.product-form section:has(label:contains("Price")),
+        form.product-form section:has(label:contains("السعر")) {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        
+        /* ALWAYS keep bundle UI visible - override any hiding */
+        .salla-bundle-container,
+        .salla-bundle-ui,
+        [data-salla-bundle="true"],
+        .salla-bundle-btn {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+      \`;
+
+      // Check if style already exists
+      const existingStyle = document.getElementById('salla-bundle-hide-product-price');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      document.head.appendChild(style);
+
+      // Also hide via JS (backup method)
+      const hidePriceElements = () => {
+        const productForms = document.querySelectorAll('form.product-form');
+        productForms.forEach(form => {
+          // Find price-related elements
+          const priceSelectors = [
+            '.price-wrapper',
+            '.total-price',
+            '.before-price',
+            '.price_is_on_sale',
+            '.starting-or-normal-price',
+            'section:has(.price-wrapper)',
+            'section:has(.total-price)'
+          ];
+          
+          priceSelectors.forEach(selector => {
+            try {
+              const elements = form.querySelectorAll(selector);
+              elements.forEach(element => {
+                // Check if this is a price section (not bundle UI)
+                if (!element.closest('[data-salla-bundle]') && !element.classList.contains('salla-bundle-container')) {
+                  // For sections, check if they contain price-related classes
+                  if (element.tagName === 'SECTION') {
+                    const hasPriceContent = element.querySelector('.price-wrapper, .total-price, .before-price, .price_is_on_sale, .starting-or-normal-price');
+                    if (hasPriceContent) {
+                      element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                    }
+                  } else {
+                    element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                  }
+                }
+              });
+            } catch (e) {
+              // Skip selectors that are not supported
+            }
+          });
+
+          // Also check for sections with price labels
+          const sections = form.querySelectorAll('section');
+          sections.forEach(section => {
+            if (section.querySelector('[data-salla-bundle]')) return; // Don't hide bundle UI
+            
+            const labels = section.querySelectorAll('.form-label, label');
+            labels.forEach(label => {
+              const labelText = label.textContent || '';
+              if (labelText.includes('السعر') || labelText.includes('Price') || labelText.includes('price')) {
+                section.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+              }
+            });
+          });
+
+          // Ensure bundle UI is always visible
+          const bundleContainers = form.querySelectorAll('.salla-bundle-container, [data-salla-bundle="true"]');
+          bundleContainers.forEach(container => {
+            container.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;';
+          });
+        });
+      };
+
+      // Hide existing elements immediately
+      hidePriceElements();
+
+      // Keep checking every 500ms for dynamically loaded elements
+      setInterval(hidePriceElements, 500);
+
+      // Observe for new elements being added to DOM
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) {
+              // Check if the node is a price element
+              const priceClasses = ['price-wrapper', 'total-price', 'before-price', 'price_is_on_sale', 'starting-or-normal-price'];
+              const hasPriceClass = priceClasses.some(cls => node.classList && node.classList.contains(cls));
+              
+              if (hasPriceClass) {
+                const productForm = node.closest('form.product-form');
+                if (productForm && !node.closest('[data-salla-bundle]')) {
+                  node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                }
+              }
+              
+              // Check if node is a section containing price elements
+              if (node.tagName === 'SECTION') {
+                const productForm = node.closest('form.product-form');
+                if (productForm && !node.querySelector('[data-salla-bundle]')) {
+                  const hasPriceContent = node.querySelector('.price-wrapper, .total-price, .before-price, .price_is_on_sale, .starting-or-normal-price');
+                  if (hasPriceContent) {
+                    node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                  }
+                }
+              }
+              
+              // Check children
+              if (node.querySelectorAll) {
+                const priceElements = node.querySelectorAll('form.product-form .price-wrapper, form.product-form .total-price, form.product-form .before-price');
+                priceElements.forEach(element => {
+                  if (!element.closest('[data-salla-bundle]')) {
+                    element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                    
+                    // Also hide parent section if it's within product-form
+                    const parentSection = element.closest('section');
+                    if (parentSection && parentSection.closest('form.product-form') && !parentSection.querySelector('[data-salla-bundle]')) {
+                      parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+                    }
                   }
                 });
               }
