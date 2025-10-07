@@ -1,0 +1,11 @@
+# Project documentation files
+PROJECT.md
+SALLA_IMPLEMENTATION_GUIDE.md
+
+# Claude AI files
+.claude
+
+# Node modules
+dashboard/node_modules/
+server/node_modules/
+
