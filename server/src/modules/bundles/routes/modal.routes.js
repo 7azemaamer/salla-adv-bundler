@@ -15,101 +15,20 @@ router.get("/modal.js", (req, res) => {
     "Access-Control-Allow-Origin": "*",
   });
 
-  // Minified modal script with external CSS
   const modalScript = `
-(function(){'use strict';
-// Load external CSS file for better caching and smaller JS bundle
-(function loadModalCSS(){
-if(!document.getElementById('salla-bundle-modal-styles')){
-const link=document.createElement('link');
-link.id='salla-bundle-modal-styles';
-link.rel='stylesheet';
-link.href='https://${req.get("host")}/bundle-modal.css?v=1.0.1';
-document.head.appendChild(link);
-}
-})();
-const riyalSvgIcon=\`<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display:inline-block;vertical-align:middle;margin:0 2px"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/></svg>\`;
-function formatPrice(price){
-const formatted=new Intl.NumberFormat('ar-SA',{minimumFractionDigits:2,maximumFractionDigits:2}).format(price);
-return formatted+' '+riyalSvgIcon;
-}
-class SallaBundleModal{
-constructor(productId,contextData={}){
-this.productId=productId;
-this.contextData=contextData;
-this.storeDomain=contextData.storeDomain||contextData;
-this.apiUrl='https://${req.get("host")}/api/v1';
-this.bundleData=null;
-this.modalElement=null;
-this.selectedBundle=null;
-}
-async initialize(){
-try{
-const params=new URLSearchParams();
-if(this.contextData.storeId){
-params.append('store',this.contextData.storeId);
-}else if(this.storeDomain){
-params.append('store',this.storeDomain);
-}
-if(this.contextData.customerId){
-params.append('customer_id',this.contextData.customerId);
-}
-const response=await fetch(\`\${this.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`,{
-method:'GET',
-headers:{'Content-Type':'application/json','X-Store-Domain':this.storeDomain||''}
-});
-if(!response.ok){
-throw new Error(\`Failed to load bundle: \${response.statusText}\`);
-}
-this.bundleData=await response.json();
-this.createModal();
-this.show();
-return this;
-}catch(error){
-console.error('[Bundle Modal] Initialization error:',error);
-this.showToast('فشل تحميل البيانات. حاول مرة أخرى.','error');
-throw error;
-}
-}
-createModal(){
-this.modalElement=document.createElement('div');
-this.modalElement.className='salla-bundle-modal';
-this.modalElement.innerHTML=\`
-<div class="salla-bundle-panel">
-<div class="salla-bundle-header">
-<div class="salla-bundle-header-row">
-<h2 class="salla-bundle-title">\${this.bundleData.data?.title||'اختر باقتك'}</h2>
-<button class="salla-bundle-close" aria-label="إغلاق">×</button>
-</div>
-</div>
-<div class="salla-bundle-body"></div>
-<div class="salla-sticky-summary"></div>
-</div>
-\`;
-document.body.appendChild(this.modalElement);
-window.sallaBundleModal=this;
-this.modalElement.onclick=(e)=>{if(e.target===this.modalElement)this.hide();};
-const closeBtn=this.modalElement.querySelector('.salla-bundle-close');
-closeBtn.onclick=()=>this.hide();
-this.renderContent();
-}
-renderContent(){
-const body=this.modalElement.querySelector('.salla-bundle-body');
-const summary=this.modalElement.querySelector('.salla-sticky-summary');
-const bundleConfig=this.bundleData.data||this.bundleData;
-const bundles=bundleConfig.bundles||[];
-if(bundles.length===0){
-body.innerHTML=\`<div class="salla-bundle-section"><div style="text-align:center;color:var(--text-2);padding:20px">لا توجد عروض متاحة حالياً.</div></div>\`;
-return;
-}
-const targetProductData=bundleConfig.target_product_data;
-const baseProductPrice=targetProductData?.price||100.00;
-const bundleDisplayData=bundles.map((tier,index)=>{
-const buyQuantity=tier.buy_quantity||1;
-const subtotal=buyQuantity*baseProductPrice;
-const unavailableProducts=this.getUnavailableProducts(bundleConfig,tier);
-const hasUnavailableProducts=unavailableProducts.length>0;
-const targetProductUnavailable=bundleConfig.target_product_data?this.isProductCompletelyUnavailable(bundleConfig.target_product_data):false;
+(function() {
+  'use strict';
+
+  // Load external CSS file for better caching and smaller JS bundle
+  if (!document.getElementById('salla-bundle-modal-styles')) {
+    const link = document.createElement('link');
+    link.id = 'salla-bundle-modal-styles';
+    link.rel = 'stylesheet';
+    link.href = 'https://${req.get("host")}/bundle-modal.css?v=1.0.1';
+    document.head.appendChild(link);
+  }
+
+  // Riyal SVG icon (inline)
   const riyalSvgIcon = \`<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display: inline-block; vertical-align: middle; margin: 0 2px;">
     <path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/>
     <path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/>
