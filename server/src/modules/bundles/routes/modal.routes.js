@@ -2705,6 +2705,7 @@ router.get("/modal.js", (req, res) => {
               </div>
             </div>
             \${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
+            \${this.renderReviews()}
           </div>
         </div>
       \`;
@@ -2725,6 +2726,7 @@ router.get("/modal.js", (req, res) => {
       }
       
       const totalSavings = freeGifts.reduce((sum, o) => sum + (o.product_data?.price || 100), 0);
+      const isLastStep = this.currentStep === this.totalSteps;
       
       return \`
         <div class="salla-step-container" data-step="3">
@@ -2734,6 +2736,7 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-gifts-grid">
               \${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
             </div>
+            \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
           </div>
         </div>
       \`;
@@ -2792,6 +2795,8 @@ router.get("/modal.js", (req, res) => {
         return sum;
       }, 0);
 
+      const isLastStep = this.currentStep === this.totalSteps;
+
       return \`
         <div class="salla-step-container" data-step="4">
           <div class="salla-bundle-section">
@@ -2800,6 +2805,7 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-discounted-scroll">
               \${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
             </div>
+            \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
           </div>
         </div>
       \`;
@@ -2881,6 +2887,16 @@ router.get("/modal.js", (req, res) => {
                   <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
                 </div>
               </div>
+              
+              <!-- كود الخصم - Discount Code Section -->
+              \${this.renderDiscountCode()}
+              
+              <!-- Timer at the end after discount code -->
+              \${this.renderTimer() ? \`
+                <div style="margin-top: 16px; display: flex; justify-content: center;">
+                  \${this.renderTimer()}
+                </div>
+              \` : ''}
             </div>
           </div>
         </div>
@@ -2896,28 +2912,8 @@ router.get("/modal.js", (req, res) => {
       const totalPrice = currentSelectedBundleData ? currentSelectedBundleData.price : 0;
       const originalTotal = currentSelectedBundleData ? (currentSelectedBundleData.price + (currentSelectedBundleData.savings || 0)) : 0;
       const hasSavings = currentSelectedBundleData && currentSelectedBundleData.savings > 0;
-      
-      // Dynamic content based on step
-      const isLastStep = this.currentStep === this.totalSteps;
-      const showReviews = this.currentStep === 2; // Step 2: Reviews only
-      const showShipping = (this.currentStep === 3 || this.currentStep === 4) && !isLastStep; // Steps 3 & 4: Shipping only, but not on last step
-      const showTimer = isLastStep; // Last step: Timer only
 
       summary.innerHTML = \`
-        \${''/* Timer - only on last step (step 5) */}
-        \${showTimer && this.renderTimer() ? \`
-          <div style="margin-bottom: 12px; display: flex; justify-content: center;">
-            \${this.renderTimer()}
-          </div>
-        \` : ''}
-        
-        \${''/* Free Shipping Banner - only on steps 3 & 4 */}
-        \${showShipping ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
-        
-        \${''/* Reviews - only on step 2 */}
-        \${showReviews ? this.renderReviews() : ''}
-        
-        \${''/* this.renderDiscountCode() */}
         <div class="salla-footer-compact">
           <div>
             <div class="salla-footer-total">المجموع</div>
@@ -4932,7 +4928,11 @@ router.get("/modal.js", (req, res) => {
         <div class="salla-discount-section">
           <div class="salla-discount-header" onclick="window.sallaBundleModal.toggleDiscountSection()">
             <div class="salla-discount-title">
-              🎟️ لديك كود خصم؟
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle; margin-left: 6px;">
+                <path d="M9 2L7 6H3C2.45 6 2 6.45 2 7V9C3.1 9 4 9.9 4 11C4 12.1 3.1 13 2 13V15C2 15.55 2.45 16 3 16H7L9 20L15 22L17 18H21C21.55 18 22 17.55 22 17V15C20.9 15 20 14.1 20 13C20 11.9 20.9 11 22 11V9C22 8.45 21.55 8 21 8H17L15 4L9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9 8L15 14M15 8L9 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              لديك كود خصم؟
             </div>
             <span class="salla-discount-toggle" id="salla-discount-toggle">▼</span>
           </div>
