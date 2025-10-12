@@ -198,18 +198,18 @@ export default function DashboardHome() {
     },
     {
       title: "عرض التحليلات",
-      description: "تحليل أداء الباقات والمبيعات",
+      description: "تحليل أداء العروض والمبيعات",
       icon: IconChartBar,
       color: "violet",
       buttonText: "عرض التقارير",
       onClick: () => navigate("/dashboard/analytics"),
     },
     {
-      title: "إدارة الباقات",
-      description: "عرض وتعديل الباقات الحالية",
+      title: "إدارة العروض",
+      description: "عرض وتعديل العروض الحالية",
       icon: IconPackage,
       color: "green",
-      buttonText: "إدارة الباقات",
+      buttonText: "إدارة العروض",
       onClick: () => navigate("/dashboard/bundles"),
     },
   ];
@@ -241,7 +241,7 @@ export default function DashboardHome() {
           color="yellow"
           variant="light"
         >
-          لقد وصلت إلى الحد الأقصى لعدد الباقات في خطتك الحالية.
+          لقد وصلت إلى الحد الأقصى لعدد العروض في خطتك الحالية.
           <Button variant="light" size="xs" ml="sm">
             ترقية الخطة
           </Button>
@@ -251,7 +251,7 @@ export default function DashboardHome() {
       {/* Stats Grid */}
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
         <StatCard
-          title="إجمالي الباقات"
+          title="إجمالي العروض"
           value={stats.total}
           icon={IconPackage}
           color="blue"
@@ -273,7 +273,7 @@ export default function DashboardHome() {
           color="violet"
           description={`${stats.totalConversions} من ${stats.totalClicks}`}
         />
-{/* 
+        {/* 
         <StatCard
           title="إجمالي الإيرادات"
           value={`${stats.totalRevenue.toLocaleString()} ريال`}
@@ -350,7 +350,7 @@ export default function DashboardHome() {
             className="h-full"
           >
             <Group justify="space-between" mb="md">
-              <Title order={3}>الباقات الأخيرة</Title>
+              <Title order={3}>العروض الأخيرة</Title>
               <Button
                 variant="light"
                 size="xs"

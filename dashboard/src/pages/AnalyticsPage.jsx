@@ -7,7 +7,7 @@ export default function AnalyticsPage() {
         التحليلات والتقارير
       </Title>
       <Text className="text-gray-600 mb-8">
-        تحليل أداء الباقات والمبيعات والتحويلات
+        تحليل أداء العروض والمبيعات والتحويلات
       </Text>
 
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">

@@ -18,12 +18,50 @@ class SettingsService {
           hide_product_options: false,
           hide_quantity_input: false,
           hide_price_section: false,
+          sticky_button: {
+            enabled: false,
+            text: "🛍️ اطلب باقتك الآن",
+            bg_color: "#10b981",
+            text_color: "#ffffff",
+            position: "bottom-center",
+            width_type: "auto",
+            custom_width: 250,
+          },
+          free_shipping: {
+            enabled: false,
+            mode: "always",
+            min_price: 0,
+            text: "شحن مجاني لهذه الباقة",
+            progress_text: "أضف {amount} ريال للحصول على شحن مجاني",
+            bg_color: "#10b981",
+            text_color: "#ffffff",
+            icon: "🚚",
+            progress_color: "#ffffff",
+            progress_bg_color: "rgba(255, 255, 255, 0.3)",
+          },
+          timer: {
+            enabled: false,
+            duration: 21600,
+            duration_type: "6h",
+            auto_restart: true,
+            effect: "pulse",
+            text_color: "#0E1012",
+            bg_color: "#FFFFFF",
+            border_color: "#E5E8EC",
+            border_radius: 12,
+            label: "عرض محدود ينتهي خلال",
+            label_color: "#60646C",
+            font_size: 14,
+          },
         });
       }
 
       return settings;
     } catch (error) {
-      console.error(`[Settings]: Failed to get settings for store ${store_id}:`, error);
+      console.error(
+        `[Settings]: Failed to get settings for store ${store_id}:`,
+        error
+      );
       throw new AppError("Failed to fetch settings", 500);
     }
   }
@@ -33,8 +71,18 @@ class SettingsService {
    * ===============*/
   async updateSettings(store_id, updates) {
     try {
-      // Validate updates
-      const allowedFields = ["hide_default_buttons", "hide_salla_offer_modal", "hide_product_options", "hide_quantity_input", "hide_price_section"];
+      // Validate updates - now supports both flat fields and nested objects
+      const allowedFields = [
+        "hide_default_buttons",
+        "hide_salla_offer_modal",
+        "hide_product_options",
+        "hide_quantity_input",
+        "hide_price_section",
+        "sticky_button", // Nested object
+        "free_shipping", // Nested object
+        "timer", // Nested object
+      ];
+
       const filteredUpdates = {};
 
       for (const field of allowedFields) {
@@ -54,14 +102,13 @@ class SettingsService {
         { new: true, upsert: true, runValidators: true }
       );
 
-      console.log(
-        `[Settings]: Updated settings for store ${store_id}:`,
-        filteredUpdates
-      );
 
       return settings;
     } catch (error) {
-      console.error(`[Settings]: Failed to update settings for store ${store_id}:`, error);
+      console.error(
+        `[Settings]: Failed to update settings for store ${store_id}:`,
+        error
+      );
       throw error instanceof AppError
         ? error
         : new AppError("Failed to update settings", 500);

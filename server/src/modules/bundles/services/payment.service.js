@@ -11,7 +11,6 @@ export const fetchPaymentMethods = async (accessToken) => {
         },
       }
     );
-    console.log("Get payments", JSON.stringify(response.data));
 
     if (response.data && response.data.data) {
       // Map to simpler format with icons

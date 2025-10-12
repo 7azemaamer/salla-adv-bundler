@@ -77,9 +77,7 @@ class BundleService {
       created_by: bundleData.created_by || "system",
     });
 
-    console.log(
-      `[Bundle]: Created bundle ${bundle._id} for store ${store_id} with real product data`
-    );
+
     return bundle;
   }
 
@@ -98,13 +96,8 @@ class BundleService {
       });
     });
 
-    console.log(
-      `[Bundle Service] Fetching product data for IDs: ${allProductIds.join(
-        ", "
-      )}`
-    );
 
-    // Fetch all products from Salla API
+
     const { products, failed } = await productService.getMultipleProducts(
       store_id,
       allProductIds
@@ -286,9 +279,7 @@ class BundleService {
         offers_count: savedOffers.length,
       });
 
-      console.log(
-        `[Bundle]: Generated ${savedOffers.length} offers for bundle ${bundle_id}`
-      );
+
 
       return {
         success: true,

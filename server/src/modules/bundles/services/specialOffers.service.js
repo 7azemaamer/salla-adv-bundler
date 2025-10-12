@@ -123,9 +123,7 @@ class SpecialOffersService {
         }
       );
 
-      console.log(
-        `[SpecialOffers]: Updated offer ${offer_id} status to ${status} for store ${store_id}`
-      );
+
       return response.data;
     } catch (error) {
       console.error(
@@ -413,10 +411,6 @@ class SpecialOffersService {
       },
     };
 
-    console.log(
-      `[SpecialOffers]: 📦 CONSOLIDATED PAYLOAD FOR TIER ${tier.tier}:`
-    );
-    console.log(JSON.stringify(payload, null, 2));
 
     return payload;
   }

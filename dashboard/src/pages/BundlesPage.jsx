@@ -149,7 +149,7 @@ function BundleCard({
                 }
                 disabled={actionLoading === "activate"}
               >
-                تفعيل الباقة
+                تفعيل العرض المركب
               </Menu.Item>
             )}
 
@@ -165,7 +165,7 @@ function BundleCard({
                 }
                 disabled={actionLoading === "deactivate"}
               >
-                إيقاف الباقة
+                إيقاف العرض المركب
               </Menu.Item>
             )}
 
@@ -181,7 +181,7 @@ function BundleCard({
                 }
                 disabled={actionLoading === "activate"}
               >
-                إعادة تفعيل الباقة
+                إعادة تفعيل العرض المركب
               </Menu.Item>
             )}
 
@@ -304,7 +304,7 @@ function DeleteConfirmModal({
     <Modal opened={opened} onClose={onClose} title="تأكيد الحذف" centered>
       <Stack gap="md">
         <Alert color="red" variant="light">
-          هل أنت متأكد من حذف الباقة "{bundleName}"؟ سيتم حذف جميع العروض
+          هل أنت متأكد من حذف العرض المركب "{bundleName}"؟ سيتم حذف جميع العروض
           المرتبطة بها نهائياً.
         </Alert>
 
@@ -379,7 +379,7 @@ export default function BundlesPage() {
       await deleteBundle(bundleToDelete._id);
       notifications.show({
         title: "تم الحذف بنجاح",
-        message: `تم حذف الباقة "${bundleToDelete.name}" بنجاح`,
+        message: `تم حذف العرض المركب "${bundleToDelete.name}" بنجاح`,
         color: "green",
         icon: <IconCheck size="1rem" />,
       });
@@ -388,7 +388,7 @@ export default function BundlesPage() {
     } catch (error) {
       notifications.show({
         title: "خطأ في الحذف",
-        message: error.message || "حدث خطأ أثناء حذف الباقة",
+        message: error.message || "حدث خطأ أثناء حذف العرض المركب",
         color: "red",
         icon: <IconX size="1rem" />,
       });
@@ -401,7 +401,8 @@ export default function BundlesPage() {
       id: `activate-${bundleId}`,
       loading: true,
       title: "جاري التفعيل...",
-      message: "جاري إنشاء العروض وتفعيل الباقة، قد يستغرق الأمر بضع ثوانٍ...",
+      message:
+        "جاري إنشاء العروض وتفعيل العرض المركب، قد يستغرق الأمر بضع ثوانٍ...",
       autoClose: false,
       withCloseButton: false,
     });
@@ -411,8 +412,8 @@ export default function BundlesPage() {
       notifications.update({
         id: `activate-${bundleId}`,
         loading: false,
-        title: "تم تفعيل الباقة",
-        message: "تم إنشاء العروض وتفعيل الباقة بنجاح",
+        title: "تم تفعيل العرض المركب",
+        message: "تم إنشاء العروض وتفعيل العرض المركب بنجاح",
         color: "green",
         icon: <IconCheck size="1rem" />,
         autoClose: 5000,
@@ -422,7 +423,7 @@ export default function BundlesPage() {
         id: `activate-${bundleId}`,
         loading: false,
         title: "خطأ في التفعيل",
-        message: error.message || "حدث خطأ أثناء تفعيل الباقة",
+        message: error.message || "حدث خطأ أثناء تفعيل العرض المركب",
         color: "red",
         icon: <IconX size="1rem" />,
         autoClose: 5000,
@@ -437,8 +438,8 @@ export default function BundlesPage() {
     //   loading: true,
     //   title: newStatus === "active" ? "جاري إعادة التفعيل..." : "جاري الإيقاف...",
     //   message: newStatus === "active"
-    //     ? "جاري إنشاء العروض وتفعيل الباقة، قد يستغرق الأمر بضع ثوانٍ..."
-    //     : "جاري إيقاف الباقة وحذف العروض...",
+    //     ? "جاري إنشاء العروض وتفعيل العرض المركب، قد يستغرق الأمر بضع ثوانٍ..."
+    //     : "جاري إيقاف العرض المركب وحذف العروض...",
     //   autoClose: false,
     //   withCloseButton: false,
     // });
@@ -449,8 +450,8 @@ export default function BundlesPage() {
         notifications.update({
           id: `toggle-${bundleId}`,
           loading: false,
-          title: "تم إيقاف الباقة",
-          message: "تم إيقاف الباقة وحذف جميع عروضها بنجاح",
+          title: "تم إيقاف العرض المركب",
+          message: "تم إيقاف العرض المركب وحذف جميع عروضها بنجاح",
           color: "orange",
           icon: <IconCheck size="1rem" />,
           autoClose: 5000,
@@ -460,8 +461,8 @@ export default function BundlesPage() {
         notifications.update({
           id: `toggle-${bundleId}`,
           loading: false,
-          title: "تم إعادة تفعيل الباقة",
-          message: "تم إنشاء العروض وإعادة تفعيل الباقة بنجاح",
+          title: "تم إعادة تفعيل العرض المركب",
+          message: "تم إنشاء العروض وإعادة تفعيل العرض المركب بنجاح",
           color: "green",
           icon: <IconCheck size="1rem" />,
           autoClose: 5000,
@@ -472,7 +473,7 @@ export default function BundlesPage() {
         id: `toggle-${bundleId}`,
         loading: false,
         title: "خطأ في العملية",
-        message: error.message || "حدث خطأ أثناء تحديث حالة الباقة",
+        message: error.message || "حدث خطأ أثناء تحديث حالة العرض المركب",
         color: "red",
         icon: <IconX size="1rem" />,
         autoClose: 5000,
@@ -487,7 +488,7 @@ export default function BundlesPage() {
         <Group justify="space-between">
           <div>
             <Title order={1} className="text-gray-800 mb-2">
-              إدارة الباقات
+              إدارة العروض
             </Title>
             <Text className="text-gray-600">
               عرض وإدارة جميع باقاتك والعروض الخاصة
@@ -514,7 +515,7 @@ export default function BundlesPage() {
         <Card shadow="sm" padding="md" radius="md" withBorder>
           <Group gap="md">
             <TextInput
-              placeholder="البحث في الباقات..."
+              placeholder="البحث في العروض..."
               leftSection={<IconSearch size="0.9rem" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

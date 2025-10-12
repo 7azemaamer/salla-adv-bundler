@@ -23,7 +23,6 @@ import useAuthStore from "../stores/useAuthStore";
 export default function LoginPage() {
   const { isAuthenticated, loginViaSalla, error } = useAuthStore();
 
-
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -42,7 +41,7 @@ export default function LoginPage() {
     {
       icon: <IconTrendingUp size="1.2rem" />,
       title: "تحليلات مفصلة",
-      description: "تتبع أداء الباقات والمبيعات والتحويلات",
+      description: "تتبع أداء العروض والمبيعات والتحويلات",
     },
     {
       icon: <IconShield size="1.2rem" />,
@@ -110,7 +109,7 @@ export default function LoginPage() {
                     تسجيل الدخول
                   </Title>
                   <Text className="text-gray-600">
-                    ادخل إلى حسابك في سلة لإدارة الباقات
+                    ادخل إلى حسابك في سلة لإدارة العروض
                   </Text>
                 </div>
 

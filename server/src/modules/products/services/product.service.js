@@ -10,7 +10,6 @@ class ProductService {
    * Get all products from Salla store
    * ===============*/
   async getProducts(store_id, page = 1, per_page = 50, search = null) {
-    console.log(`[ProductService] Fetching products for store: ${store_id}`);
 
     try {
       const store = await Store.findOne({ store_id });
@@ -19,7 +18,6 @@ class ProductService {
         throw new Error("Store not found");
       }
 
-      console.log(`[ProductService] Found store, making API call to Salla...`);
 
       const params = { page, per_page };
       if (search) {
@@ -34,11 +32,7 @@ class ProductService {
         params,
       });
 
-      console.log(
-        `[ProductService] Successfully fetched ${
-          response.data?.data?.length || 0
-        } products`
-      );
+
       return response.data;
     } catch (error) {
       console.error(`[ProductService] Error fetching products:`, {
@@ -179,9 +173,7 @@ class ProductService {
     }
 
     if (variant.unlimited_quantity === true) {
-      console.log(
-        `[Product Service] Variant has unlimited_quantity=true, variant is available: ${variant.name}`
-      );
+
       return false;
     }
 
@@ -191,25 +183,19 @@ class ProductService {
       !parentProduct.inventory_tracking;
 
     if (noStockTracking) {
-      // console.log(
-      //   `[Product Service] ALL stock tracking disabled for ${parentProduct.name}, ignoring variant stock status - assuming unlimited`
-      // );
+
       return false; // Assume unlimited stock when all tracking is disabled
     }
 
     if (variant.hasOwnProperty("is_out_of_stock")) {
       const result = variant.is_out_of_stock;
-      console.log(
-        `[Product Service] Using explicit is_out_of_stock=${result} for variant ${variant.name}`
-      );
+
       return result;
     }
 
     if (variant.hasOwnProperty("is_available")) {
       const result = !variant.is_available;
-      console.log(
-        `[Product Service] Using is_available=${variant.is_available}, result=${result} for variant ${variant.name}`
-      );
+
       return result;
     }
 
@@ -220,22 +206,14 @@ class ProductService {
         parentProduct.inventory_tracking
       ) {
         const result = variant.quantity === 0;
-        console.log(
-          `[Product Service] Stock tracking enabled, quantity=${variant.quantity}, result=${result} for variant ${variant.name}`
-        );
+
         return result;
       }
-      // If stock tracking is disabled, ignore quantity and assume available
-      console.log(
-        `[Product Service] Stock tracking disabled, assuming available for variant ${variant.name}`
-      );
+
       return false;
     }
 
-    // Default to available if no stock indicators
-    console.log(
-      `[Product Service] No stock indicators found, defaulting to available for variant ${variant.name}`
-    );
+
     return false;
   }
 }

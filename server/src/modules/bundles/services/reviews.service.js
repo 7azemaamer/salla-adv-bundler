@@ -110,15 +110,12 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
         page,
       },
     });
-    console.log("Salla reviews", JSON.stringify(response.data));
 
     if (response.data && response.data.data) {
-      // Filter only 4-5 star reviews for display
       const highRatedReviews = response.data.data.filter((review) => {
         return review.rating >= 4;
       });
 
-      // If no reviews, return dummy reviews
       if (highRatedReviews.length === 0) {
         return {
           success: true,

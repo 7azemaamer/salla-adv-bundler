@@ -66,6 +66,10 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         hide_salla_offer_modal: settings.hide_salla_offer_modal,
         hide_product_options: settings.hide_product_options,
         hide_quantity_input: settings.hide_quantity_input,
+        hide_price_section: settings.hide_price_section,
+        sticky_button: settings.sticky_button,
+        free_shipping: settings.free_shipping,
+        timer: settings.timer,
       },
     },
   });
@@ -201,7 +205,6 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
       });
     }
 
-    // Check if cached payment methods exist and are fresh (less than 24 hours old)
     const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
     const isCacheFresh =
       store.payment_methods_updated_at &&
@@ -213,7 +216,6 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
       store.payment_methods &&
       store.payment_methods.length > 0
     ) {
-      console.log("[Payment Methods] Using cached data for store:", store_id);
       return res.status(200).json({
         success: true,
         data: store.payment_methods,
@@ -221,8 +223,6 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
       });
     }
 
-    // If cache is stale or doesn't exist, fetch fresh data
-    console.log("[Payment Methods] Fetching fresh data for store:", store_id);
     const accessToken = await getValidAccessToken(store_id);
 
     if (!accessToken) {
@@ -298,8 +298,6 @@ export const validateDiscountCode = asyncWrapper(async (req, res) => {
       });
     }
 
-    // Try to get coupon by code - Salla API approach
-    // First, try to list coupons with search by code
     const response = await axios.get("https://api.salla.dev/admin/v2/coupons", {
       params: {
         code: code,
@@ -310,12 +308,10 @@ export const validateDiscountCode = asyncWrapper(async (req, res) => {
         Accept: "application/json",
       },
     });
-    console.log("[Coupon Validation] Response:", JSON.stringify(response.data));
 
     if (response.data && response.data.data && response.data.data.length > 0) {
       const coupon = response.data.data[0];
 
-      // Check if coupon is active and not expired
       const now = new Date();
       const isActive = coupon.status === "active" || coupon.status === 1;
       const isExpired = coupon.expires_at

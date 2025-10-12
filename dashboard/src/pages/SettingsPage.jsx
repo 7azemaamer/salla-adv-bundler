@@ -1,30 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Container,
-  Title,
-  Text,
   Card,
   Stack,
-  Switch,
-  Group,
   Alert,
-  Divider,
   LoadingOverlay,
-  Image,
-  Modal,
-  Button,
+  Tabs,
 } from "@mantine/core";
-import { useState } from "react";
 import {
-  IconSettings,
-  IconCheck,
   IconX,
-  IconInfoCircle,
+  IconCheck,
   IconEyeOff,
-  IconPhoto,
+  IconTruck,
+  IconClock,
+  IconClick,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../stores/useSettingsStore";
+import SettingsHeader from "../components/settings/SettingsHeader";
+import DisplaySettingsPanel from "../components/settings/DisplaySettingsPanel";
+import FreeShippingSettingsPanel from "../components/settings/FreeShippingSettingsPanel";
+import TimerSettingsPanel from "../components/settings/TimerSettingsPanel";
+import StickyButtonSettingsPanel from "../components/settings/StickyButtonSettingsPanel";
+import DemoImageModal from "../components/settings/DemoImageModal";
 
 export default function SettingsPage() {
   const { settings, loading, error, fetchSettings, toggleSetting } =
@@ -87,17 +85,7 @@ export default function SettingsPage() {
     <Container size="lg" px={0}>
       <Stack gap="lg">
         {/* Header */}
-        <div>
-          <Group gap="sm" mb="xs">
-            <IconSettings size="2rem" className="text-blue-600" />
-            <Title order={1} className="text-gray-800">
-              الإعدادات
-            </Title>
-          </Group>
-          <Text className="text-gray-600">
-            إدارة إعدادات التطبيق والتحكم في سلوك الباقات
-          </Text>
-        </div>
+        <SettingsHeader />
 
         {/* Error Alert */}
         {error && (
@@ -110,431 +98,124 @@ export default function SettingsPage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <LoadingOverlay visible={loading.fetching} />
 
-          <Stack gap="xl">
-            {/* Display Settings Section */}
-            <div>
-              <Group gap="xs" mb="md">
-                <IconEyeOff size="1.2rem" className="text-gray-700" />
-                <Title order={3} className="text-gray-800">
-                  إعدادات العرض
-                </Title>
-              </Group>
+          <Tabs defaultValue="display" variant="outline">
+            <Tabs.List grow>
+              <Tabs.Tab
+                value="display"
+                leftSection={<IconEyeOff size="1rem" />}
+              >
+                إعدادات العرض
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="sticky-button"
+                leftSection={<IconClick size="1rem" />}
+              >
+                الزر الثابت
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="shipping"
+                leftSection={<IconTruck size="1rem" />}
+              >
+                لافتة الشحن المجاني
+              </Tabs.Tab>
+              <Tabs.Tab value="timer" leftSection={<IconClock size="1rem" />}>
+                إعدادات المؤقت
+              </Tabs.Tab>
+            </Tabs.List>
 
-              <Stack gap="md">
-                {/* Hide Default Buttons Toggle */}
-                <div>
-                  <Switch
-                    size="md"
-                    label={
-                      <div>
-                        <Text fw={500} size="sm">
-                          إخفاء أزرار سلة الافتراضية
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء أزرار "إضافة للسلة" و "اشتر الآن" الافتراضية من
-                          سلة في صفحات المنتجات التي تحتوي على باقات نشطة
-                        </Text>
-                      </div>
-                    }
-                    checked={settings.hide_default_buttons}
-                    onChange={(event) =>
-                      handleToggleChange(
-                        "hide_default_buttons",
-                        event.currentTarget.checked
-                      )
-                    }
-                    disabled={loading.updating}
-                  />
+            {/* Tab 1: Display Settings */}
+            <Tabs.Panel value="display" pt="xl">
+              <DisplaySettingsPanel
+                settings={settings}
+                loading={loading}
+                onToggle={handleToggleChange}
+                onShowButtonsModal={() => setShowButtonsModal(true)}
+                onShowOfferModal={() => setShowOfferModal(true)}
+                onShowOptionsModal={() => setShowOptionsModal(true)}
+                onShowQuantityModal={() => setShowQuantityModal(true)}
+                onShowPriceModal={() => setShowPriceModal(true)}
+              />
+            </Tabs.Panel>
 
-                  <Group mt="md">
-                    <Button
-                      variant="light"
-                      size="xs"
-                      leftSection={<IconPhoto size="0.9rem" />}
-                      onClick={() => setShowButtonsModal(true)}
-                    >
-                      عرض مثال توضيحي
-                    </Button>
-                  </Group>
+            {/* Tab 2: Sticky Button */}
+            <Tabs.Panel value="sticky-button" pt="xl">
+              <StickyButtonSettingsPanel
+                settings={settings}
+                loading={loading}
+                onToggle={handleToggleChange}
+              />
+            </Tabs.Panel>
 
-                  <Alert
-                    icon={<IconInfoCircle size="1rem" />}
-                    color="blue"
-                    variant="light"
-                    mt="md"
-                  >
-                    <Text size="sm">
-                      <strong>ملاحظة:</strong> عند تفعيل هذا الخيار، سيتم إخفاء
-                      أزرار سلة الافتراضية في صفحات المنتجات التي لديها باقات
-                      نشطة فقط. سيظهر بدلاً منها زر الباقة الخاص بك. هذا يساعد
-                      على تجنب الارتباك ويشجع العملاء على اختيار الباقات.
-                    </Text>
-                  </Alert>
-                </div>
+            {/* Tab 3: Free Shipping Banner */}
+            <Tabs.Panel value="shipping" pt="xl">
+              <FreeShippingSettingsPanel
+                settings={settings}
+                loading={loading}
+                onToggle={handleToggleChange}
+              />
+            </Tabs.Panel>
 
-                <Divider />
-
-                {/* Hide Salla Offer Modal Toggle */}
-                <div>
-                  <Switch
-                    size="md"
-                    label={
-                      <div>
-                        <Text fw={500} size="sm">
-                          إخفاء نافذة عروض سلة الافتراضية
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء النافذة المنبثقة الافتراضية من سلة التي تظهر عند
-                          وجود عروض خاصة على المنتج
-                        </Text>
-                      </div>
-                    }
-                    checked={settings.hide_salla_offer_modal}
-                    onChange={(event) =>
-                      handleToggleChange(
-                        "hide_salla_offer_modal",
-                        event.currentTarget.checked
-                      )
-                    }
-                    disabled={loading.updating}
-                  />
-
-                  <Group mt="md">
-                    <Button
-                      variant="light"
-                      size="xs"
-                      leftSection={<IconPhoto size="0.9rem" />}
-                      onClick={() => setShowOfferModal(true)}
-                    >
-                      عرض مثال توضيحي
-                    </Button>
-                  </Group>
-
-                  <Alert
-                    icon={<IconInfoCircle size="1rem" />}
-                    color="blue"
-                    variant="light"
-                    mt="md"
-                  >
-                    <Text size="sm">
-                      <strong>ملاحظة:</strong> هذا الخيار يخفي النافذة المنبثقة
-                      الافتراضية من سلة (s-offer-modal-type-products) فقط.
-                      النوافذ الأخرى من سلة ستعمل بشكل طبيعي.
-                    </Text>
-                  </Alert>
-                </div>
-
-                <Divider />
-
-                {/* Hide Product Options Toggle */}
-                <div>
-                  <Switch
-                    size="md"
-                    label={
-                      <div>
-                        <Text fw={500} size="sm">
-                          إخفاء خيارات المنتج الافتراضية
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء قسم خيارات المنتج (salla-product-options) في
-                          المنتج المستهدف عند وجود عروض باقات نشطة عليه
-                        </Text>
-                      </div>
-                    }
-                    checked={settings.hide_product_options}
-                    onChange={(event) =>
-                      handleToggleChange(
-                        "hide_product_options",
-                        event.currentTarget.checked
-                      )
-                    }
-                    disabled={loading.updating}
-                  />
-
-                  <Group mt="md">
-                    <Button
-                      variant="light"
-                      size="xs"
-                      leftSection={<IconPhoto size="0.9rem" />}
-                      onClick={() => setShowOptionsModal(true)}
-                    >
-                      عرض مثال توضيحي
-                    </Button>
-                  </Group>
-
-                  <Alert
-                    icon={<IconInfoCircle size="1rem" />}
-                    color="blue"
-                    variant="light"
-                    mt="md"
-                  >
-                    <Text size="sm">
-                      <strong>ملاحظة:</strong> هذا الخيار يخفي قسم خيارات المنتج
-                      الافتراضي (salla-product-options) الموجود داخل النموذج
-                      (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض
-                      باقات عليه. هذا يمنع الارتباك ويوجه العميل لاختيار
-                      الخيارات من نافذة الباقة.
-                    </Text>
-                  </Alert>
-                </div>
-
-                <Divider />
-
-                {/* Hide Quantity Input Toggle */}
-                <div>
-                  <Switch
-                    size="md"
-                    label={
-                      <div>
-                        <Text fw={500} size="sm">
-                          إخفاء حقل الكمية الافتراضي
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء قسم الكمية (parent section of
-                          salla-quantity-input) في المنتج المستهدف عند وجود عروض
-                          باقات نشطة عليه
-                        </Text>
-                      </div>
-                    }
-                    checked={settings.hide_quantity_input}
-                    onChange={(event) =>
-                      handleToggleChange(
-                        "hide_quantity_input",
-                        event.currentTarget.checked
-                      )
-                    }
-                    disabled={loading.updating}
-                  />
-
-                  <Group mt="md">
-                    <Button
-                      variant="light"
-                      size="xs"
-                      leftSection={<IconPhoto size="0.9rem" />}
-                      onClick={() => setShowQuantityModal(true)}
-                    >
-                      عرض مثال توضيحي
-                    </Button>
-                  </Group>
-
-                  <Alert
-                    icon={<IconInfoCircle size="1rem" />}
-                    color="blue"
-                    variant="light"
-                    mt="md"
-                  >
-                    <Text size="sm">
-                      <strong>ملاحظة:</strong> هذا الخيار يخفي قسم الكمية
-                      الافتراضي الموجود داخل النموذج (product-form) في صفحة
-                      المنتج المستهدف فقط عند وجود عروض باقات عليه. يتم اختيار
-                      الكمية من خلال نافذة الباقة.
-                    </Text>
-                  </Alert>
-                </div>
-
-                <Divider />
-
-                {/* Hide Price Section Toggle */}
-                <div>
-                  <Switch
-                    size="md"
-                    label={
-                      <div>
-                        <Text fw={500} size="sm">
-                          إخفاء قسم السعر الافتراضي
-                        </Text>
-                        <Text size="xs" c="dimmed" mt={4}>
-                          إخفاء قسم السعر (price-wrapper وعناصر السعر) الموجود
-                          داخل النموذج (product-form) في المنتج المستهدف عند
-                          وجود عروض باقات نشطة عليه
-                        </Text>
-                      </div>
-                    }
-                    checked={settings.hide_price_section}
-                    onChange={(event) =>
-                      handleToggleChange(
-                        "hide_price_section",
-                        event.currentTarget.checked
-                      )
-                    }
-                    disabled={loading.updating}
-                  />
-
-                  <Group mt="md">
-                    <Button
-                      variant="light"
-                      size="xs"
-                      leftSection={<IconPhoto size="0.9rem" />}
-                      onClick={() => setShowPriceModal(true)}
-                    >
-                      عرض مثال توضيحي
-                    </Button>
-                  </Group>
-
-                  <Alert
-                    icon={<IconInfoCircle size="1rem" />}
-                    color="blue"
-                    variant="light"
-                    mt="md"
-                  >
-                    <Text size="sm">
-                      <strong>ملاحظة:</strong> هذا الخيار يخفي قسم السعر
-                      الافتراضي (price-wrapper, total-price, before-price)
-                      الموجود داخل النموذج (product-form) في صفحة المنتج
-                      المستهدف فقط عند وجود عروض باقات عليه. يتم عرض السعر من
-                      خلال نافذة الباقة بدلاً من ذلك.
-                    </Text>
-                  </Alert>
-                </div>
-
-                <Divider />
-              </Stack>
-            </div>
-          </Stack>
+            {/* Tab 4: Timer Settings */}
+            <Tabs.Panel value="timer" pt="xl">
+              <TimerSettingsPanel
+                settings={settings}
+                loading={loading}
+                onToggle={handleToggleChange}
+              />
+            </Tabs.Panel>
+          </Tabs>
         </Card>
 
-        {/* Hide Buttons Demo Modal */}
-        <Modal
+        {/* Demo Modals */}
+        <DemoImageModal
           opened={showButtonsModal}
           onClose={() => setShowButtonsModal(false)}
           title="مثال: أزرار سلة الافتراضية"
-          size="lg"
-          centered
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              هذه هي الأزرار الافتراضية من سلة التي سيتم إخفاؤها عند تفعيل
-              الخيار:
-            </Text>
-            <Image
-              src="/salla-buy-buttons.png"
-              alt="Salla Default Buy Buttons"
-              radius="md"
-              fit="contain"
-            />
-            <Alert color="yellow" variant="light">
-              <Text size="xs">
-                سيتم إخفاء أزرار "إضافة للسلة" و "اشتر الآن" في المنتجات التي
-                لديها باقات نشطة فقط. سيظهر بدلاً منها زر الباقة الخاص بك.
-              </Text>
-            </Alert>
-          </Stack>
-        </Modal>
+          description="هذه هي الأزرار الافتراضية من سلة التي سيتم إخفاؤها عند تفعيل الخيار:"
+          imageSrc="/salla-buy-buttons.png"
+          imageAlt="Salla Default Buy Buttons"
+          warningText='سيتم إخفاء أزرار "إضافة للسلة" و "اشتر الآن" في المنتجات التي لديها باقات نشطة فقط. سيظهر بدلاً منها زر الباقة الخاص بك.'
+        />
 
-        {/* Hide Offer Modal Demo */}
-        <Modal
+        <DemoImageModal
           opened={showOfferModal}
           onClose={() => setShowOfferModal(false)}
           title="مثال: نافذة عروض سلة الافتراضية"
-          size="lg"
-          centered
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              هذه هي النافذة المنبثقة الافتراضية من سلة التي سيتم إخفاؤها عند
-              تفعيل الخيار:
-            </Text>
-            <Image
-              src="/salla-model.png"
-              alt="Salla Default Offer Modal"
-              radius="md"
-              fit="contain"
-            />
-            <Alert color="yellow" variant="light">
-              <Text size="xs">
-                سيتم إخفاء هذه النافذة فقط (s-offer-modal-type-products).
-                النوافذ الأخرى من سلة ستبقى تعمل بشكل طبيعي.
-              </Text>
-            </Alert>
-          </Stack>
-        </Modal>
+          description="هذه هي النافذة المنبثقة الافتراضية من سلة التي سيتم إخفاؤها عند تفعيل الخيار:"
+          imageSrc="/salla-model.png"
+          imageAlt="Salla Default Offer Modal"
+          warningText="سيتم إخفاء هذه النافذة فقط (s-offer-modal-type-products). النوافذ الأخرى من سلة ستبقى تعمل بشكل طبيعي."
+        />
 
-        {/* Hide Product Options Demo Modal */}
-        <Modal
+        <DemoImageModal
           opened={showOptionsModal}
           onClose={() => setShowOptionsModal(false)}
           title="مثال: قسم خيارات المنتج الافتراضي"
-          size="lg"
-          centered
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              هذا هو قسم خيارات المنتج (salla-product-options) الذي سيتم إخفاؤه
-              عند تفعيل الخيار:
-            </Text>
-            <Image
-              src="/salla-options.png"
-              alt="Salla Product Options"
-              radius="md"
-              fit="contain"
-            />
-            <Alert color="yellow" variant="light">
-              <Text size="xs">
-                سيتم إخفاء قسم خيارات المنتج الافتراضي في صفحة المنتج المستهدف
-                فقط عند وجود عروض باقات نشطة عليه. سيختار العميل الخيارات من
-                نافذة الباقة بدلاً من ذلك.
-              </Text>
-            </Alert>
-          </Stack>
-        </Modal>
+          description="هذا هو قسم خيارات المنتج (salla-product-options) الذي سيتم إخفاؤه عند تفعيل الخيار:"
+          imageSrc="/salla-options.png"
+          imageAlt="Salla Product Options"
+          warningText="سيتم إخفاء قسم خيارات المنتج الافتراضي في صفحة المنتج المستهدف فقط عند وجود عروض باقات نشطة عليه. سيختار العميل الخيارات من نافذة الباقة بدلاً من ذلك."
+        />
 
-        {/* Hide Quantity Input Demo Modal */}
-        <Modal
+        <DemoImageModal
           opened={showQuantityModal}
           onClose={() => setShowQuantityModal(false)}
           title="مثال: قسم الكمية الافتراضي"
-          size="lg"
-          centered
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              هذا هو قسم الكمية (parent section of salla-quantity-input) الذي
-              سيتم إخفاؤه عند تفعيل الخيار:
-            </Text>
-            <Image
-              src="/salla-qta.png"
-              alt="Salla Quantity Input"
-              radius="md"
-              fit="contain"
-            />
-            <Alert color="yellow" variant="light">
-              <Text size="xs">
-                سيتم إخفاء قسم الكمية الافتراضي في صفحة المنتج المستهدف فقط عند
-                وجود عروض باقات نشطة عليه. يتم اختيار الكمية من خلال نافذة
-                الباقة بدلاً من ذلك.
-              </Text>
-            </Alert>
-          </Stack>
-        </Modal>
+          description="هذا هو قسم الكمية (parent section of salla-quantity-input) الذي سيتم إخفاؤه عند تفعيل الخيار:"
+          imageSrc="/salla-qta.png"
+          imageAlt="Salla Quantity Input"
+          warningText="سيتم إخفاء قسم الكمية الافتراضي في صفحة المنتج المستهدف فقط عند وجود عروض باقات نشطة عليه. يتم اختيار الكمية من خلال نافذة الباقة بدلاً من ذلك."
+        />
 
-        {/* Hide Price Section Demo Modal */}
-        <Modal
+        <DemoImageModal
           opened={showPriceModal}
           onClose={() => setShowPriceModal(false)}
           title="مثال: قسم السعر الافتراضي"
-          size="lg"
-          centered
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              هذا هو قسم السعر (price-wrapper, total-price, before-price) الذي
-              سيتم إخفاؤه عند تفعيل الخيار:
-            </Text>
-            <Image
-              src="/salla-price.png"
-              alt="Salla Price Section"
-              radius="md"
-              fit="contain"
-            />
-            <Alert color="yellow" variant="light">
-              <Text size="xs">
-                سيتم إخفاء قسم السعر الافتراضي الموجود داخل النموذج
-                (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض باقات
-                نشطة عليه. يتم عرض السعر من خلال نافذة الباقة بدلاً من ذلك.
-              </Text>
-            </Alert>
-          </Stack>
-        </Modal>
+          description="هذا هو قسم السعر (price-wrapper, total-price, before-price) الذي سيتم إخفاؤه عند تفعيل الخيار:"
+          imageSrc="/salla-price.png"
+          imageAlt="Salla Price Section"
+          warningText="سيتم إخفاء قسم السعر الافتراضي الموجود داخل النموذج (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض باقات نشطة عليه. يتم عرض السعر من خلال نافذة الباقة بدلاً من ذلك."
+        />
       </Stack>
     </Container>
   );

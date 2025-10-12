@@ -1044,7 +1044,7 @@ router.get("/modal.js", (req, res) => {
       /* Hide desktop-only elements in mobile cards */
       .salla-bundle-card .salla-bundle-card-header,
       .salla-bundle-card .salla-bundle-card-footer,
-      .salla-bundle-card .salla-bundle-card-title,
+      
       .salla-bundle-card .salla-bundle-card-value,
       .salla-bundle-card .salla-bundle-badge,
       .salla-bundle-card .salla-bundle-price,
@@ -1146,7 +1146,7 @@ router.get("/modal.js", (req, res) => {
         margin-bottom: 6px;
       }
 
-      /* ===== STEP 4: Free Shipping Banner & Discounted Products ===== */
+      /* ===== Free Shipping Banner (Dynamically styled) ===== */
 
       .salla-free-shipping-banner {
         display: flex;
@@ -1155,16 +1155,10 @@ router.get("/modal.js", (req, res) => {
         gap: 8px;
         padding: 12px 16px;
         margin: 0 0 12px 0;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         border-radius: 12px;
-        color: white;
         font-size: 14px;
         font-weight: 600;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-      }
-
-      .salla-free-shipping-banner svg {
-        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       }
 
       .salla-free-shipping-banner span {
@@ -1769,11 +1763,13 @@ router.get("/modal.js", (req, res) => {
 
   // Price formatting utility
   function formatPrice(price) {
-    const formatted = new Intl.NumberFormat('ar-SA', {
+    // Ensure price is a valid number
+    const numPrice = parseFloat(price) || 0;
+    const formatted = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(price);
-    return formatted + ' ' + riyalSvgIcon;
+    }).format(numPrice);
+    return formatted + '&nbsp;' + riyalSvgIcon;
   }
 
   // Bundle Modal Class - Modern Boxy Design
@@ -1808,7 +1804,7 @@ router.get("/modal.js", (req, res) => {
         'الخيارات',
         'الهدايا',
         'المنتجات المخفضة',
-        'المراجعة'
+        'الفاتورة'
       ];
 
       // New features state
@@ -1926,16 +1922,32 @@ router.get("/modal.js", (req, res) => {
 
     async initialize() {
       try {
-        // Wait for any ongoing preload to complete
+        
         if (SallaBundleModal.preloadPromise) {
           await SallaBundleModal.preloadPromise;
         }
 
-        // Check if bundle data is already cached
+
+        if (SallaBundleModal.dataCache.timerSettings) {
+          this.timerSettings = SallaBundleModal.dataCache.timerSettings;
+          if (this.timerSettings && this.timerSettings.enabled) {
+            const duration = this.timerSettings.duration || 21600;
+            this.timerEndTime = Date.now() + (duration * 1000);
+          }
+        }
+
+        if (SallaBundleModal.dataCache.reviews && SallaBundleModal.dataCache.reviews.length > 0) {
+          this.reviews = SallaBundleModal.dataCache.reviews;
+        }
+
+        if (SallaBundleModal.dataCache.paymentMethods && SallaBundleModal.dataCache.paymentMethods.length > 0) {
+          this.paymentMethods = SallaBundleModal.dataCache.paymentMethods;
+        }
+
+
         if (SallaBundleModal.dataCache.bundleData[this.productId]) {
           this.bundleData = SallaBundleModal.dataCache.bundleData[this.productId];
         } else {
-          // Fetch bundle data if not cached
           const params = new URLSearchParams();
 
           if (this.contextData.storeId) {
@@ -1977,22 +1989,31 @@ router.get("/modal.js", (req, res) => {
           }
         }
 
-        // Use cached data (should already be loaded by preload)
-        if (SallaBundleModal.dataCache.timerSettings) {
-          this.timerSettings = SallaBundleModal.dataCache.timerSettings;
+        // Extract timer settings from bundleData.settings
+        const bundleConfig = this.bundleData.data || this.bundleData;
+        if (bundleConfig.settings && bundleConfig.settings.timer) {
+          this.timerSettings = {
+            enabled: bundleConfig.settings.timer.enabled,
+            duration: bundleConfig.settings.timer.duration || 21600,
+            duration_type: bundleConfig.settings.timer.duration_type || '6h',
+            auto_restart: bundleConfig.settings.timer.auto_restart ?? true,
+            effect: bundleConfig.settings.timer.effect || 'pulse',
+            style: {
+              text_color: bundleConfig.settings.timer.text_color || '#0E1012',
+              bg_color: bundleConfig.settings.timer.bg_color || '#FFFFFF',
+              border_color: bundleConfig.settings.timer.border_color || '#E5E8EC',
+              border_radius: bundleConfig.settings.timer.border_radius || 12,
+              label: bundleConfig.settings.timer.label || 'عرض محدود ينتهي خلال',
+              label_color: bundleConfig.settings.timer.label_color || '#60646C',
+              font_size: bundleConfig.settings.timer.font_size || 14,
+            }
+          };
+
           // Initialize timer if enabled
           if (this.timerSettings && this.timerSettings.enabled) {
             const duration = this.timerSettings.duration || 21600;
             this.timerEndTime = Date.now() + (duration * 1000);
           }
-        }
-
-        if (SallaBundleModal.dataCache.reviews) {
-          this.reviews = SallaBundleModal.dataCache.reviews;
-        }
-
-        if (SallaBundleModal.dataCache.paymentMethods) {
-          this.paymentMethods = SallaBundleModal.dataCache.paymentMethods;
         }
 
         // Create modal element
@@ -2062,9 +2083,7 @@ router.get("/modal.js", (req, res) => {
     }
 
     createModal() {
-      // Prevent multiple modal instances
       if (this.modalElement && document.body.contains(this.modalElement)) {
-        console.log('[Bundle Modal] Modal already exists, showing existing modal');
         this.show();
         return;
       }
@@ -2587,7 +2606,7 @@ router.get("/modal.js", (req, res) => {
       // Step 5: Review (always present)
       steps.push({
         number: stepNumber++,
-        label: 'المراجعة',
+        label: 'الفاتورة',
         html: this.renderStep5Review(selectedBundleData),
         type: 'review'
       });
@@ -2598,9 +2617,10 @@ router.get("/modal.js", (req, res) => {
       this.stepTypes = steps.map(s => s.type);
       
       // Render all steps with corrected data-step numbers
-      let mobileContent = steps.map(step => 
-        step.html.replace(/data-step="\d+"/, \`data-step="\${step.number}"\`)
-      ).join('');
+      let mobileContent = steps.map((step, index) => {
+        // Replace ALL occurrences of data-step, not just the first one
+        return step.html.replace(/data-step="\d+"/g, \`data-step="\${step.number}"\`);
+      }).join('');
 
       body.innerHTML = mobileContent;
       
@@ -2654,8 +2674,6 @@ router.get("/modal.js", (req, res) => {
               }).join('')}
             </div>
           </div>
-
-          \${this.renderReviews()}
         </div>
       \`;
     }
@@ -2727,7 +2745,7 @@ router.get("/modal.js", (req, res) => {
       const productImage = productData?.image || 'https://via.placeholder.com/64';
       const productPrice = productData?.price || 100;
       const isUnavailable = productData ? this.isProductCompletelyUnavailable(productData) : false;
-      
+
       return \`
         <div class="salla-gift-card \${isUnavailable ? 'salla-gift-unavailable' : ''}">
           <div class="salla-gift-image" style="background-image: url('\${productImage}')">
@@ -2739,12 +2757,12 @@ router.get("/modal.js", (req, res) => {
           </div>
           <div class="salla-gift-content">
             <div class="salla-gift-badges">
-              <span class="salla-gift-badge">هدية</span>
-              <span class="salla-gift-free">مجاناً</span>
+              <span class="salla-gift-badge" style="\${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">هدية مجانية</span>
+              <span class="salla-gift-free" style="\${isUnavailable ? 'color: #dc2626;' : ''}">مجاناً</span>
             </div>
-            <div class="salla-gift-title">\${productName}</div>
+            <div class="salla-gift-title" style="\${isUnavailable ? 'color: #9ca3af;' : ''}">\${productName}</div>
             <div class="salla-gift-value">\${formatPrice(productPrice)}</div>
-            \${this.renderCompactVariantSelectors(productData, offer.product_id, true)}
+            \${this.renderCompactVariantSelectors(offer.product_data, offer.product_id, true)}
           </div>
         </div>
       \`;
@@ -2753,22 +2771,9 @@ router.get("/modal.js", (req, res) => {
     renderStep4DiscountedProducts(selectedTier, selectedBundleData) {
       const discountedProducts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type !== 'free') : [];
 
-      const freeShippingMessage = \`
-        <div class="salla-free-shipping-banner">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="1" y="3" width="15" height="13"></rect>
-            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-            <circle cx="5.5" cy="18.5" r="2.5"></circle>
-            <circle cx="18.5" cy="18.5" r="2.5"></circle>
-          </svg>
-          <span>شحن مجاني لطلبك 🎉</span>
-        </div>
-      \`;
-
       if (discountedProducts.length === 0) {
         return \`
           <div class="salla-step-container" data-step="4">
-            \${freeShippingMessage}
             <div class="salla-bundle-section">
               <h3>منتجات مخفضة</h3>
               <div class="subtitle">لا توجد منتجات مخفضة في هذه الباقة</div>
@@ -2789,7 +2794,6 @@ router.get("/modal.js", (req, res) => {
 
       return \`
         <div class="salla-step-container" data-step="4">
-          \${freeShippingMessage}
           <div class="salla-bundle-section">
             <h3>منتجات مخفضة</h3>
             <div class="subtitle">وفر \${formatPrice(discountSavings)} إضافية</div>
@@ -2832,17 +2836,12 @@ router.get("/modal.js", (req, res) => {
 
       const totalPrice = selectedBundleData.price;
       const originalValue = selectedBundleData.originalPrice;
-      const offersPrice = selectedBundleData.offersCost;
+      const productsPrice = selectedBundleData.price;
       const bundleSavings = selectedBundleData.savings;
+      const originalPriceBeforeDiscount = originalValue + bundleSavings;
 
       return \`
         <div class="salla-step-container" data-step="5">
-          \${this.renderTimer() ? \`
-            <div style="margin-bottom: 12px; display: flex; justify-content: center;">
-              \${this.renderTimer()}
-            </div>
-          \` : ''}
-
           <div class="salla-bundle-section">
             <h3>\${this.stepLabels[4]}</h3>
             <div class="subtitle">تأكد من طلبك قبل الإتمام</div>
@@ -2850,24 +2849,35 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-review-static">
               <h3 style="font-size: 14px; margin-bottom: 10px;">تفاصيل الفاتورة</h3>
               <div class="salla-review-content">
+                <!-- السعر الأصلي - Red color -->
                 <div class="salla-summary-row">
-                  <span class="salla-summary-label">المنتج الأساسي</span>
-                  <span class="salla-summary-value">\${formatPrice(originalValue)}</span>
+                  <span class="salla-summary-label">السعر الأصلي</span>
+                  <span class="salla-summary-value" style="color: #dc2626;">\${formatPrice(originalPriceBeforeDiscount)}</span>
                 </div>
-                \${offersPrice > 0 ? \`
-                  <div class="salla-summary-row">
-                    <span class="salla-summary-label">المنتجات الإضافية</span>
-                    <span class="salla-summary-value">\${formatPrice(offersPrice)}</span>
-                  </div>
-                \` : ''}
+                
+                <!-- سعر المنتجات - Black color -->
+                <div class="salla-summary-row">
+                  <span class="salla-summary-label">سعر المنتجات</span>
+                  <span class="salla-summary-value">\${formatPrice(productsPrice)}</span>
+                </div>
+                
+                <!-- تكلفة الشحن - Black color -->
+                <div class="salla-summary-row">
+                  <span class="salla-summary-label">تكلفة الشحن</span>
+                  <span class="salla-summary-value">تُحسب في الخطوة القادمة</span>
+                </div>
+                
+                <!-- مبلغ الخصم - Green color (negative sign) -->
                 \${bundleSavings > 0 ? \`
                   <div class="salla-summary-row">
-                    <span class="salla-summary-label">توفير الباقة</span>
-                    <span class="salla-summary-value salla-summary-savings">\${formatPrice(bundleSavings)}</span>
+                    <span class="salla-summary-label">مبلغ الخصم</span>
+                    <span class="salla-summary-value" style="color: #16a34a;">-\${formatPrice(bundleSavings)}</span>
                   </div>
                 \` : ''}
+                
+                <!-- إجمالي الطلب - Black color with border -->
                 <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
-                  <span class="salla-summary-label" style="font-weight: 600;">المجموع</span>
+                  <span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>
                   <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
                 </div>
               </div>
@@ -2878,11 +2888,35 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderMobileFooter(summary, selectedBundleData, bundleConfig) {
-      const totalPrice = selectedBundleData ? selectedBundleData.price : 0;
-      const originalTotal = selectedBundleData ? (selectedBundleData.price + (selectedBundleData.savings || 0)) : 0;
-      const hasSavings = selectedBundleData && selectedBundleData.savings > 0;
+
+
+      const currentSelectedBundleData = selectedBundleData || this.getSelectedBundleDisplayData();
+
+
+      const totalPrice = currentSelectedBundleData ? currentSelectedBundleData.price : 0;
+      const originalTotal = currentSelectedBundleData ? (currentSelectedBundleData.price + (currentSelectedBundleData.savings || 0)) : 0;
+      const hasSavings = currentSelectedBundleData && currentSelectedBundleData.savings > 0;
+      
+      // Dynamic content based on step
+      const isLastStep = this.currentStep === this.totalSteps;
+      const showReviews = this.currentStep === 2; // Step 2: Reviews only
+      const showShipping = (this.currentStep === 3 || this.currentStep === 4) && !isLastStep; // Steps 3 & 4: Shipping only, but not on last step
+      const showTimer = isLastStep; // Last step: Timer only
 
       summary.innerHTML = \`
+        \${''/* Timer - only on last step (step 5) */}
+        \${showTimer && this.renderTimer() ? \`
+          <div style="margin-bottom: 12px; display: flex; justify-content: center;">
+            \${this.renderTimer()}
+          </div>
+        \` : ''}
+        
+        \${''/* Free Shipping Banner - only on steps 3 & 4 */}
+        \${showShipping ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
+        
+        \${''/* Reviews - only on step 2 */}
+        \${showReviews ? this.renderReviews() : ''}
+        
         \${''/* this.renderDiscountCode() */}
         <div class="salla-footer-compact">
           <div>
@@ -3352,7 +3386,6 @@ router.get("/modal.js", (req, res) => {
         const basePath = pathMatch ? pathMatch[1] : '/';
         const cartUrl = \`\${window.location.origin}\${basePath}cart\`;
 
-         // console.log('[Salla Bundle] Navigating to cart:', cartUrl);
         window.location.href = cartUrl;
 
       } catch (error) {
@@ -3368,9 +3401,73 @@ router.get("/modal.js", (req, res) => {
       // Find selected tier
       const tierNumber = this.selectedBundle ? parseInt(this.selectedBundle.replace('tier-', '')) : 1;
       const selectedTier = bundles.find(tier => tier.tier === tierNumber);
-      
- 
+
+
       return selectedTier;
+    }
+
+    getSelectedBundleDisplayData() {
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const bundles = bundleConfig.bundles || [];
+      const targetProductData = bundleConfig.target_product_data;
+      const baseProductPrice = targetProductData?.price || 0;
+
+
+
+      if (!this.selectedBundle) return null;
+
+      // Find the selected tier
+      const tierNumber = parseInt(this.selectedBundle.replace('tier-', ''));
+      const selectedTier = bundles.find(tier => tier.tier === tierNumber);
+
+      if (!selectedTier) return null;
+
+      // Calculate the same way as in renderContentMobile
+      const buyQuantity = selectedTier.buy_quantity || 1;
+      const subtotal = buyQuantity * baseProductPrice;
+
+      let giftValue = 0;
+      let offersCost = 0;
+
+      if (selectedTier.offers) {
+        selectedTier.offers.forEach(offer => {
+          if (offer.product_data && this.isProductCompletelyUnavailable(offer.product_data)) {
+            return;
+          }
+
+          const productPrice = offer.product_data?.price || 0;
+          const discountValue = offer.discount_value || offer.discount_amount || 0;
+
+          if (offer.discount_type === 'free') {
+            giftValue += productPrice;
+            offersCost += 0;
+          } else if (offer.discount_type === 'percentage') {
+            const discountAmount = productPrice * (discountValue / 100);
+            const customerPays = productPrice - discountAmount;
+            giftValue += discountAmount;
+            offersCost += customerPays;
+          } else if (offer.discount_type === 'fixed' || offer.discount_type === 'fixed_amount') {
+            const customerPays = Math.max(0, productPrice - discountValue);
+            giftValue += discountValue;
+            offersCost += customerPays;
+          } else {
+            offersCost += productPrice;
+          }
+        });
+      }
+
+      const totalCustomerPays = subtotal + offersCost;
+
+
+      return {
+        id: 'tier-' + selectedTier.tier,
+        name: selectedTier.tier_title || 'المستوى ' + selectedTier.tier,
+        price: totalCustomerPays,
+        originalPrice: subtotal,
+        offersCost: offersCost,
+        savings: giftValue,
+        tier: selectedTier
+      };
     }
 
     getSelectedVariantOptions(productId) {
@@ -3500,31 +3597,19 @@ router.get("/modal.js", (req, res) => {
 
     scrollToVariantInputAggressively(productId, optionId) {
       const inputId = \`#variant-\${productId}-\${optionId}\`;
-      console.log(\`[Scroll] Looking for element: \${inputId}\`);
 
       const input = document.querySelector(inputId);
 
       if (!input) {
-        console.error(\`[Scroll] Element not found: \${inputId}\`);
-        console.log('[Scroll] Available variant selects:',
-          Array.from(document.querySelectorAll('[data-variant-product]')).map(el => ({
-            id: el.id,
-            productId: el.getAttribute('data-variant-product'),
-            optionId: el.getAttribute('data-option-id')
-          }))
-        );
         return;
       }
 
-      console.log(\`[Scroll] Found element, scrolling to: \${inputId}\`);
 
-      // First scroll to top of modal to ensure we scroll to the right position
       const modalBody = document.querySelector('.salla-bundle-body');
       if (modalBody) {
         modalBody.scrollTop = 0;
       }
 
-      // Wait a bit then scroll to the input
       setTimeout(() => {
         input.scrollIntoView({
           behavior: 'smooth',
@@ -3532,16 +3617,12 @@ router.get("/modal.js", (req, res) => {
           inline: 'nearest'
         });
 
-        // Focus after scrolling
         setTimeout(() => {
           input.focus();
-          console.log(\`[Scroll] Focused on element: \${inputId}\`);
 
-          // Also try to open the select dropdown
           if (input.tagName === 'SELECT') {
             try {
               input.showPicker(); // Modern browsers
-              console.log('[Scroll] Opened select dropdown');
             } catch (e) {
               console.log('[Scroll] Could not open dropdown (browser limitation)');
             }
@@ -4240,10 +4321,11 @@ router.get("/modal.js", (req, res) => {
     updateStepUI() {
       // Update progress bar
       this.updateProgressUI();
-      
-      // Show/hide step containers
+
+      // Show/hide step containers based on data-step attribute, not DOM index
       const allSteps = document.querySelectorAll('.salla-step-container');
       allSteps.forEach((step, index) => {
+        // Use index + 1 to match step number (steps are 1-indexed)
         if (index + 1 === this.currentStep) {
           step.classList.add('active');
         } else {
@@ -4251,8 +4333,21 @@ router.get("/modal.js", (req, res) => {
         }
       });
       
+      // Re-initialize variant listeners for the current step
+      setTimeout(() => {
+        this.initializeVariantListeners();
+      }, 50);
+      
       // Update navigation buttons
       this.updateNavigationButtons();
+      
+      // Re-render footer to show/hide reviews based on current step
+      const summary = document.querySelector('.salla-sticky-summary');
+      const selectedBundleData = this.getSelectedBundleDisplayData();
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      if (summary && selectedBundleData) {
+        this.renderMobileFooter(summary, selectedBundleData, bundleConfig);
+      }
 
       // Start modern reviews auto-scroll if on final step
       if (this.currentStep === this.totalSteps) {
@@ -4288,7 +4383,10 @@ router.get("/modal.js", (req, res) => {
         nextBtn.disabled = !canProceed;
         
         if (this.currentStep === this.totalSteps) {
-          nextBtn.textContent = 'إتمام الطلب';
+          // Get custom checkout button text from settings
+          const bundleConfig = this.bundleData.data || this.bundleData;
+          const checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب';
+          nextBtn.textContent = checkoutButtonText;
           nextBtn.classList.add('primary');
         } else {
           nextBtn.textContent = 'التالي';
@@ -4359,10 +4457,19 @@ router.get("/modal.js", (req, res) => {
       const selects = document.querySelectorAll('.salla-variant-compact-select, .salla-variant-select');
       
       selects.forEach(select => {
-        select.addEventListener('change', () => {
+        // Remove old listener if exists (prevent duplicates)
+        if (select._variantChangeHandler) {
+          select.removeEventListener('change', select._variantChangeHandler);
+        }
+        
+        // Create and store the handler
+        select._variantChangeHandler = () => {
           // Update navigation buttons when variants change
           setTimeout(() => this.updateNavigationButtons(), 50);
-        });
+        };
+        
+        // Add the listener
+        select.addEventListener('change', select._variantChangeHandler);
       });
     }
 
@@ -4420,6 +4527,72 @@ router.get("/modal.js", (req, res) => {
       const seconds = Math.floor((remaining % 60000) / 1000);
       
       display.textContent = \`\${String(hours).padStart(2, '0')}:\${String(minutes).padStart(2, '0')}:\${String(seconds).padStart(2, '0')}\`;
+    }
+
+    // Helper to get current bundle total price
+    calculateCurrentTotal() {
+      if (!this.selectedBundleData || !this.selectedBundleData.price) {
+        return 0;
+      }
+      return this.selectedBundleData.price;
+    }
+
+    // Render Free Shipping Banner with dynamic settings
+    renderFreeShippingBanner(currentTotal = 0) {
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const settings = bundleConfig.settings || {};
+      const freeShipping = settings.free_shipping || {};
+      
+      // Check if free shipping is enabled and mode
+      if (!freeShipping.enabled || freeShipping.mode === 'hidden') {
+        return '';
+      }
+      
+      const minPrice = freeShipping.min_price || 0;
+      const showProgress = freeShipping.mode === 'min_price' && minPrice > 0;
+      const isEligible = currentTotal >= minPrice;
+      
+      // Settings with defaults
+      const bgColor = freeShipping.bg_color || '#10b981';
+      const textColor = freeShipping.text_color || '#ffffff';
+      const icon = freeShipping.icon || '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
+      const text = freeShipping.text || 'شحن مجاني لهذه الباقة';
+      const progressText = freeShipping.progress_text || 'أضف {amount} ريال للحصول على شحن مجاني';
+      const progressColor = freeShipping.progress_color || '#ffffff';
+      const progressBgColor = freeShipping.progress_bg_color || 'rgba(255, 255, 255, 0.3)';
+      const borderRadius = freeShipping.border_radius || 12;
+      
+      // If mode is 'always' or eligible, show success message
+      if (freeShipping.mode === 'always' || isEligible) {
+        return \`
+          <div class="salla-free-shipping-banner" style="background: \${bgColor}; color: \${textColor}; border-radius: \${borderRadius}px;">
+            <span style="display: flex; align-items: center;">\${icon}</span>
+            <span>\${text}</span>
+          </div>
+        \`;
+      }
+      
+      // Show progress bar if not eligible yet
+      if (showProgress && !isEligible) {
+        const remaining = minPrice - currentTotal;
+        const percentage = Math.min(100, (currentTotal / minPrice) * 100);
+        const formattedRemaining = remaining.toFixed(2);
+        const message = progressText.replace('{amount}', formattedRemaining);
+        
+        return \`
+          <div class="salla-free-shipping-banner" style="background: \${bgColor}; color: \${textColor}; flex-direction: column; gap: 10px; padding: 16px; border-radius: \${borderRadius}px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;">
+              <span style="display: flex; align-items: center;">\${icon}</span>
+              <span style="flex: 1; text-align: center;">\${message}</span>
+            </div>
+            <div style="width: 100%; background: \${progressBgColor}; border-radius: 20px; height: 8px; overflow: hidden;">
+              <div style="width: \${percentage}%; background: \${progressColor}; height: 100%; transition: width 0.3s ease; border-radius: 20px;"></div>
+            </div>
+          </div>
+        \`;
+      }
+      
+      return '';
     }
 
     // Render Reviews Carousel (Modern Boxy Style)
@@ -4507,7 +4680,7 @@ router.get("/modal.js", (req, res) => {
                     </div>
                   </div>
                   <div class="salla-review-content">\${review.content}</div>
-                  <div class="salla-review-time">\${review.timeAgo}</div>
+                  <!-- <div class="salla-review-time">\${review.timeAgo}</div> -->
                 </div>
               \`).join('')}
             </div>
@@ -4857,11 +5030,8 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
-    // Update Summary with Discount
     updateSummaryWithDiscount() {
       // This will recalculate the summary including the discount
-      // Implementation depends on existing summary logic
-      console.log('Discount applied:', this.appliedDiscount);
     }
 
     renderPaymentMethods() {

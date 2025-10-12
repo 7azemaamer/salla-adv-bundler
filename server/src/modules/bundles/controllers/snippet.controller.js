@@ -155,6 +155,7 @@ class SnippetController {
     constructor() {
       this.productId = null;
       this.isInjected = false;
+      this.isStarting = false;  // 🔥 NEW: Prevent duplicate start() calls
       this.retryCount = 0;
       this.maxRetries = 10;
       this.modalScriptLoaded = false;
@@ -164,7 +165,14 @@ class SnippetController {
         hide_salla_offer_modal: false,
         hide_product_options: false,
         hide_quantity_input: false,
-        hide_price_section: false
+        hide_price_section: false,
+        sticky_button_enabled: false,
+        sticky_button_text: ' اطلب باقتك الآن',
+        sticky_button_bg_color: '#10b981',
+        sticky_button_text_color: '#ffffff',
+        sticky_button_position: 'bottom-center',
+        sticky_button_width_type: 'auto',
+        sticky_button_custom_width: 250
       };
       this.bundleData = {
         cta_button_text: 'اختر الباقة',
@@ -231,8 +239,10 @@ class SnippetController {
 
     async start() {
       try {
-        if (this.isInjected || this.retryCount >= this.maxRetries) return;
-        
+        // 🔥 NEW: Prevent multiple starts (fixes duplicate API calls)
+        if (this.isStarting || this.isInjected || this.retryCount >= this.maxRetries) return;
+
+        this.isStarting = true;  // 🔥 Mark as starting
         this.retryCount++;
 
 
@@ -251,13 +261,11 @@ class SnippetController {
           return;
         }
 
-        // Preload modal script and data immediately
+        // Preload modal script and all data immediately (global + bundle)
         this.preloadModalScript();
 
-        // Preload bundle data in background (after modal script loads)
-        this.preloadBundleDataInBackground();
-
         this.injectBundleUI();
+        this.injectStickyButton();
         this.hideSallaDefaultButtons();
         this.hideSallaOfferModal();
         this.hideProductOptions();
@@ -266,9 +274,12 @@ class SnippetController {
 
       } catch (error) {
         console.error('[Salla Bundle] Error:', error);
+        this.isStarting = false;  // 🔥 Reset flag on error
         if (this.retryCount < this.maxRetries) {
           setTimeout(() => this.start(), 2000);
         }
+      } finally {
+        this.isStarting = false;  // 🔥 Always reset flag when done
       }
     }
 
@@ -367,12 +378,12 @@ class SnippetController {
         });
 
         if (response.ok) {
-          // Parse response to get settings and bundle data
           const data = await response.json();
           if (data.data) {
-            // Store settings
             if (data.data.settings) {
               this.settings = data.data.settings;
+            } else {
+              console.warn('[Bundle] No settings found in API response');
             }
             
             // Store bundle data for UI customization
@@ -810,20 +821,139 @@ class SnippetController {
       });
     }
 
-    injectBundleUI() {
-      if (this.isInjected) return;
-
-      // Priority 1: Try to inject above Salla add-product-button
-      const sallaButton = document.querySelector('salla-add-product-button');
-      if (sallaButton) {
-        this.injectAboveSallaButton(sallaButton);
+    injectStickyButton() {
+      const stickyButton = this.settings.sticky_button || {};
+      
+      if (!stickyButton.enabled) {
         return;
       }
 
-      // Priority 2: Try to inject in product form
+      if (document.querySelector('.salla-bundle-sticky-button')) {
+        return;
+      }
+
+
+      // Create sticky button
+      const button = document.createElement('button');
+      button.className = 'salla-bundle-sticky-button';
+      button.type = 'button';
+      button.innerHTML = stickyButton.text || ' اطلب باقتك الآن';
+
+      const position = stickyButton.position || 'bottom-center';
+      const widthType = stickyButton.width_type || 'auto';
+
+      // Build position and width styles
+      let positionStyle = 'bottom: 20px;';
+      let transformStyle = '';
+      let widthStyle = '';
+      
+      // Position handling
+      if (position === 'bottom-center') {
+        positionStyle += ' left: 50%; right: auto;';
+        transformStyle = 'transform: translateX(-50%);';
+      } else if (position === 'bottom-left') {
+        positionStyle += ' left: 20px; right: auto;';
+      } else { // bottom-right
+        positionStyle += ' right: 20px; left: auto;';
+      }
+      
+      // Width handling
+      if (widthType === 'full') {
+        widthStyle = 'width: calc(100% - 40px); max-width: none;';
+        // For full width, override position to stretch across
+        positionStyle = 'bottom: 20px; left: 20px; right: 20px;';
+        transformStyle = ''; // No transform needed for full width
+      } else if (widthType === 'custom') {
+        const customWidth = stickyButton.custom_width || 250;
+        widthStyle = \`width: \${customWidth}px; max-width: min(\${customWidth}px, calc(100vw - 40px));\`;
+      } else {
+        widthStyle = 'width: auto; max-width: calc(100vw - 40px);';
+      }
+
+      // Get button colors
+      const buttonBgColor = stickyButton.bg_color || '#10b981';
+      const buttonTextColor = stickyButton.text_color || '#ffffff';
+      
+      // Create a lighter shade for hover effect
+      const lighterBgColor = this.adjustColorBrightness(buttonBgColor, 15);
+
+      // Apply styles
+      button.style.cssText = \`
+        position: fixed;
+        \${positionStyle}
+        \${widthStyle}
+        \${transformStyle}
+        z-index: 999999;
+        background: \${buttonBgColor};
+        color: \${buttonTextColor};
+        border: none;
+        padding: 14px 28px;
+        border-radius: 50px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        transition: all 0.3s ease;
+        font-family: inherit;
+        white-space: \${widthType === 'auto' ? 'nowrap' : 'normal'};
+        text-align: center;
+        animation: sallaStickyPulse 2s ease-in-out infinite;
+        box-sizing: border-box;
+      \`;
+
+      // Add hover effects with lighter color
+      button.onmouseenter = () => {
+        button.style.background = lighterBgColor;
+        button.style.boxShadow = '0 12px 28px rgba(0, 0, 0, 0.35)';
+      };
+
+      button.onmouseleave = () => {
+        button.style.background = buttonBgColor;
+        button.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.25)';
+      };
+
+      // Click handler
+      button.onclick = (e) => {
+        e.preventDefault();
+        this.openBundleModal();
+      };
+
+      // Add animation keyframes if not already added
+      if (!document.getElementById('salla-sticky-animation')) {
+        const style = document.createElement('style');
+        style.id = 'salla-sticky-animation';
+        style.textContent = \`
+          @keyframes sallaStickyPulse {
+            0%, 100% {
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            }
+            50% {
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), 0 0 0 8px rgba(16, 185, 129, 0.2);
+            }
+          }
+        \`;
+        document.head.appendChild(style);
+      }
+
+      // Append to body
+      document.body.appendChild(button);
+      console.log('[Bundle] Sticky button injected successfully');
+    }
+
+    injectBundleUI() {
+      if (this.isInjected) return;
+
+      // Priority 1: Try to inject at the end of product form
       const productForm = document.querySelector('form.product-form');
       if (productForm) {
         this.injectInProductForm(productForm);
+        return;
+      }
+
+      // Priority 2: Try to inject above Salla add-product-button
+      const sallaButton = document.querySelector('salla-add-product-button');
+      if (sallaButton) {
+        this.injectAboveSallaButton(sallaButton);
         return;
       }
 
@@ -1025,7 +1155,12 @@ class SnippetController {
 
     async preloadModalScript() {
       try {
+        if (window.__SALLA_BUNDLE_PRELOAD_STARTED__) {
+          return;
+        }
+
         if (!this.modalScriptLoaded && !window.SallaBundleModal) {
+          window.__SALLA_BUNDLE_PRELOAD_STARTED__ = true;
 
           // Add loading indicator
           this.isModalLoading = true;
@@ -1034,35 +1169,32 @@ class SnippetController {
           this.modalScriptLoaded = true;
           this.isModalLoading = false;
 
-          // Preload global data (reviews, payments, timer) immediately after modal script loads
+
           if (window.SallaBundleModal && window.SallaBundleModal.preloadGlobalData) {
-            window.SallaBundleModal.preloadGlobalData(CONFIG.storeId, CONFIG.storeDomain)
+            await window.SallaBundleModal.preloadGlobalData(CONFIG.storeId, CONFIG.storeDomain)
               .catch(err => console.error('[Bundle] Preload global data failed:', err));
+            
+            
+            if (window.SallaBundleModal.preloadBundleData) {
+              await window.SallaBundleModal.preloadBundleData(
+                this.productId,
+                CONFIG.storeId,
+                CONFIG.storeDomain,
+                CONFIG.customerId
+              ).catch(err => console.error('[Bundle] Preload bundle data failed:', err));
+              
+            }
           }
 
         }
       } catch (error) {
         this.isModalLoading = false;
+        console.error('[Snippet] Preload error:', error);
       }
     }
 
     preloadBundleDataInBackground() {
-      // Wait for modal script to load, then preload bundle data
-      const waitAndPreload = () => {
-        if (window.SallaBundleModal && window.SallaBundleModal.preloadBundleData) {
-          window.SallaBundleModal.preloadBundleData(
-            this.productId,
-            CONFIG.storeId,
-            CONFIG.storeDomain,
-            CONFIG.customerId
-          ).catch(err => console.error('[Bundle] Preload bundle data failed:', err));
-        } else {
-          // Modal script not loaded yet, retry in 100ms
-          setTimeout(waitAndPreload, 100);
-        }
-      };
-
-      waitAndPreload();
+      console.log('[Snippet] preloadBundleDataInBackground is deprecated');
     }
 
     loadModalScriptAsync() {
@@ -1082,7 +1214,18 @@ class SnippetController {
         if (!window.SallaBundleModal) {
           this.showLoadingState();
           
-          await this.loadModalScript();
+          if (this.isModalLoading) {
+            await new Promise((resolve) => {
+              const checkInterval = setInterval(() => {
+                if (window.SallaBundleModal) {
+                  clearInterval(checkInterval);
+                  resolve();
+                }
+              }, 100);
+            });
+          } else if (!this.modalScriptLoaded) {
+            await this.loadModalScript();
+          }
           
           this.hideLoadingState();
         }
@@ -1102,19 +1245,15 @@ class SnippetController {
           userPhone: CONFIG.userPhone
         };
 
-        // Check if modal is already open/initializing - prevent multiple instances
         if (window.sallaBundleModal && window.sallaBundleModal.isInitializing) {
-          console.log('[Bundle] Modal is already initializing, ignoring duplicate click');
           return;
         }
 
-        // Clear any existing modal instance
         if (window.sallaBundleModal) {
           window.sallaBundleModal.hide();
           window.sallaBundleModal = null;
         }
 
-        // Initialize and show modal with full context
         const modal = new window.SallaBundleModal(this.productId, contextData);
         window.sallaBundleModal = modal; // Set global reference for button callbacks
         modal.isInitializing = true; // Flag to prevent duplicate initialization

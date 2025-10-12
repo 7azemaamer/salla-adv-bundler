@@ -30,13 +30,13 @@ const BundleConfigSchema = new mongoose.Schema(
       id: String,
       name: String,
       price: Number,
-      currency: { type: String, default: 'SAR' },
+      currency: { type: String, default: "SAR" },
       image: String,
       sku: String,
       status: String,
       options: [mongoose.Schema.Types.Mixed], // Product variants/options
       variants: [mongoose.Schema.Types.Mixed], // Product variant combinations
-      has_variants: { type: Boolean, default: false }
+      has_variants: { type: Boolean, default: false },
     },
     bundles: [
       {
@@ -57,9 +57,9 @@ const BundleConfigSchema = new mongoose.Schema(
           type: String,
           trim: true,
           maxLength: 50,
-          default: function() {
+          default: function () {
             return `المستوى ${this.tier}`;
-          }
+          },
         },
         tier_highlight_text: {
           type: String,
@@ -69,22 +69,22 @@ const BundleConfigSchema = new mongoose.Schema(
         tier_bg_color: {
           type: String,
           trim: true,
-          default: '#f8f9fa',
+          default: "#f8f9fa",
         },
         tier_text_color: {
           type: String,
           trim: true,
-          default: '#212529',
+          default: "#212529",
         },
         tier_highlight_bg_color: {
           type: String,
           trim: true,
-          default: '#ffc107',
+          default: "#ffc107",
         },
         tier_highlight_text_color: {
           type: String,
           trim: true,
-          default: '#000000',
+          default: "#000000",
         },
         is_default: {
           type: Boolean,
@@ -134,13 +134,13 @@ const BundleConfigSchema = new mongoose.Schema(
               id: String,
               name: String,
               price: Number,
-              currency: { type: String, default: 'SAR' },
+              currency: { type: String, default: "SAR" },
               image: String,
               sku: String,
               status: String,
               options: [mongoose.Schema.Types.Mixed], // Product variants/options
               variants: [mongoose.Schema.Types.Mixed], // Product variant combinations
-              has_variants: { type: Boolean, default: false }
+              has_variants: { type: Boolean, default: false },
             },
           },
         ],
@@ -164,29 +164,35 @@ const BundleConfigSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxLength: 100,
-      default: 'اختر باقتك',
+      default: "اختر باقتك",
     },
     modal_subtitle: {
       type: String,
       trim: true,
       maxLength: 150,
-      default: '',
+      default: "",
     },
     cta_button_text: {
       type: String,
       trim: true,
       maxLength: 50,
-      default: 'اختر الباقة',
+      default: "اختر الباقة",
     },
     cta_button_bg_color: {
       type: String,
       trim: true,
-      default: '#0066ff',
+      default: "#0066ff",
     },
     cta_button_text_color: {
       type: String,
       trim: true,
-      default: '#ffffff',
+      default: "#ffffff",
+    },
+    checkout_button_text: {
+      type: String,
+      trim: true,
+      maxLength: 50,
+      default: "إتمام الطلب",
     },
     config_hash: {
       type: String,

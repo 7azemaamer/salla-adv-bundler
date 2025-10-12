@@ -23,7 +23,6 @@ export const getValidAccessToken = async (store_id) => {
     !expiresAt || expiresAt.getTime() - now.getTime() < 5 * 60 * 1000;
 
   if (needsRefresh && store.refresh_token) {
-    console.log(`[TokenHelper] Refreshing token for store ${store_id}`);
     return await refreshAccessToken(store_id);
   }
 
@@ -65,9 +64,7 @@ export const refreshAccessToken = async (store_id) => {
       }
     );
 
-    console.log(
-      `[TokenHelper] Token refreshed successfully for store ${store_id}`
-    );
+
     return access_token;
   } catch (error) {
     console.error(

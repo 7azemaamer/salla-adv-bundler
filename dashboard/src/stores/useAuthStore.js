@@ -109,18 +109,12 @@ const useAuthStore = create(
       initAuth: () => {
         const { token, isAuthenticated } = get();
         if (token && isAuthenticated) {
-          // Set axios header on initialization
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-          // Set authenticated state
           set({ isAuthenticated: true });
 
-          console.log(
-            "Auth initialized with token:",
-            token.substring(0, 20) + "..."
-          );
+   
         } else {
-          // Clear any existing headers if not authenticated
           delete axios.defaults.headers.common["Authorization"];
           set({ isAuthenticated: false });
         }

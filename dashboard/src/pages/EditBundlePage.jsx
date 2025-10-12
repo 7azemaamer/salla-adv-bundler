@@ -73,6 +73,7 @@ export default function EditBundlePage() {
       cta_button_text: "اختر الباقة",
       cta_button_bg_color: "#0066ff",
       cta_button_text_color: "#ffffff",
+      checkout_button_text: "إتمام الطلب",
       bundles: [
         {
           tier: 1,
@@ -214,6 +215,8 @@ export default function EditBundlePage() {
         cta_button_text: currentBundle.cta_button_text || "اختر الباقة",
         cta_button_bg_color: currentBundle.cta_button_bg_color || "#0066ff",
         cta_button_text_color: currentBundle.cta_button_text_color || "#ffffff",
+        checkout_button_text:
+          currentBundle.checkout_button_text || "إتمام الطلب",
         bundles: formattedBundles,
       };
 
@@ -1016,6 +1019,14 @@ export default function EditBundlePage() {
                       {...form.getInputProps("cta_button_text_color")}
                     />
                   </Grid.Col>
+                  <Grid.Col span={6}>
+                    <TextInput
+                      label="نص زر إتمام الطلب"
+                      placeholder="مثال: إتمام الطلب"
+                      description="النص الذي سيظهر على الزر في الخطوة الأخيرة"
+                      {...form.getInputProps("checkout_button_text")}
+                    />
+                  </Grid.Col>
                 </Grid>
 
                 {currentBundle.status === "active" && (
@@ -1283,6 +1294,7 @@ export default function EditBundlePage() {
             {/* Navigation Buttons */}
             <Group justify="space-between" mt="xl">
               <Button
+                type="button"
                 variant="light"
                 onClick={prevStep}
                 disabled={active === 0}
@@ -1294,7 +1306,7 @@ export default function EditBundlePage() {
               </Button>
 
               {active < 3 ? (
-                <Button onClick={nextStep}>
+                <Button type="button" onClick={nextStep}>
                   <Group gap="xs">
                     <span>التالي</span>
                     <IconArrowLeft size="1rem" />

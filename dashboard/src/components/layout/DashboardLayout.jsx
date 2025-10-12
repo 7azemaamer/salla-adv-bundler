@@ -39,7 +39,7 @@ const navItems = [
   },
   {
     icon: IconPackage,
-    label: "الباقات",
+    label: "العروض",
     path: "/dashboard/bundles",
     color: "green",
   },
@@ -181,7 +181,7 @@ export default function DashboardLayout() {
                   منصة العروض المتقدمة
                 </Text>
                 <Text size="xs" c="dimmed">
-                  إدارة ذكية للعروض والباقات
+                  إدارة ذكية للعروض والعروض
                 </Text>
               </div>
             </Group>

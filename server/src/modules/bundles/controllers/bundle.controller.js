@@ -116,7 +116,21 @@ export const updateBundle = asyncWrapper(async (req, res) => {
 
   // Allow updating basic fields and bundle configuration
   // Complex updates (changing products/tiers) may require offer recreation
-  const allowedUpdates = ["name", "description", "start_date", "expiry_date", "bundles", "target_product_id", "target_product_name"];
+  const allowedUpdates = [
+    "name",
+    "description",
+    "start_date",
+    "expiry_date",
+    "bundles",
+    "target_product_id",
+    "target_product_name",
+    "modal_title",
+    "modal_subtitle",
+    "cta_button_text",
+    "cta_button_bg_color",
+    "cta_button_text_color",
+    "checkout_button_text",
+  ];
   const updates = {};
 
   for (const field of allowedUpdates) {

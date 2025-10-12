@@ -164,8 +164,6 @@ BundleOfferSchema.virtual("performance").get(function () {
 
 // Pre-remove middleware to cleanup related data
 BundleOfferSchema.pre("deleteOne", { document: true }, async function () {
-  // Here you could add logic to deactivate the offer in Salla
-  console.log(`Preparing to delete offer: ${this.offer_id}`);
 });
 
 // Static method to cleanup failed offers

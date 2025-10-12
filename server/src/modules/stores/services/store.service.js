@@ -61,27 +61,18 @@ class StoreService {
       new: true,
     });
 
-    console.log(
-      `[Store Service] Store ${store_id} ${
-        existingStore ? "reactivated" : "installed"
-      }`
-    );
 
     // Fetch and cache payment methods on installation/reactivation
     if (access_token) {
       try {
-        console.log(
-          `[Store Service] Fetching payment methods for store ${store_id}...`
-        );
+
         const paymentMethodsResult = await fetchPaymentMethods(access_token);
 
         if (paymentMethodsResult && paymentMethodsResult.data) {
           store.payment_methods = paymentMethodsResult.data;
           store.payment_methods_updated_at = new Date();
           await store.save();
-          console.log(
-            `[Store Service] Cached ${paymentMethodsResult.data.length} payment methods for store ${store_id}`
-          );
+
         }
       } catch (error) {
         console.error(

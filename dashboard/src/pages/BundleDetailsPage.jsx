@@ -64,13 +64,13 @@ export default function BundleDetailsPage() {
     try {
       await generateOffers(bundleId);
       notifications.show({
-        title: "تم تفعيل الباقة",
-        message: "تم إنشاء العروض الخاصة وتفعيل الباقة بنجاح",
+        title: "تم تفعيل العرض المركب",
+        message: "تم إنشاء العروض الخاصة وتفعيل العرض المركب بنجاح",
         color: "green",
       });
     } catch (error) {
       notifications.show({
-        title: "خطأ في تفعيل الباقة",
+        title: "خطأ في تفعيل العرض المركب",
         message: error.message,
         color: "red",
       });
@@ -81,8 +81,8 @@ export default function BundleDetailsPage() {
     try {
       await deactivateBundle(bundleId);
       notifications.show({
-        title: "تم إلغاء تفعيل الباقة",
-        message: "تم إلغاء تفعيل الباقة بنجاح",
+        title: "تم إلغاء تفعيل العرض المركب",
+        message: "تم إلغاء تفعيل العرض المركب بنجاح",
         color: "blue",
       });
     } catch (error) {
@@ -98,14 +98,14 @@ export default function BundleDetailsPage() {
     try {
       await deleteBundle(bundleId);
       notifications.show({
-        title: "تم حذف الباقة",
-        message: "تم حذف الباقة بنجاح",
+        title: "تم حذف العرض المركب",
+        message: "تم حذف العرض المركب بنجاح",
         color: "green",
       });
       navigate("/dashboard/bundles");
     } catch (error) {
       notifications.show({
-        title: "خطأ في حذف الباقة",
+        title: "خطأ في حذف العرض المركب",
         message: error.message,
         color: "red",
       });
@@ -132,7 +132,7 @@ export default function BundleDetailsPage() {
     return (
       <Container size="xl">
         <Alert color="red" title="خطأ في تحميل البيانات">
-          {error || "لم يتم العثور على الباقة"}
+          {error || "لم يتم العثور على العرض المركب"}
         </Alert>
       </Container>
     );
@@ -231,7 +231,7 @@ export default function BundleDetailsPage() {
                     navigate(`/dashboard/bundles/${bundleId}/edit`)
                   }
                 >
-                  تعديل الباقة
+                  تعديل العرض المركب
                 </Menu.Item>
                 {/* 
                 <Menu.Item
@@ -256,7 +256,7 @@ export default function BundleDetailsPage() {
                     color="green"
                     onClick={handleGenerateOffers}
                   >
-                    تفعيل الباقة
+                    تفعيل العرض المركب
                   </Menu.Item>
                 )}
 
@@ -276,7 +276,7 @@ export default function BundleDetailsPage() {
                     color="green"
                     onClick={handleGenerateOffers}
                   >
-                    إعادة تفعيل الباقة
+                    إعادة تفعيل العرض المركب
                   </Menu.Item>
                 )}
 
@@ -287,7 +287,7 @@ export default function BundleDetailsPage() {
                   color="red"
                   onClick={handleDelete}
                 >
-                  حذف الباقة
+                  حذف العرض المركب
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -323,7 +323,7 @@ export default function BundleDetailsPage() {
         {/* Performance Overview */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Title order={3} className="text-gray-800" mb="md">
-            أداء الباقة
+            أداء العرض المركب
           </Title>
 
           <Grid>
@@ -383,7 +383,7 @@ export default function BundleDetailsPage() {
           <Grid.Col span={{ base: 12, md: 6 }}>
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Title order={3} className="text-gray-800" mb="md">
-                معلومات الباقة
+                معلومات العرض المركب
               </Title>
 
               <Stack gap="md">
@@ -456,14 +456,14 @@ export default function BundleDetailsPage() {
           <Grid.Col span={{ base: 12, md: 6 }}>
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Title order={3} className="text-gray-800" mb="md">
-                مستويات الباقة
+                مستويات العرض المركب
               </Title>
 
               <Stack gap="md">
                 {currentBundle.bundles?.map((tier, index) => (
                   <Paper key={index} p="md" withBorder>
                     <Group justify="space-between" mb="sm">
-                      <Text fw={600}>المستوى {tier.tier}</Text>
+                      <Text fw={600}>العرض {tier.tier}</Text>
                       <Badge size="sm" variant="light">
                         اشترِ {tier.buy_quantity}
                       </Badge>
@@ -509,15 +509,15 @@ export default function BundleDetailsPage() {
         {/* Status-specific alerts */}
         {currentBundle.status === "draft" && (
           <Alert color="yellow" title="باقة غير مفعلة">
-            هذه الباقة ما زالت في وضع المسودة. اضغط على "تفعيل الباقة" لإنشاء
-            العروض الخاصة وتفعيلها.
+            هذه العرض المركب ما زالت في وضع المسودة. اضغط على "تفعيل العرض
+            المركب" لإنشاء العروض الخاصة وتفعيلها.
           </Alert>
         )}
 
         {currentBundle.status === "expired" && (
           <Alert color="red" title="باقة منتهية الصلاحية">
-            انتهت صلاحية هذه الباقة. يمكنك تعديل تاريخ الانتهاء أو إنشاء باقة
-            جديدة.
+            انتهت صلاحية هذه العرض المركب. يمكنك تعديل تاريخ الانتهاء أو إنشاء
+            باقة جديدة.
           </Alert>
         )}
       </Stack>

@@ -8,6 +8,42 @@ const useSettingsStore = create((set, get) => ({
     hide_salla_offer_modal: false,
     hide_product_options: false,
     hide_quantity_input: false,
+    hide_price_section: false,
+    sticky_button: {
+      enabled: false,
+      text: " اطلب باقتك الآن",
+      bg_color: "#10b981",
+      text_color: "#ffffff",
+      position: "bottom-center",
+      width_type: "auto",
+      custom_width: 250,
+    },
+    free_shipping: {
+      enabled: true,
+      mode: "always",
+      min_price: 0,
+      text: "شحن مجاني لهذه الباقة",
+      progress_text: "أضف {amount} ريال للحصول على شحن مجاني",
+      bg_color: "#10b981",
+      text_color: "#ffffff",
+      icon: "🚚",
+      progress_color: "#ffffff",
+      progress_bg_color: "rgba(255, 255, 255, 0.3)",
+    },
+    timer: {
+      enabled: true,
+      duration: 21600,
+      duration_type: "6h",
+      auto_restart: true,
+      effect: "pulse",
+      text_color: "#0E1012",
+      bg_color: "#FFFFFF",
+      border_color: "#E5E8EC",
+      border_radius: 12,
+      label: "عرض محدود ينتهي خلال",
+      label_color: "#60646C",
+      font_size: 14,
+    },
   },
   loading: {
     fetching: false,
@@ -69,25 +105,83 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  // Toggle specific setting
+  // Toggle specific setting (supports nested paths with dot notation)
   toggleSetting: async (key) => {
     try {
-      const currentValue = get().settings[key];
+      const state = get();
+
+      // Support nested paths like "timer.enabled" or "sticky_button.enabled"
+      const keys = key.split(".");
+      let currentValue;
+
+      if (keys.length === 1) {
+        // Flat key (e.g., "hide_default_buttons")
+        currentValue = state.settings[key];
+      } else {
+        // Nested key (e.g., "timer.enabled")
+        const [parent, child] = keys;
+        currentValue = state.settings[parent]?.[child];
+      }
+
       const newValue = !currentValue;
 
       // Optimistic update
-      set((state) => ({
-        settings: { ...state.settings, [key]: newValue },
-      }));
+      if (keys.length === 1) {
+        // Flat key update
+        set((state) => ({
+          settings: { ...state.settings, [key]: newValue },
+        }));
+      } else {
+        // Nested key update
+        const [parent, child] = keys;
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            [parent]: {
+              ...state.settings[parent],
+              [child]: newValue,
+            },
+          },
+        }));
+      }
 
-      // Call API
-      await get().updateSettings({ [key]: newValue });
+      // Call API with nested structure
+      if (keys.length === 1) {
+        await get().updateSettings({ [key]: newValue });
+      } else {
+        const [parent, child] = keys;
+        await get().updateSettings({
+          [parent]: {
+            ...state.settings[parent],
+            [child]: newValue,
+          },
+        });
+      }
     } catch (error) {
       // Revert on error
-      const currentValue = get().settings[key];
-      set((state) => ({
-        settings: { ...state.settings, [key]: !currentValue },
-      }));
+      const state = get();
+      const keys = key.split(".");
+      let currentValue;
+
+      if (keys.length === 1) {
+        currentValue = state.settings[key];
+        set((state) => ({
+          settings: { ...state.settings, [key]: !currentValue },
+        }));
+      } else {
+        const [parent, child] = keys;
+        currentValue = state.settings[parent]?.[child];
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            [parent]: {
+              ...state.settings[parent],
+              [child]: !currentValue,
+            },
+          },
+        }));
+      }
+
       throw error;
     }
   },
