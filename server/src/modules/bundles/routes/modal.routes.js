@@ -6,856 +6,110 @@ const router = Router();
 router.get("/modal.js", (req, res) => {
   const { store } = req.query;
 
+  // Enable aggressive caching for better performance
+  const version = "v1.0.1"; // Increment to bust cache on updates
   res.set({
     "Content-Type": "application/javascript",
-    "Cache-Control": "no-cache, no-store, must-revalidate", // Disable caching during development
-    "Pragma": "no-cache",
-    "Expires": "0",
+    "Cache-Control": "public, max-age=3600, s-maxage=86400", // 1 hour browser, 24 hours CDN
+    "ETag": `"${version}"`,
     "Access-Control-Allow-Origin": "*",
   });
 
+  // Minified modal script with external CSS
   const modalScript = `
-(function() {
-  'use strict';
-
-  // Modern Boxy Modal Styles - Based on popup.style.jsx
-  const modalStyles = \`
-    /* Design tokens */
-    :root {
-      --bg-page:  #FAFBFC;
-      --bg-soft:  #F6F8FA;
-      --bg-elev:  #F4F6F8;
-      --bg-panel: #F2F4F7;
-      --bg-card:  #FFFFFF;
-      --bg-thumb: #EEF1F4;
-      --border:   #E5E8EC;
-      --text-1:   #0E1012;
-      --text-2:   #60646C;
-      --ok:       #2F3136;
-      --brand:    #0E1012;
-      --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 1px 1px rgba(16,24,40,.04);
-      --shadow-2: 0 10px 28px rgba(15,17,19,.08);
-    }
-
-    .salla-bundle-modal {
-      font-family: system-ui, -apple-system, sans-serif !important;
-      direction: rtl;
-      display: none;
-      position: fixed;
-      z-index: 999999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-    }
-
-    .salla-bundle-modal.show {
-      display: block;
-    }
-
-    .salla-bundle-panel {
-      position: absolute;
-      right: 0;
-      top: 0;
-      height: 100%;
-      width: 100%;
-      max-width: 720px;
-      background: var(--bg-panel);
-      box-shadow: var(--shadow-2);
-      border-left: 1px solid var(--border);
-      border-radius: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    /* Mobile-first responsive design */
-    @media (max-width: 640px) {
-      .salla-bundle-panel {
-        position: fixed;
-        top: 16px;
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
-        transform: none;
-        width: auto;
-        max-width: none;
-        height: auto;
-        max-height: none;
-        border-radius: 16px;
-        border: none;
-        animation: slideInMobile 0.3s ease-out;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-bundle-panel {
-        border-radius: 16px 0 0 16px;
-      }
-    }
-
-    .salla-bundle-header {
-      padding: 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-panel);
-    }
-
-    /* Mobile header adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-header {
-        padding: 16px;
-        background: var(--bg-panel);
-        border-bottom: 1px solid var(--border);
-        border-radius: 16px 16px 0 0;
-      }
-    }
-
-    .salla-bundle-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .salla-bundle-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin: 0;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-close {
-      width: 32px;
-      height: 32px;
-      display: grid;
-      place-items: center;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--text-1);
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-    }
-
-    .salla-bundle-close:hover {
-      background: var(--bg-elev);
-    }
-
-    .salla-bundle-body {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 16px;
-      background: var(--bg-soft);
-    }
-
-    /* Mobile body adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-body {
-        padding: 12px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-    }
-
-    .salla-bundle-section {
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-
-    /* Mobile section adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-section {
-        border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 8px;
-      }
-    }
-
-    .salla-bundle-section h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin: 0 0 6px 0;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-section .subtitle {
-      font-size: 12px;
-      color: var(--text-2);
-      margin-bottom: 12px;
-    }
-
-    /* Product header with image */
-    .salla-product-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      padding: 12px;
-      background: var(--bg-card);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-
-    .salla-product-image {
-      width: 56px;
-      height: 56px;
-      border-radius: 10px;
-      object-fit: cover;
-      background: var(--bg-soft);
-      flex-shrink: 0;
-    }
-
-    .salla-product-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .salla-product-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-1);
-      margin: 0 0 4px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .salla-product-meta {
-      font-size: 12px;
-      color: var(--text-2);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* Compact variant selectors */
-    .salla-variant-compact {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 640px) {
-      .salla-variant-compact {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .salla-variant-compact-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .salla-variant-compact-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-2);
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .salla-variant-compact-label.required:after {
-      content: " *";
-      color: #ef4444;
-    }
-
-    .salla-variant-compact-select {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: white;
-      color: var(--text-1);
-      font-size: 13px;
-      font-weight: 500;
-      font-family: inherit;
-      outline: none;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-
-    .salla-variant-compact-select:hover {
-      border-color: var(--text-1);
-    }
-
-    .salla-variant-compact-select:focus {
-      border-color: var(--text-1);
-      box-shadow: 0 0 0 3px rgba(14, 16, 18, 0.1);
-    }
-
-    /* Multiple quantity accordion */
-    .salla-quantity-accordion {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 8px;
-    }
-
-    .salla-quantity-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      background: var(--bg-elev);
-      cursor: pointer;
-      transition: background 0.2s;
-      border-bottom: 1px solid transparent;
-    }
-
-    .salla-quantity-header:hover {
-      background: var(--bg-thumb);
-    }
-
-    .salla-quantity-header.active {
-      border-bottom-color: var(--border);
-      background: var(--bg-card);
-    }
-
-    .salla-quantity-header-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-1);
-    }
-
-    .salla-quantity-badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: var(--text-1);
-      color: white;
-      font-weight: 600;
-    }
-
-    .salla-quantity-arrow {
-      font-size: 12px;
-      color: var(--text-2);
-      transition: transform 0.2s;
-    }
-
-    .salla-quantity-header.active .salla-quantity-arrow {
-      transform: rotate(180deg);
-    }
-
-    .salla-quantity-body {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-
-    .salla-quantity-body.active {
-      max-height: 500px;
-      padding: 12px 14px;
-      background: var(--bg-card);
-    }
-
-    .salla-quantity-status {
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: #d1fae5;
-      color: #065f46;
-      font-weight: 500;
-    }
-
-    .salla-quantity-status.incomplete {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .salla-bundle-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    /* Responsive grid layout */
-    @media (max-width: 640px) {
-      .salla-bundle-grid {
-        grid-template-columns: 1fr;
-        gap: 8px;
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-bundle-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-      }
-    }
-
-    .salla-bundle-card {
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      background: var(--bg-card);
-      padding: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      transition: all 0.2s ease;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .salla-bundle-card.active {
-      border: 1px solid var(--text-1);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-      transform: translateY(-2px);
-    }
-
-    .salla-bundle-card:not(.active) {
-      opacity: 0.85;
-      background: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    .salla-bundle-card:not(.active):hover {
-      opacity: 0.95;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .salla-bundle-card-header {
-      display: flex;
-      align-items: start;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .salla-bundle-card-title {
-      font-size: 14px;
-      font-weight: 600;
-      line-height: 1.3;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-card-value {
-      font-size: 12px;
-      color: var(--text-2);
-    }
-
-    .salla-bundle-badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 50px;
-      border: 1px solid var(--border);
-      background: var(--bg-soft);
-      color: var(--text-2);
-    }
-
-    .salla-bundle-items {
-      list-style: disc;
-      list-style-position: inside;
-      font-size: 13px;
-      color: var(--text-1);
-      margin: 0 0 12px 0;
-      padding: 0;
-    }
-
-    .salla-bundle-items li {
-      margin-bottom: 4px;
-    }
-
-    .salla-bundle-card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: auto;
-    }
-
-    .salla-bundle-price {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-button {
-      height: 44px;
-      padding: 0 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--text-1);
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-    }
-
-    /* Mobile bundle button adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-button {
-        height: 48px;
-        font-size: 15px;
-        font-weight: 600;
-        border-radius: 10px;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-bundle-button {
-        height: 36px;
-      }
-    }
-
-    .salla-bundle-button:hover {
-      background: var(--bg-elev);
-    }
-
-    .salla-bundle-button.active {
-      background: transparent !important;
-      color: var(--text-1) !important;
-      border-color: var(--text-1);
-    }
-
-    .salla-gifts-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    @media (min-width: 640px) {
-      .salla-gifts-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    .salla-gift-card {
-      border-radius: 14px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-
-    .salla-gift-image {
-      aspect-ratio: 1;
-      background: var(--bg-soft);
-    }
-
-    .salla-gift-content {
-      padding: 12px;
-    }
-
-    .salla-gift-badges {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    .salla-gift-badge {
-      font-size: 12px;
-      padding: 2px 8px;
-      border-radius: 50px;
-      border: 1px solid var(--border);
-      background: var(--bg-soft);
-    }
-
-    .salla-gift-free {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--ok);
-    }
-
-    .salla-gift-title {
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1.4;
-      margin-bottom: 4px;
-      color: var(--text-1);
-    }
-
-    .salla-gift-value {
-      font-size: 13px;
-      color: var(--text-2);
-      text-decoration: line-through;
-    }
-
-    .salla-sticky-summary {
-      padding: 12px;
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
-      box-shadow: var(--shadow-1);
-    }
-
-    /* Mobile sticky summary adjustments */
-    @media (max-width: 640px) {
-      .salla-sticky-summary {
-        padding: 16px;
-        background: var(--bg-panel);
-        border-top: 1px solid var(--border);
-        border-radius: 0 0 16px 16px;
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-      }
-    }
-
-    .salla-summary-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
-
-    .salla-summary-label {
-      color: var(--text-2);
-    }
-
-    .salla-summary-value {
-      font-weight: 600;
-      color: var(--text-1);
-    }
-
-    .salla-summary-savings {
-      color: #10b981;
-      font-weight: 600;
-      text-decoration: line-through;
-      position: relative;
-    }
-
-    .salla-summary-savings:before {
-      content: '−';
-      margin-left: 4px;
-      text-decoration: none;
-      font-weight: 700;
-    }
-
-    .salla-checkout-button {
-      width: 100%;
-      height: 56px;
-      border-radius: 14px;
-      background: var(--brand);
-      color: white;
-      border: none;
-      font-size: 16px;
-      font-weight: 500;
-      cursor: pointer;
-      box-shadow: var(--shadow-2);
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    /* Mobile checkout button adjustments */
-    @media (max-width: 640px) {
-      .salla-checkout-button {
-        height: 56px;
-        font-size: 16px;
-        font-weight: 600;
-        border-radius: 12px;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-checkout-button {
-        height: 48px;
-      }
-    }
-
-    .salla-checkout-button:hover {
-      opacity: 0.95;
-    }
-
-    .salla-checkout-button:active {
-      opacity: 0.9;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    @keyframes slideInMobile {
-      from {
-        transform: translateY(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
-    .no-scrollbar {
-      scrollbar-width: none;
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-
-    /* Variant Selector Styles */
-    .salla-variant-section {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
-    }
-
-    .salla-variant-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-1);
-      margin-bottom: 6px;
-    }
-
-    .salla-variant-label.required:after {
-      content: " *";
-      color: #ef4444;
-    }
-
-    .salla-variant-select {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg-card);
-      color: var(--text-1);
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s ease;
-    }
-
-    .salla-variant-select:focus {
-      border-color: var(--text-1);
-    }
-
-    .salla-variant-select.variant-error {
-      border: 2px solid #ef4444 !important;
-      outline: 3px solid rgba(239, 68, 68, 0.3) !important;
-      outline-offset: 1px !important;
-      background: rgba(239, 68, 68, 0.05) !important;
-      box-shadow: 0 0 0 1px #ef4444, 0 0 8px rgba(239, 68, 68, 0.2) !important;
-    }
-
-    .salla-variant-select.variant-error:focus {
-      outline: 3px solid rgba(239, 68, 68, 0.5) !important;
-      box-shadow: 0 0 0 2px #ef4444, 0 0 12px rgba(239, 68, 68, 0.3) !important;
-    }
-
-    .salla-variant-select.all-out-of-stock {
-      background: rgba(156, 163, 175, 0.1);
-      border-color: #9ca3af;
-      color: #6b7280;
-      cursor: not-allowed;
-    }
-
-    .salla-variant-select.all-out-of-stock:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px #9ca3af;
-    }
-
-    .salla-variant-group {
-      margin-bottom: 12px;
-    }
-
-    .salla-variant-error {
-      font-size: 12px;
-      color: #ef4444;
-      margin-top: 4px;
-    }
-
-    /* Out of Stock Product Styles */
-    .salla-gift-unavailable {
-      opacity: 0.7;
-      position: relative;
-    }
-
-    .salla-gift-unavailable .salla-gift-image {
-      position: relative;
-    }
-
-    .salla-gift-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px 14px 0 0;
-    }
-
-    .salla-gift-overlay-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    /* Bundle card styling for unavailable products */
-    .salla-bundle-card.unavailable {
-      opacity: 0.6;
-      background: #f8f9fa;
-      border-color: #e9ecef;
-      position: relative;
-    }
-
-    .salla-bundle-card.unavailable::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(156, 163, 175, 0.1) 10px,
-        rgba(156, 163, 175, 0.1) 20px
-      );
-      border-radius: 14px;
-      pointer-events: none;
-    }
-
-    .salla-bundle-card.unavailable .salla-bundle-button {
-      background: #e5e7eb;
-      color: #9ca3af;
-      cursor: not-allowed;
-      border-color: #d1d5db;
-    }
-
-    .salla-bundle-card.unavailable .salla-bundle-button:hover {
-      background: #e5e7eb;
-      transform: none;
-      box-shadow: none;
-    }
-  \`;
-
-  // Inject styles
-  if (!document.getElementById('salla-bundle-modal-styles')) {
-    const styleSheet = document.createElement('style');
-    styleSheet.id = 'salla-bundle-modal-styles';
-    styleSheet.textContent = modalStyles;
-    document.head.appendChild(styleSheet);
-  }
-
-  // Riyal SVG icon (inline)
+(function(){'use strict';
+// Load external CSS file for better caching and smaller JS bundle
+(function loadModalCSS(){
+if(!document.getElementById('salla-bundle-modal-styles')){
+const link=document.createElement('link');
+link.id='salla-bundle-modal-styles';
+link.rel='stylesheet';
+link.href='https://${req.get("host")}/bundle-modal.css?v=1.0.1';
+document.head.appendChild(link);
+}
+})();
+const riyalSvgIcon=\`<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display:inline-block;vertical-align:middle;margin:0 2px"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/></svg>\`;
+function formatPrice(price){
+const formatted=new Intl.NumberFormat('ar-SA',{minimumFractionDigits:2,maximumFractionDigits:2}).format(price);
+return formatted+' '+riyalSvgIcon;
+}
+class SallaBundleModal{
+constructor(productId,contextData={}){
+this.productId=productId;
+this.contextData=contextData;
+this.storeDomain=contextData.storeDomain||contextData;
+this.apiUrl='https://${req.get("host")}/api/v1';
+this.bundleData=null;
+this.modalElement=null;
+this.selectedBundle=null;
+}
+async initialize(){
+try{
+const params=new URLSearchParams();
+if(this.contextData.storeId){
+params.append('store',this.contextData.storeId);
+}else if(this.storeDomain){
+params.append('store',this.storeDomain);
+}
+if(this.contextData.customerId){
+params.append('customer_id',this.contextData.customerId);
+}
+const response=await fetch(\`\${this.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`,{
+method:'GET',
+headers:{'Content-Type':'application/json','X-Store-Domain':this.storeDomain||''}
+});
+if(!response.ok){
+throw new Error(\`Failed to load bundle: \${response.statusText}\`);
+}
+this.bundleData=await response.json();
+this.createModal();
+this.show();
+return this;
+}catch(error){
+console.error('[Bundle Modal] Initialization error:',error);
+this.showToast('فشل تحميل البيانات. حاول مرة أخرى.','error');
+throw error;
+}
+}
+createModal(){
+this.modalElement=document.createElement('div');
+this.modalElement.className='salla-bundle-modal';
+this.modalElement.innerHTML=\`
+<div class="salla-bundle-panel">
+<div class="salla-bundle-header">
+<div class="salla-bundle-header-row">
+<h2 class="salla-bundle-title">\${this.bundleData.data?.title||'اختر باقتك'}</h2>
+<button class="salla-bundle-close" aria-label="إغلاق">×</button>
+</div>
+</div>
+<div class="salla-bundle-body"></div>
+<div class="salla-sticky-summary"></div>
+</div>
+\`;
+document.body.appendChild(this.modalElement);
+window.sallaBundleModal=this;
+this.modalElement.onclick=(e)=>{if(e.target===this.modalElement)this.hide();};
+const closeBtn=this.modalElement.querySelector('.salla-bundle-close');
+closeBtn.onclick=()=>this.hide();
+this.renderContent();
+}
+renderContent(){
+const body=this.modalElement.querySelector('.salla-bundle-body');
+const summary=this.modalElement.querySelector('.salla-sticky-summary');
+const bundleConfig=this.bundleData.data||this.bundleData;
+const bundles=bundleConfig.bundles||[];
+if(bundles.length===0){
+body.innerHTML=\`<div class="salla-bundle-section"><div style="text-align:center;color:var(--text-2);padding:20px">لا توجد عروض متاحة حالياً.</div></div>\`;
+return;
+}
+const targetProductData=bundleConfig.target_product_data;
+const baseProductPrice=targetProductData?.price||100.00;
+const bundleDisplayData=bundles.map((tier,index)=>{
+const buyQuantity=tier.buy_quantity||1;
+const subtotal=buyQuantity*baseProductPrice;
+const unavailableProducts=this.getUnavailableProducts(bundleConfig,tier);
+const hasUnavailableProducts=unavailableProducts.length>0;
+const targetProductUnavailable=bundleConfig.target_product_data?this.isProductCompletelyUnavailable(bundleConfig.target_product_data):false;
   const riyalSvgIcon = \`<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display: inline-block; vertical-align: middle; margin: 0 2px;">
     <path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/>
     <path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/>
