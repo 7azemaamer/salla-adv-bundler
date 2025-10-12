@@ -208,9 +208,18 @@ class SnippetController {
           params.append('store', CONFIG.storeDomain);
         }
 
-        const prefetchUrl = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
-        
+        // Prefetch CSS
+        const prefetchCssUrl = \`\${CONFIG.apiUrl}/modal/modal.css\`;
+        if (!document.querySelector(\`link[href="\${prefetchCssUrl}"]\`)) {
+          const cssPrefetchLink = document.createElement('link');
+          cssPrefetchLink.rel = 'prefetch';
+          cssPrefetchLink.href = prefetchCssUrl;
+          cssPrefetchLink.as = 'style';
+          document.head.appendChild(cssPrefetchLink);
+        }
 
+        // Prefetch JS
+        const prefetchUrl = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
         if (!document.querySelector(\`link[href="\${prefetchUrl}"]\`)) {
           const prefetchLink = document.createElement('link');
           prefetchLink.rel = 'prefetch';
@@ -1273,6 +1282,16 @@ class SnippetController {
     }
 
     async loadModalScript() {
+      // Load CSS first (if not already loaded)
+      if (!document.getElementById('salla-bundle-modal-styles')) {
+        const link = document.createElement('link');
+        link.id = 'salla-bundle-modal-styles';
+        link.rel = 'stylesheet';
+        link.href = \`\${CONFIG.apiUrl}/modal/modal.css\`;
+        document.head.appendChild(link);
+      }
+
+      // Then load the JavaScript
       return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         
