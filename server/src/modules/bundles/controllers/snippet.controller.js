@@ -1211,6 +1211,7 @@ class SnippetController {
 
     async openBundleModal() {
       try {
+        
         if (!window.SallaBundleModal) {
           this.showLoadingState();
           
@@ -1228,6 +1229,8 @@ class SnippetController {
           }
           
           this.hideLoadingState();
+        } else {
+          console.log('[Salla Bundle] Modal script already available');
         }
 
         // Prepare context data using Salla store variables
@@ -1244,6 +1247,7 @@ class SnippetController {
           userEmail: CONFIG.userEmail,
           userPhone: CONFIG.userPhone
         };
+        
 
         if (window.sallaBundleModal && window.sallaBundleModal.isInitializing) {
           return;
@@ -1260,14 +1264,13 @@ class SnippetController {
         
         try {
           await modal.initialize();
+          
           modal.show();
         } finally {
           modal.isInitializing = false;
         }
 
       } catch (error) {
-        console.error('[Salla Bundle] Modal error:', error);
-        // Show user-friendly error message instead of navigating
         alert('عذراً، حدث خطأ في تحميل العروض. يرجى المحاولة مرة أخرى.');
       }
     }
@@ -1288,16 +1291,20 @@ class SnippetController {
           params.append('customer_id', CONFIG.customerId);
         }
         
-        script.src = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
+        params.append('v', Date.now());
+        
+        const scriptUrl = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
+        
+        script.src = scriptUrl;
         script.async = true;
-        script.defer = true;
         script.onload = () => {
+          this.modalScriptLoaded = true;
           resolve();
         };
         script.onerror = (error) => {
-          console.error('[Salla Bundle] Modal script load failed:', error);
           reject(error);
         };
+        
         document.head.appendChild(script);
       });
     }

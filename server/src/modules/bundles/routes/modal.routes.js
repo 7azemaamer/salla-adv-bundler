@@ -1097,6 +1097,7 @@ router.get("/modal.js", (req, res) => {
         display: grid;
         grid-template-columns: 1fr;
         gap: 8px;
+        margin-bottom:10px;
       }
 
       .salla-gift-card {

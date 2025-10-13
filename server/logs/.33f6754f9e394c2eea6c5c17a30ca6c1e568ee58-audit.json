@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\hazoo\\OneDrive\\Desktop\\weirdos\\sallaAdvBundle\\server\\logs\\.33f6754f9e394c2eea6c5c17a30ca6c1e568ee58-audit.json",
+    "files": [
+        {
+            "date": 1760352116476,
+            "name": "C:\\Users\\hazoo\\OneDrive\\Desktop\\weirdos\\sallaAdvBundle\\server\\logs\\error-2025-10-13.log",
+            "hash": "5648003b7335806e8f3da4bf031fbb832db2e1d3a9f5985bf6d367f7745a5918"
+        }
+    ],
+    "hashType": "sha256"
+}
