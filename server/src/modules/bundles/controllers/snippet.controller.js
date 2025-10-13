@@ -935,9 +935,44 @@ class SnippetController {
         document.head.appendChild(style);
       }
 
-      // Append to body
+      button.style.opacity = '0';
+      button.style.transform = \`translateY(100px) \${transformStyle ? 'translateX(-50%)' : ''}\`;
+      button.style.pointerEvents = 'none';
       document.body.appendChild(button);
-      console.log('[Bundle] Sticky button injected successfully');
+
+      const setupStickyButtonVisibility = () => {
+        const mainCTA = document.querySelector('.salla-bundle-btn, .salla-bundle-notice');
+        
+        if (!mainCTA) {
+          setTimeout(setupStickyButtonVisibility, 500);
+          return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              // Main CTA is visible - hide sticky button
+              button.style.opacity = '0';
+              button.style.transform = \`translateY(100px) \${transformStyle ? 'translateX(-50%)' : ''}\`;
+              button.style.pointerEvents = 'none';
+            } else {
+              // Main CTA is NOT visible - show sticky button
+              button.style.opacity = '1';
+              button.style.transform = transformStyle || 'translateY(0)';
+              button.style.pointerEvents = 'auto';
+            }
+          });
+        }, {
+          threshold: 0.1, 
+          rootMargin: '0px'
+        });
+
+        observer.observe(mainCTA);
+        console.log('[Bundle] Sticky button visibility observer setup complete');
+      };
+
+      setTimeout(setupStickyButtonVisibility, 1000);
+
     }
 
     injectBundleUI() {
