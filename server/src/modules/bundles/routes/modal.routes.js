@@ -1946,7 +1946,11 @@ router.get("/modal.js", (req, res) => {
         }
 
 
-        if (SallaBundleModal.dataCache.bundleData[this.productId]) {
+        
+        if (window.__SALLA_BUNDLE_CACHE__ && window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`]) {
+          this.bundleData = window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`];
+          SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
+        } else if (SallaBundleModal.dataCache.bundleData[this.productId]) {
           this.bundleData = SallaBundleModal.dataCache.bundleData[this.productId];
         } else {
           const params = new URLSearchParams();
@@ -1983,6 +1987,7 @@ router.get("/modal.js", (req, res) => {
             this.bundleData = JSON.parse(responseText);
             // Cache it for future use
             SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
+            console.log('[Modal] ✅ Bundle data fetched and cached');
           } catch (jsonError) {
             console.error('[Salla Bundle Modal] JSON parse error:', jsonError);
             console.error('[Salla Bundle Modal] Response text:', responseText);

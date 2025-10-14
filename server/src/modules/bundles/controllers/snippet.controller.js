@@ -1194,38 +1194,81 @@ class SnippetController {
           return;
         }
 
-        if (!this.modalScriptLoaded && !window.SallaBundleModal) {
-          window.__SALLA_BUNDLE_PRELOAD_STARTED__ = true;
+        window.__SALLA_BUNDLE_PRELOAD_STARTED__ = true;
 
+        // 🔥 NEW: Preload bundle data FIRST (most important for UX)
+        console.log('[Bundle] 📦 Preloading bundle data for product:', this.productId);
+        this.preloadBundleData();
+
+        if (!this.modalScriptLoaded && !window.SallaBundleModal) {
           // Add loading indicator
           this.isModalLoading = true;
 
+          console.log('[Bundle] 📥 Loading modal script...');
           await this.loadModalScript();
           this.modalScriptLoaded = true;
           this.isModalLoading = false;
 
+          console.log('[Bundle] ✅ Modal script loaded');
 
+          // Load global data if available
           if (window.SallaBundleModal && window.SallaBundleModal.preloadGlobalData) {
+            console.log('[Bundle] 📥 Preloading global data...');
             await window.SallaBundleModal.preloadGlobalData(CONFIG.storeId, CONFIG.storeDomain)
               .catch(err => console.error('[Bundle] Preload global data failed:', err));
-            
-            
-            if (window.SallaBundleModal.preloadBundleData) {
-              await window.SallaBundleModal.preloadBundleData(
-                this.productId,
-                CONFIG.storeId,
-                CONFIG.storeDomain,
-                CONFIG.customerId
-              ).catch(err => console.error('[Bundle] Preload bundle data failed:', err));
-              
-            }
+            console.log('[Bundle] ✅ Global data preloaded');
           }
-
         }
       } catch (error) {
         this.isModalLoading = false;
         console.error('[Snippet] Preload error:', error);
       }
+    }
+
+    // 🔥 NEW: Preload bundle data immediately when page loads
+    preloadBundleData() {
+      const params = new URLSearchParams();
+
+      if (CONFIG.storeId) {
+        params.append('store', CONFIG.storeId);
+      } else if (CONFIG.storeDomain) {
+        params.append('store', CONFIG.storeDomain);
+      }
+
+      if (CONFIG.customerId) {
+        params.append('customer_id', CONFIG.customerId);
+      }
+
+      const bundleDataUrl = \`\${CONFIG.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`;
+      
+      console.log('[Bundle] 🚀 Fetching bundle data:', bundleDataUrl);
+
+      // Fetch bundle data in background
+      fetch(bundleDataUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          'X-Store-Domain': CONFIG.storeDomain || '',
+          'X-Store-ID': CONFIG.storeId || '',
+          'X-Customer-ID': CONFIG.customerId || ''
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error(\`HTTP \${response.status}\`);
+      })
+      .then(data => {
+        // Cache the data globally for instant access
+        window.__SALLA_BUNDLE_CACHE__ = window.__SALLA_BUNDLE_CACHE__ || {};
+        window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`] = data;
+        console.log('[Bundle] ✅ Bundle data preloaded and cached');
+      })
+      .catch(error => {
+        console.error('[Bundle] ❌ Failed to preload bundle data:', error);
+      });
     }
 
     preloadBundleDataInBackground() {
