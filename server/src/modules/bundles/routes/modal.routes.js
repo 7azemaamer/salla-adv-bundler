@@ -2,7 +2,6 @@ import { Router } from "express";
 
 const router = Router();
 
-// Bundle modal script - loaded on demand when bundle button is clicked
 router.get("/modal.js", (req, res) => {
   res.set({
     "Content-Type": "application/javascript",
@@ -1262,7 +1261,6 @@ router.get("/modal.js", (req, res) => {
 
       .salla-footer-total {
         font-size: 13px;
-        color: var(--text-2);
       }
 
       .salla-footer-price {
@@ -1409,6 +1407,111 @@ router.get("/modal.js", (req, res) => {
     @keyframes timerGlow {
       0%, 100% { filter: drop-shadow(0 0 0px currentColor); }
       50% { filter: drop-shadow(0 0 8px currentColor); }
+    }
+
+    /* Enhanced Progress and Feedback Animations */
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes successPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      }
+      50% {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      }
+    }
+
+    @keyframes checkmarkBounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-8px); }
+      60% { transform: translateY(-4px); }
+    }
+
+    @keyframes fadeInSlide {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+
+    @keyframes progressShimmer {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+
+    @keyframes truckBounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-3px); }
+      60% { transform: translateY(-2px); }
+    }
+
+    @keyframes popIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      80% {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes progressBarGlow {
+      0%, 100% {
+        filter: brightness(1) drop-shadow(0 0 8px rgba(255,255,255,0.3));
+      }
+      50% {
+        filter: brightness(1.1) drop-shadow(0 0 16px rgba(255,255,255,0.6));
+      }
+    }
+
+    @keyframes progressSlideIn {
+      0% {
+        width: 0%;
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      100% {
+        width: var(--target-width, 100%);
+        opacity: 1;
+      }
+    }
+
+    @keyframes bannerSlideIn {
+      0% {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
 
     /* Reviews Carousel */
@@ -1787,6 +1890,125 @@ router.get("/modal.js", (req, res) => {
     static isPreloading = false;
     static preloadPromise = null;
 
+    // Haptic feedback, sound, and vibration system
+    static feedbackSystem = {
+      // Audio context for sound effects
+      audioContext: null,
+      sounds: {
+        click: null,
+        progress: null,
+        complete: null,
+        success: null
+      },
+
+      // Initialize audio context and sounds
+      initAudio() {
+        if (this.audioContext) return;
+
+        try {
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          this.createSounds();
+        } catch (e) {
+          console.log('Audio not supported:', e);
+        }
+      },
+
+      // Create procedural sound effects
+      createSounds() {
+        // Click sound - short and satisfying
+        this.sounds.click = () => this.playTone(800, 0.05, 'sine', 0.1);
+
+        // Progress sound - ascending tone
+        this.sounds.progress = () => {
+          this.playTone(600, 0.1, 'square', 0.05);
+          setTimeout(() => this.playTone(800, 0.1, 'square', 0.05), 50);
+        };
+
+        // Complete sound - celebration
+        this.sounds.complete = () => {
+          this.playTone(523, 0.15, 'sine', 0.2); // C5
+          setTimeout(() => this.playTone(659, 0.15, 'sine', 0.2), 100); // E5
+          setTimeout(() => this.playTone(784, 0.2, 'sine', 0.3), 200); // G5
+        };
+
+        // Success sound - triumphant
+        this.sounds.success = () => {
+          this.playTone(523, 0.1, 'triangle', 0.15); // C5
+          setTimeout(() => this.playTone(659, 0.1, 'triangle', 0.15), 75); // E5
+          setTimeout(() => this.playTone(784, 0.1, 'triangle', 0.15), 150); // G5
+          setTimeout(() => this.playTone(1047, 0.2, 'triangle', 0.25), 225); // C6
+        };
+      },
+
+      // Play a tone with given parameters
+      playTone(frequency, duration, type = 'sine', volume = 0.1) {
+        if (!this.audioContext) return;
+
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+
+        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+        oscillator.start(this.audioContext.currentTime);
+        oscillator.stop(this.audioContext.currentTime + duration);
+      },
+
+      // Haptic feedback for mobile devices
+      triggerHaptic(type = 'light') {
+        if (!window.navigator.vibrate) return;
+
+        const patterns = {
+          light: [10],
+          medium: [50],
+          heavy: [100],
+          success: [50, 50, 50, 50, 100],
+          progress: [20],
+          click: [10],
+          complete: [100, 50, 100]
+        };
+
+        try {
+          window.navigator.vibrate(patterns[type] || patterns.light);
+        } catch (e) {
+          console.log('Vibration not supported:', e);
+        }
+      },
+
+      // Trigger combined feedback
+      triggerFeedback(type) {
+        this.initAudio();
+
+        const actions = {
+          click: () => {
+            this.sounds.click?.();
+            this.triggerHaptic('click');
+          },
+          progress: () => {
+            this.sounds.progress?.();
+            this.triggerHaptic('progress');
+          },
+          complete: () => {
+            this.sounds.complete?.();
+            this.triggerHaptic('complete');
+          },
+          success: () => {
+            this.sounds.success?.();
+            this.triggerHaptic('success');
+          }
+        };
+
+        actions[type]?.();
+      }
+    };
+    static preloadPromise = null;
+
     constructor(productId, contextData = {}) {
       this.productId = productId;
       this.contextData = contextData;
@@ -1797,18 +2019,118 @@ router.get("/modal.js", (req, res) => {
       this.selectedBundle = null;
       this.isInitializing = false; // Prevent duplicate initialization
 
+      // Initialize feedback system on first user interaction
+      this.feedbackInitialized = false;
+      this.initializeFeedbackOnFirstInteraction();
+
       // Mobile stepper state
       this.currentStep = 1;
       this.totalSteps = 5;
       this.stepLabels = [
         'اختر الباقة',
         'الخيارات',
-        'الهدايا',
+        'إختر هداياك',
         'المنتجات المخفضة',
         'الفاتورة'
       ];
 
-      // New features state
+      // Initialize feature state
+      this.initializeFeatureState();
+    }
+
+    // Initialize feedback system on first user interaction (to avoid browser audio restrictions)
+    initializeFeedbackOnFirstInteraction() {
+      const initFeedback = (e) => {
+        if (!this.feedbackInitialized) {
+          SallaBundleModal.feedbackSystem.initAudio();
+          this.feedbackInitialized = true;
+          // Remove listeners after initialization
+          document.removeEventListener('click', initFeedback);
+          document.removeEventListener('touchstart', initFeedback);
+          document.removeEventListener('keydown', initFeedback);
+        }
+      };
+
+      // Add listeners for first user interaction
+      document.addEventListener('click', initFeedback, { once: true });
+      document.addEventListener('touchstart', initFeedback, { once: true });
+      document.addEventListener('keydown', initFeedback, { once: true });
+    }
+
+    // Trigger feedback with error handling
+    triggerFeedback(type) {
+      try {
+        SallaBundleModal.feedbackSystem.triggerFeedback(type);
+      } catch (e) {
+        console.log('Feedback system error:', e);
+      }
+    }
+
+    // Setup global feedback listeners for all interactive elements
+    setupGlobalFeedbackListeners() {
+      if (!this.modalElement) return;
+
+      // Add feedback to button clicks
+      const buttons = this.modalElement.querySelectorAll('button, .salla-bundle-button, .salla-step-btn, .salla-checkout-button');
+      buttons.forEach(button => {
+        if (!button.hasFeedbackListener) {
+          button.addEventListener('click', (e) => {
+            // Don't trigger feedback for close button since it's handled separately
+            if (!e.target.classList.contains('salla-bundle-close')) {
+              this.triggerFeedback('click');
+            }
+          });
+          button.hasFeedbackListener = true;
+        }
+      });
+
+      // Add feedback to bundle card selections
+      const bundleCards = this.modalElement.querySelectorAll('.salla-bundle-card, .salla-bundle-card-compact');
+      bundleCards.forEach(card => {
+        if (!card.hasFeedbackListener) {
+          card.addEventListener('click', () => {
+            this.triggerFeedback('click');
+          });
+          card.hasFeedbackListener = true;
+        }
+      });
+
+      // Add feedback to gift and product selections
+      const selectableItems = this.modalElement.querySelectorAll('.salla-gift-card, .salla-discounted-card, .salla-review-dot');
+      selectableItems.forEach(item => {
+        if (!item.hasFeedbackListener) {
+          item.addEventListener('click', () => {
+            this.triggerFeedback('click');
+          });
+          item.hasFeedbackListener = true;
+        }
+      });
+
+      // Add feedback to toggle elements
+      const toggles = this.modalElement.querySelectorAll('.salla-summary-toggle, .salla-discount-header');
+      toggles.forEach(toggle => {
+        if (!toggle.hasFeedbackListener) {
+          toggle.addEventListener('click', () => {
+            this.triggerFeedback('click');
+          });
+          toggle.hasFeedbackListener = true;
+        }
+      });
+
+      // Add feedback to navigation buttons
+      const navButtons = this.modalElement.querySelectorAll('button[aria-label]');
+      navButtons.forEach(button => {
+        if (!button.hasFeedbackListener) {
+          button.addEventListener('click', () => {
+            this.triggerFeedback('click');
+          });
+          button.hasFeedbackListener = true;
+        }
+      });
+    }
+
+    // Initialize new features state
+    initializeFeatureState() {
       this.timerSettings = null;
       this.timerEndTime = null;
       this.timerInterval = null;
@@ -2153,7 +2475,13 @@ router.get("/modal.js", (req, res) => {
       };
 
       const closeBtn = this.modalElement.querySelector('.salla-bundle-close');
-      closeBtn.onclick = () => this.hide();
+      closeBtn.onclick = () => {
+        this.triggerFeedback('click');
+        this.hide();
+      };
+
+      // Add global feedback listeners for interactive elements
+      this.setupGlobalFeedbackListeners();
 
       // Render content (mobile or desktop)
       if (isMobile) {
@@ -2593,7 +2921,7 @@ router.get("/modal.js", (req, res) => {
       if (freeGifts.length > 0) {
         steps.push({
           number: stepNumber++,
-          label: 'الهدايا',
+          label: 'إختر هداياك',
           html: this.renderStep3FreeGifts(selectedTier, selectedBundleData),
           type: 'free_gifts'
         });
@@ -2668,9 +2996,6 @@ router.get("/modal.js", (req, res) => {
                         <span>\${formatPrice(bundle.price)}</span>
                         \${bundle.savings > 0 ? \`<span class="salla-bundle-savings-badge">وفر \${formatPrice(bundle.savings)}</span>\` : ''}
                       </div>
-                      <div class="salla-bundle-details-toggle" id="toggle-\${bundle.id}" onclick="event.stopPropagation(); window.sallaBundleModal.toggleBundleDetails('\${bundle.id}')">
-                        \${isSelected ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
-                      </div>
                       <ul class="salla-bundle-items \${isSelected ? 'expanded' : ''}" id="bundle-items-\${bundle.id}">
                         \${bundle.items.map(item => \`<li>\${item}</li>\`).join('')}
                       </ul>
@@ -2699,6 +3024,7 @@ router.get("/modal.js", (req, res) => {
       return \`
         <div class="salla-step-container" data-step="2">
           <div class="salla-bundle-section">
+            <h3>المنتج الأساسي</h3>
             <div class="salla-product-header">
               <img src="\${targetProductData.image || 'https://via.placeholder.com/56'}" alt="\${targetProductData.name}" class="salla-product-image" />
               <div class="salla-product-info">
@@ -2711,8 +3037,8 @@ router.get("/modal.js", (req, res) => {
               </div>
             </div>
             \${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
+            </div>
             \${this.renderReviews()}
-          </div>
         </div>
       \`;
     }
@@ -2742,8 +3068,8 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-gifts-grid">
               \${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
             </div>
-            \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
           </div>
+          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
         </div>
       \`;
     }
@@ -2811,8 +3137,8 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-discounted-scroll">
               \${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
             </div>
-            \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
           </div>
+          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
         </div>
       \`;
     }
@@ -2864,12 +3190,12 @@ router.get("/modal.js", (req, res) => {
                 <!-- السعر الأصلي - Red color -->
                 <div class="salla-summary-row">
                   <span class="salla-summary-label">السعر الأصلي</span>
-                  <span class="salla-summary-value" style="color: #dc2626;">\${formatPrice(originalPriceBeforeDiscount)}</span>
+                  <span class="salla-summary-value" style="color: #dc2626;text-decoration: line-through;">\${formatPrice(originalPriceBeforeDiscount)}</span>
                 </div>
                 
                 <!-- سعر المنتجات - Black color -->
                 <div class="salla-summary-row">
-                  <span class="salla-summary-label">سعر المنتجات</span>
+                  <span class="salla-summary-label">السعر المخفض</span>
                   <span class="salla-summary-value">\${formatPrice(productsPrice)}</span>
                 </div>
                 
@@ -2924,7 +3250,7 @@ router.get("/modal.js", (req, res) => {
           <div>
             <div class="salla-footer-total">المجموع</div>
             \${hasSavings ? \`
-              <div style="font-size: 11px; color: #10b981; text-decoration: line-through; margin-bottom: 2px;">
+              <div style="font-size: 11px; color: #ef4444; text-decoration: line-through; margin-bottom: 2px;">
                 \${formatPrice(originalTotal)}
               </div>
             \` : ''}
@@ -3087,6 +3413,9 @@ router.get("/modal.js", (req, res) => {
     selectBundle(bundleId) {
       this.selectedBundle = bundleId;
 
+      // Trigger satisfying feedback for bundle selection
+      this.triggerFeedback('click');
+
       // Stop payment slider animation before re-rendering
       if (this.paymentSliderAnimationFrame) {
         cancelAnimationFrame(this.paymentSliderAnimationFrame);
@@ -3117,6 +3446,14 @@ router.get("/modal.js", (req, res) => {
           setTimeout(() => this.startPaymentSliderAutoScroll(), 100);
         }
       }
+
+      // 🔥 NEW: Automatically expand the selected bundle's details
+      setTimeout(() => {
+        const itemsList = document.querySelector(\`#bundle-items-\${bundleId}\`);
+        if (itemsList && !itemsList.classList.contains('expanded')) {
+          itemsList.classList.add('expanded');
+        }
+      }, 50);
 
       // Auto-advance on mobile if step 1 complete
       if (isMobile && this.currentStep === 1) {
@@ -4210,14 +4547,18 @@ router.get("/modal.js", (req, res) => {
         this.showStepValidationError();
         return;
       }
-      
+
       if (this.currentStep < this.totalSteps) {
         this.currentStep++;
         this.updateStepUI();
         this.scrollToTop();
+        // Trigger click feedback for navigation
+        this.triggerFeedback('click');
       } else if (this.currentStep === this.totalSteps) {
         // Final step: trigger checkout
         this.handleCheckout();
+        // Trigger success feedback for checkout
+        this.triggerFeedback('success');
       }
     }
 
@@ -4226,6 +4567,8 @@ router.get("/modal.js", (req, res) => {
         this.currentStep--;
         this.updateStepUI();
         this.scrollToTop();
+        // Trigger click feedback for navigation
+        this.triggerFeedback('click');
       }
     }
 
@@ -4357,17 +4700,168 @@ router.get("/modal.js", (req, res) => {
           this.startModernReviewsAutoScroll();
         }, 500);
       }
+
+      // Animate free shipping progress bar when step appears
+      setTimeout(() => {
+        this.animateFreeShippingProgress();
+      }, 100);
     }
 
     updateProgressUI() {
       const progressSteps = document.querySelectorAll('.salla-progress-step');
+      let hasProgressChange = false;
+
       progressSteps.forEach((step, index) => {
+        const stepNumber = index + 1;
+        const wasCompleted = step.classList.contains('completed');
+        const wasActive = step.classList.contains('active');
+
         step.classList.remove('active', 'completed');
-        if (index + 1 < this.currentStep) {
+
+        if (stepNumber < this.currentStep) {
+          if (!wasCompleted) {
+            hasProgressChange = true;
+            // Add animation for newly completed steps
+            step.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+              step.style.transform = 'scale(1)';
+            }, 200);
+          }
           step.classList.add('completed');
-        } else if (index + 1 === this.currentStep) {
+        } else if (stepNumber === this.currentStep) {
+          if (!wasActive) {
+            hasProgressChange = true;
+            // Add pulse animation for active step
+            step.style.animation = 'pulse 0.6s ease-in-out';
+            setTimeout(() => {
+              step.style.animation = '';
+            }, 600);
+          }
           step.classList.add('active');
         }
+      });
+
+      // Trigger feedback if progress changed
+      if (hasProgressChange) {
+        this.triggerFeedback('progress');
+      }
+
+      // Update step counter animation
+      this.updateStepCounter();
+
+      // Re-animate free shipping progress when progress changes
+      if (hasProgressChange) {
+        setTimeout(() => {
+          this.refreshFreeShippingAnimation();
+        }, 200);
+      }
+    }
+
+    // Enhanced step counter with animation
+    updateStepCounter() {
+      const stepCounter = document.querySelector('.salla-step-counter');
+      if (stepCounter) {
+        const progress = (this.currentStep / this.totalSteps) * 100;
+
+        // Animate the counter
+        stepCounter.style.transform = 'scale(1.1)';
+        stepCounter.style.transition = 'transform 0.3s ease';
+
+        setTimeout(() => {
+          stepCounter.style.transform = 'scale(1)';
+        }, 300);
+
+        // Update counter text with animation
+        const counterText = stepCounter.querySelector('.counter-text');
+        if (counterText) {
+          counterText.style.opacity = '0';
+          setTimeout(() => {
+            counterText.textContent = this.currentStep + ' من ' + this.totalSteps;
+            counterText.style.opacity = '1';
+          }, 150);
+        }
+      }
+    }
+
+    // Animate free shipping progress bars when they appear
+    animateFreeShippingProgress() {
+      const freeShippingBanners = document.querySelectorAll('.salla-free-shipping-banner');
+
+      freeShippingBanners.forEach(banner => {
+        // Only animate if not already animated
+        if (banner.hasProgressAnimated) return;
+
+        // Add banner slide-in animation
+        banner.style.animation = 'bannerSlideIn 0.6s ease-out';
+
+        // Find progress bars within the banner
+        const progressBars = banner.querySelectorAll('[style*="width:"]');
+
+        progressBars.forEach(progressBar => {
+          const widthMatch = progressBar.style.width.match(/(\d+(?:\.\d+)?)%/);
+          if (widthMatch) {
+            const targetWidth = widthMatch[1];
+
+            // Set CSS variable for animation
+            progressBar.style.setProperty('--target-width', targetWidth + '%');
+
+            // Start with 0 width and animate to target
+            progressBar.style.width = '0%';
+            progressBar.style.animation = 'progressSlideIn 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards';
+
+            // Trigger feedback based on progress
+            const progress = parseFloat(targetWidth);
+            setTimeout(() => {
+              if (progress >= 100) {
+                this.triggerFeedback('complete');
+              } else if (progress >= 75) {
+                this.triggerFeedback('progress');
+              }
+            }, 900);
+          }
+        });
+
+        // Animate percentage badges
+        const percentageBadges = banner.querySelectorAll('span');
+        percentageBadges.forEach(badge => {
+          if (badge.textContent.includes('%')) {
+            badge.style.animation = 'popIn 0.8s ease-out 0.6s both';
+          }
+        });
+
+        // Mark as animated
+        banner.hasProgressAnimated = true;
+      });
+    }
+
+    // Refresh free shipping animation when content changes
+    refreshFreeShippingAnimation() {
+      const freeShippingBanners = document.querySelectorAll('.salla-free-shipping-banner');
+
+      freeShippingBanners.forEach(banner => {
+        // Reset animation flag
+        banner.hasProgressAnimated = false;
+
+        // Find progress bars and add subtle animation
+        const progressBars = banner.querySelectorAll('[style*="width:"]');
+        progressBars.forEach(progressBar => {
+          const widthMatch = progressBar.style.width.match(/(\d+(?:\.\d+)?)%/);
+          if (widthMatch) {
+            const targetWidth = widthMatch[1];
+
+            // Add pulse animation to show progress change
+            progressBar.style.animation = 'pulse 0.8s ease-in-out';
+            setTimeout(() => {
+              progressBar.style.animation = progressBar.style.animation.includes('progressBarGlow') ?
+                'progressBarGlow 2s ease-in-out infinite' : '';
+            }, 800);
+          }
+        });
+
+        // Re-trigger animation after a brief delay
+        setTimeout(() => {
+          this.animateFreeShippingProgress();
+        }, 100);
       });
     }
 
@@ -4539,56 +5033,367 @@ router.get("/modal.js", (req, res) => {
       return this.selectedBundleData.price;
     }
 
+    // Helper method to get contrasting color for progress bar
+    getContrastColor(bgColor, defaultColor) {
+      // If background is light, use dark progress color
+      // If background is dark, use light progress color
+      const rgb = this.hexToRgb(bgColor);
+      if (!rgb) return defaultColor;
+
+      const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+
+      if (brightness > 128) {
+        // Light background - use darker progress color
+        return this.getDarkerColor(bgColor, 0.6);
+      } else {
+        // Dark background - use lighter progress color or default
+        return defaultColor === '#ffffff' ? '#ffffff' : this.getLighterColor(bgColor, 0.3);
+      }
+    }
+
+    // Helper method to darken a color
+    getDarkerColor(color, factor) {
+      const rgb = this.hexToRgb(color);
+      if (!rgb) return color;
+
+      const r = Math.floor(rgb.r * (1 - factor));
+      const g = Math.floor(rgb.g * (1 - factor));
+      const b = Math.floor(rgb.b * (1 - factor));
+
+      return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+    }
+
+    // Helper method to lighten a color
+    getLighterColor(color, factor) {
+      const rgb = this.hexToRgb(color);
+      if (!rgb) return color;
+
+      const r = Math.min(255, Math.floor(rgb.r + (255 - rgb.r) * factor));
+      const g = Math.min(255, Math.floor(rgb.g + (255 - rgb.g) * factor));
+      const b = Math.min(255, Math.floor(rgb.b + (255 - rgb.b) * factor));
+
+      return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+    }
+
+    // Helper method to convert hex to RGB
+    hexToRgb(hex) {
+      if (!hex) return null;
+
+      // Remove # if present
+      hex = hex.replace('#', '');
+
+      // Handle shorthand hex
+      if (hex.length === 3) {
+        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+      }
+
+      const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    }
+
     // Render Free Shipping Banner with dynamic settings
     renderFreeShippingBanner(currentTotal = 0) {
       const bundleConfig = this.bundleData.data || this.bundleData;
       const settings = bundleConfig.settings || {};
       const freeShipping = settings.free_shipping || {};
-      
+
       // Check if free shipping is enabled and mode
       if (!freeShipping.enabled || freeShipping.mode === 'hidden') {
         return '';
       }
-      
+
       const minPrice = freeShipping.min_price || 0;
       const showProgress = freeShipping.mode === 'min_price' && minPrice > 0;
       const isEligible = currentTotal >= minPrice;
-      
+
       // Settings with defaults
       const bgColor = freeShipping.bg_color || '#10b981';
       const textColor = freeShipping.text_color || '#ffffff';
-      const icon = freeShipping.icon || '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
+      const truckIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
+      const checkIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+      const icon = freeShipping.icon || truckIcon;
       const text = freeShipping.text || 'شحن مجاني لهذه الباقة';
       const progressText = freeShipping.progress_text || 'أضف {amount} ريال للحصول على شحن مجاني';
-      const progressColor = freeShipping.progress_color || '#ffffff';
-      const progressBgColor = freeShipping.progress_bg_color || 'rgba(255, 255, 255, 0.3)';
+
+      // Enhanced progress colors with better contrast
+      const progressColor = this.getContrastColor(bgColor, freeShipping.progress_color || '#ffffff');
+      const progressBgColor = this.getDarkerColor(bgColor, 0.2); // Darker background for contrast
       const borderRadius = freeShipping.border_radius || 12;
-      
-      // If mode is 'always' or eligible, show success message
+
+      // Enhanced progress calculation with animation
+      const animateProgress = (percentage) => {
+        // Add haptic feedback at milestones
+        if (percentage >= 25 && percentage < 26) this.triggerFeedback('progress');
+        if (percentage >= 50 && percentage < 51) this.triggerFeedback('progress');
+        if (percentage >= 75 && percentage < 76) this.triggerFeedback('progress');
+        if (percentage >= 100) this.triggerFeedback('complete');
+      };
+
+      // If mode is 'always' or eligible, show success message with ALWAYS a progress bar at 100%
       if (freeShipping.mode === 'always' || isEligible) {
+        // Trigger success feedback when eligible
+        if (isEligible && minPrice > 0) {
+          setTimeout(() => this.triggerFeedback('success'), 100);
+        }
+
+        // For 'always' mode, show 100% progress bar to indicate completion
+        const percentage = 100;
+        const progressText = isEligible ? '🎉 مبروك! لقد حصلت على الشحن المجاني!' : '🚀 شحن مجاني متاح دائماً لهذه الباقة!';
+
         return \`
-          <div class="salla-free-shipping-banner" style="background: \${bgColor}; color: \${textColor}; border-radius: \${borderRadius}px;">
-            <span style="display: flex; align-items: center;">\${icon}</span>
-            <span>\${text}</span>
+          <div class="salla-free-shipping-banner salla-free-shipping-success salla-progress-complete" style="
+            background: \${bgColor};
+            color: \${textColor};
+            flex-direction: column;
+            gap: 12px;
+            padding: 18px;
+            border-radius: \${borderRadius}px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: successPulse 2s ease-in-out infinite;
+          ">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
+              <span style="display: flex; align-items: center; animation: checkmarkBounce 1s ease-in-out;">\${checkIcon}</span>
+              <span style="flex: 1; text-align: center; font-weight: 600; animation: fadeInSlide 0.6s ease-out;">\${text}</span>
+              <span style="
+                background: rgba(255,255,255,0.3);
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                min-width: 45px;
+                text-align: center;
+                animation: popIn 0.6s ease-out;
+              ">100%</span>
+            </div>
+
+            <!-- ALWAYS show progress bar at 100% for visual consistency -->
+            <div style="
+              width: 100%;
+              background: ' + progressBgColor + ';
+              border-radius: 25px;
+              height: 14px;
+              overflow: hidden;
+              position: relative;
+              box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+              border: 1px solid rgba(0,0,0,0.2);
+            ">
+              <!-- Background segments -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                overflow: hidden;
+              ">
+                <div style="flex: 1; border-left: 2px solid rgba(0,0,0,0.1);"></div>
+                <div style="flex: 1; border-left: 2px solid rgba(0,0,0,0.1);"></div>
+                <div style="flex: 1; border-left: 2px solid rgba(0,0,0,0.1);"></div>
+                <div style="flex: 1;"></div>
+              </div>
+
+              <!-- Progress fill at 100% with special success gradient -->
+              <div style="
+                width: 100%;
+                background: linear-gradient(90deg, ' + progressColor + ', rgba(255,255,255,0.6), ' + progressColor + ');
+                height: 100%;
+                transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius: 25px;
+                position: relative;
+                box-shadow: 0 2px 12px rgba(255,255,255,0.4), inset 0 1px 2px rgba(255,255,255,0.5);
+                border: 1px solid rgba(255,255,255,0.3);
+                animation: progressBarGlow 2s ease-in-out infinite;
+              ">
+                <!-- Enhanced shimmer for success state -->
+                <div style="
+                  position: absolute;
+                  top: 0;
+                  left: -100%;
+                  width: 100%;
+                  height: 100%;
+                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+                  animation: progressShimmer 2s ease-in-out infinite;
+                "></div>
+              </div>
+
+              <!-- Milestone markers (all completed) -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 2px;
+                pointer-events: none;
+              ">
+                <div style="width: 4px; height: 4px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.8);"></div>
+                <div style="width: 4px; height: 4px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.8);"></div>
+                <div style="width: 4px; height: 4px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.8);"></div>
+                <div style="width: 4px; height: 4px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.8);"></div>
+              </div>
+            </div>
+
+            <!-- Success motivation text -->
+            <div style="
+              font-size: 12px;
+              text-align: center;
+              opacity: 0.95;
+              font-weight: 600;
+              animation: fadeInSlide 0.8s ease-out 0.2s both;
+            ">
+              \${progressText}
+            </div>
+
+            <!-- Overall shimmer overlay -->
+            <div style="
+              position: absolute;
+              top: -2px;
+              left: -100%;
+              width: 100%;
+              height: calc(100% + 4px);
+              background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+              animation: shimmer 3s ease-in-out infinite;
+            "></div>
           </div>
         \`;
       }
-      
-      // Show progress bar if not eligible yet
+
+      // Show enhanced progress bar if not eligible yet
       if (showProgress && !isEligible) {
         const remaining = minPrice - currentTotal;
         const percentage = Math.min(100, (currentTotal / minPrice) * 100);
         const formattedRemaining = remaining.toFixed(2);
         const message = progressText.replace('{amount}', formattedRemaining);
-        
+
+        // Determine progress level for different visual treatments
+        let progressLevel = 'low';
+        if (percentage >= 75) progressLevel = 'high';
+        else if (percentage >= 50) progressLevel = 'medium';
+        else if (percentage >= 25) progressLevel = 'low-medium';
+
+        // Trigger animation
+        animateProgress(percentage);
+
         return \`
-          <div class="salla-free-shipping-banner" style="background: \${bgColor}; color: \${textColor}; flex-direction: column; gap: 10px; padding: 16px; border-radius: \${borderRadius}px;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;">
-              <span style="display: flex; align-items: center;">\${icon}</span>
-              <span style="flex: 1; text-align: center;">\${message}</span>
+          <div class="salla-free-shipping-banner salla-free-shipping-progress salla-progress-\${progressLevel}" style="
+            background: \${bgColor};
+            color: \${textColor};
+            flex-direction: column;
+            gap: 12px;
+            padding: 18px;
+            border-radius: \${borderRadius}px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+          ">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
+              <span style="display: flex; align-items: center; animation: truckBounce 2s ease-in-out infinite;">\${icon}</span>
+              <span style="flex: 1; text-align: center; font-weight: 500; animation: fadeInSlide 0.4s ease-out;">\${message}</span>
+              <span style="
+                background: rgba(255,255,255,0.2);
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                min-width: 45px;
+                text-align: center;
+                animation: popIn 0.6s ease-out;
+              ">' + Math.round(percentage) + '%</span>
             </div>
-            <div style="width: 100%; background: \${progressBgColor}; border-radius: 20px; height: 8px; overflow: hidden;">
-              <div style="width: \${percentage}%; background: \${progressColor}; height: 100%; transition: width 0.3s ease; border-radius: 20px;"></div>
+
+            <!-- Enhanced progress bar with segments -->
+            <div style="
+              width: 100%;
+              background: ' + progressBgColor + ';
+              border-radius: 25px;
+              height: 14px;
+              overflow: hidden;
+              position: relative;
+              box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+              border: 1px solid rgba(0,0,0,0.2);
+            ">
+              <!-- Background segments -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                overflow: hidden;
+              ">
+                <div style="flex: 1; border-left: 2px solid rgba(0,0,0,0.1);"></div>
+                <div style="flex: 1; border-left: 2px solid rgba(0,0,0,0.1);"></div>
+                <div style="flex: 1; border-left: 2px solid rgba(0,0,0,0.1);"></div>
+                <div style="flex: 1;"></div>
+              </div>
+
+              <!-- Progress fill with gradient -->
+              <div style="
+                width: ' + percentage + '%;
+                background: linear-gradient(90deg, ' + progressColor + ', rgba(255,255,255,0.4));
+                height: 100%;
+                transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius: 25px;
+                position: relative;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.3);
+                border: 1px solid rgba(255,255,255,0.2);
+              ">
+                <!-- Shimmer effect -->
+                <div style="
+                  position: absolute;
+                  top: 0;
+                  left: -100%;
+                  width: 100%;
+                  height: 100%;
+                  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+                  animation: progressShimmer 2s ease-in-out infinite;
+                "></div>
+              </div>
+
+              <!-- Milestone markers -->
+              <div style="
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 2px;
+                pointer-events: none;
+              ">
+                <div style="width: 3px; height: 3px; background: rgba(255,255,255,0.6); border-radius: 50%;"></div>
+                <div style="width: 3px; height: 3px; background: rgba(255,255,255,0.6); border-radius: 50%;"></div>
+                <div style="width: 3px; height: 3px; background: rgba(255,255,255,0.6); border-radius: 50%;"></div>
+                <div style="width: 3px; height: 3px; background: rgba(255,255,255,0.6); border-radius: 50%;"></div>
+              </div>
+            </div>
+
+            <!-- Progress motivation text -->
+            <div style="
+              font-size: 11px;
+              text-align: center;
+              opacity: 0.9;
+              font-weight: 500;
+              animation: fadeInSlide 0.8s ease-out 0.2s both;
+            ">
+              ' + (percentage < 25 ? '🚀 ابدأ رحلتك نحو الشحن المجاني!' :
+                percentage < 50 ? '💪 أحسنت! واصل التقدم...' :
+                percentage < 75 ? '🔥 رائع! اقتربت جداً من الهدف!' :
+                percentage < 100 ? '⭐ ممتاز! خطوة أخيرة فقط!' : '') + '
             </div>
           </div>
         \`;
@@ -5210,7 +6015,10 @@ router.get("/modal.js", (req, res) => {
       if (this.modalElement) {
         this.modalElement.classList.add('show');
         document.body.style.overflow = 'hidden';
-        
+
+        // Trigger satisfying feedback when modal opens
+        this.triggerFeedback('success');
+
         // Start timer, reviews, and payment slider after modal shows
         setTimeout(() => {
           this.startTimer();

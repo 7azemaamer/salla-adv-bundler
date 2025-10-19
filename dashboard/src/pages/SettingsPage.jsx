@@ -14,6 +14,7 @@ import {
   IconTruck,
   IconClock,
   IconClick,
+  IconStar,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../stores/useSettingsStore";
@@ -22,11 +23,18 @@ import DisplaySettingsPanel from "../components/settings/DisplaySettingsPanel";
 import FreeShippingSettingsPanel from "../components/settings/FreeShippingSettingsPanel";
 import TimerSettingsPanel from "../components/settings/TimerSettingsPanel";
 import StickyButtonSettingsPanel from "../components/settings/StickyButtonSettingsPanel";
+import ReviewCountSettingsPanel from "../components/settings/ReviewCountSettingsPanel";
 import DemoImageModal from "../components/settings/DemoImageModal";
 
 export default function SettingsPage() {
-  const { settings, loading, error, fetchSettings, toggleSetting } =
-    useSettingsStore();
+  const {
+    settings,
+    loading,
+    error,
+    fetchSettings,
+    toggleSetting,
+    updateSettings,
+  } = useSettingsStore();
   const [showButtonsModal, setShowButtonsModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -44,7 +52,7 @@ export default function SettingsPage() {
     });
   }, [fetchSettings]);
 
-  const handleToggleChange = async (field) => {
+  const handleToggleChange = async (field, value) => {
     // Show loading notification
     const notificationId = `update-${field}`;
     notifications.show({
@@ -57,7 +65,24 @@ export default function SettingsPage() {
     });
 
     try {
-      await toggleSetting(field);
+      // If value is provided, use updateSettings directly instead of toggle
+      if (value !== undefined) {
+        const keys = field.split(".");
+        if (keys.length === 1) {
+          await updateSettings({ [field]: value });
+        } else {
+          const [parent, child] = keys;
+          await updateSettings({
+            [parent]: {
+              ...settings[parent],
+              [child]: value,
+            },
+          });
+        }
+      } else {
+        // Use toggle for boolean fields
+        await toggleSetting(field);
+      }
 
       notifications.update({
         id: notificationId,
@@ -121,6 +146,9 @@ export default function SettingsPage() {
               <Tabs.Tab value="timer" leftSection={<IconClock size="1rem" />}>
                 إعدادات المؤقت
               </Tabs.Tab>
+              <Tabs.Tab value="reviews" leftSection={<IconStar size="1rem" />}>
+                عدد التقييمات
+              </Tabs.Tab>
             </Tabs.List>
 
             {/* Tab 1: Display Settings */}
@@ -158,6 +186,15 @@ export default function SettingsPage() {
             {/* Tab 4: Timer Settings */}
             <Tabs.Panel value="timer" pt="xl">
               <TimerSettingsPanel
+                settings={settings}
+                loading={loading}
+                onToggle={handleToggleChange}
+              />
+            </Tabs.Panel>
+
+            {/* Tab 5: Review Count Settings */}
+            <Tabs.Panel value="reviews" pt="xl">
+              <ReviewCountSettingsPanel
                 settings={settings}
                 loading={loading}
                 onToggle={handleToggleChange}

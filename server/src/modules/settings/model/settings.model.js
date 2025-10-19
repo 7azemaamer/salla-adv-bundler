@@ -178,6 +178,44 @@ const settingsSchema = new mongoose.Schema(
         max: 24,
       },
     },
+    // Review count settings (nested object)
+    review_count: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+      mode: {
+        type: String,
+        enum: ["real", "custom"],
+        default: "real", // "real" = show actual review count, "custom" = use custom number
+      },
+      initial_count: {
+        type: Number,
+        default: 150,
+        min: 0,
+      },
+      current_count: {
+        type: Number,
+        default: 150, // This will be updated daily
+        min: 0,
+      },
+      daily_increase_min: {
+        type: Number,
+        default: 1,
+        min: 0,
+        max: 100,
+      },
+      daily_increase_max: {
+        type: Number,
+        default: 5,
+        min: 0,
+        max: 100,
+      },
+      last_update_date: {
+        type: Date,
+        default: Date.now,
+      },
+    },
     // Future settings can be added here
     // e.g., custom_colors, etc.
   },

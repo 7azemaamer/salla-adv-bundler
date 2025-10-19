@@ -208,10 +208,14 @@ class SnippetController {
           params.append('store', CONFIG.storeDomain);
         }
 
+
+        params.append('ver', '3.0.0'); 
+        params.append('t', Date.now()); 
+
         const prefetchUrl = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
         
 
-        if (!document.querySelector(\`link[href="\${prefetchUrl}"]\`)) {
+        if (!document.querySelector(\`link[rel="prefetch"][as="script"]\`)) {
           const prefetchLink = document.createElement('link');
           prefetchLink.rel = 'prefetch';
           prefetchLink.href = prefetchUrl;
@@ -386,7 +390,6 @@ class SnippetController {
               console.warn('[Bundle] No settings found in API response');
             }
             
-            // Store bundle data for UI customization
             this.bundleData = data.data;
           }
           return true;
@@ -968,7 +971,6 @@ class SnippetController {
         });
 
         observer.observe(mainCTA);
-        console.log('[Bundle] Sticky button visibility observer setup complete');
       };
 
       setTimeout(setupStickyButtonVisibility, 1000);
@@ -1196,27 +1198,20 @@ class SnippetController {
 
         window.__SALLA_BUNDLE_PRELOAD_STARTED__ = true;
 
-        // 🔥 NEW: Preload bundle data FIRST (most important for UX)
-        console.log('[Bundle] 📦 Preloading bundle data for product:', this.productId);
         this.preloadBundleData();
 
         if (!this.modalScriptLoaded && !window.SallaBundleModal) {
           // Add loading indicator
           this.isModalLoading = true;
 
-          console.log('[Bundle] 📥 Loading modal script...');
           await this.loadModalScript();
           this.modalScriptLoaded = true;
           this.isModalLoading = false;
 
-          console.log('[Bundle] ✅ Modal script loaded');
-
           // Load global data if available
           if (window.SallaBundleModal && window.SallaBundleModal.preloadGlobalData) {
-            console.log('[Bundle] 📥 Preloading global data...');
             await window.SallaBundleModal.preloadGlobalData(CONFIG.storeId, CONFIG.storeDomain)
               .catch(err => console.error('[Bundle] Preload global data failed:', err));
-            console.log('[Bundle] ✅ Global data preloaded');
           }
         }
       } catch (error) {
@@ -1225,7 +1220,7 @@ class SnippetController {
       }
     }
 
-    // 🔥 NEW: Preload bundle data immediately when page loads
+
     preloadBundleData() {
       const params = new URLSearchParams();
 
@@ -1241,7 +1236,6 @@ class SnippetController {
 
       const bundleDataUrl = \`\${CONFIG.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`;
       
-      console.log('[Bundle] 🚀 Fetching bundle data:', bundleDataUrl);
 
       // Fetch bundle data in background
       fetch(bundleDataUrl, {
@@ -1261,10 +1255,8 @@ class SnippetController {
         throw new Error(\`HTTP \${response.status}\`);
       })
       .then(data => {
-        // Cache the data globally for instant access
         window.__SALLA_BUNDLE_CACHE__ = window.__SALLA_BUNDLE_CACHE__ || {};
         window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`] = data;
-        console.log('[Bundle] ✅ Bundle data preloaded and cached');
       })
       .catch(error => {
         console.error('[Bundle] ❌ Failed to preload bundle data:', error);
@@ -1307,8 +1299,6 @@ class SnippetController {
           }
           
           this.hideLoadingState();
-        } else {
-          console.log('[Salla Bundle] Modal script already available');
         }
 
         // Prepare context data using Salla store variables
@@ -1369,7 +1359,9 @@ class SnippetController {
           params.append('customer_id', CONFIG.customerId);
         }
         
-        params.append('v', Date.now());
+        // Add version for cache busting (increment this manually when updating modal)
+        params.append('ver', '3.0.0'); // MAJOR UPDATE: Progress bar with animations!
+        params.append('t', Date.now()); // Timestamp for Cloudflare cache bypass
         
         const scriptUrl = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
         

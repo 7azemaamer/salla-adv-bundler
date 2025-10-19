@@ -37,3 +37,26 @@ export const updateSettings = asyncWrapper(async (req, res) => {
     data: settings,
   });
 });
+
+/* ===============
+ * Get review count settings (public endpoint for modal)
+ * ===============*/
+export const getReviewCountSettings = asyncWrapper(async (req, res) => {
+  const { store_id } = req.params;
+
+  if (!store_id) {
+    throw new AppError("Store ID is required", 400);
+  }
+
+  const settings = await settingsService.getSettings(store_id);
+
+  // Return only review count settings
+  res.status(200).json({
+    success: true,
+    data: settings?.review_count || {
+      enabled: true,
+      mode: "real",
+      current_count: 0,
+    },
+  });
+});

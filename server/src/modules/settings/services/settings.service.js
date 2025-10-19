@@ -81,6 +81,7 @@ class SettingsService {
         "sticky_button", // Nested object
         "free_shipping", // Nested object
         "timer", // Nested object
+        "review_count", // Nested object - review count settings
       ];
 
       const filteredUpdates = {};
@@ -95,13 +96,24 @@ class SettingsService {
         throw new AppError("No valid fields to update", 400);
       }
 
+      if (
+        filteredUpdates.review_count &&
+        filteredUpdates.review_count.initial_count !== undefined
+      ) {
+        filteredUpdates.review_count.current_count =
+          filteredUpdates.review_count.initial_count;
+        console.log(
+          "[Settings]: Syncing current_count with initial_count:",
+          filteredUpdates.review_count.initial_count
+        );
+      }
+
       // Update or create settings
       const settings = await Settings.findOneAndUpdate(
         { store_id },
         { $set: filteredUpdates },
         { new: true, upsert: true, runValidators: true }
       );
-
 
       return settings;
     } catch (error) {

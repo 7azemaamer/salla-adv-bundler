@@ -23,7 +23,7 @@ export const loginViaSalla = (req, res) => {
   sallaUrl.searchParams.set("redirect_uri", config.redirectUri);
   sallaUrl.searchParams.set(
     "scope",
-    "offline_access specialoffers.read_write products.read_write webhooks.read_write orders.read metadata.read_write payments.read payments.read_write"
+    "offline_access specialoffers.read_write products.read webhooks.read_write orders.read metadata.read payments.read"
   );
   sallaUrl.searchParams.set("state", state);
 

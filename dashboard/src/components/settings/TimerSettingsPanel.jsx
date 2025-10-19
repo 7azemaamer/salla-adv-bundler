@@ -275,44 +275,6 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
               حفظ التخصيصات
             </Button>
           </Group>
-
-          {/* Preview */}
-          <Alert color="gray" variant="light" mt="md">
-            <Text fw={600} size="sm" mb="xs">
-              معاينة المؤقت:
-            </Text>
-            <div
-              style={{
-                display: "inline-flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "8px",
-                padding: "12px 20px",
-                background: timerBgColor,
-                border: `1px solid ${timerBorderColor}`,
-                borderRadius: `${timerBorderRadius}px`,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: timerLabelColor,
-                }}
-              >
-                {timerLabel}
-              </div>
-              <div
-                style={{
-                  fontSize: `${timerFontSize}px`,
-                  fontWeight: 600,
-                  color: timerTextColor,
-                  fontFamily: "monospace",
-                }}
-              >
-                05:59:42
-              </div>
-            </div>
-          </Alert>
         </>
       )}
     </Stack>

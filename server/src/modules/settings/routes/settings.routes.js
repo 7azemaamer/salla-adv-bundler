@@ -4,7 +4,14 @@ import { authenticateToken } from "../../../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// All routes require authentication
+// Public endpoint for modal (no auth required)
+// GET /api/v1/settings/:store_id/review-count - Get review count settings
+router.get(
+  "/:store_id/review-count",
+  settingsController.getReviewCountSettings
+);
+
+// All routes below require authentication
 router.use(authenticateToken);
 
 // GET /api/v1/settings - Get store settings

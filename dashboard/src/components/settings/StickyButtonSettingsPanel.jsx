@@ -222,62 +222,6 @@ export default function StickyButtonSettingsPanel({
               حفظ التخصيصات
             </Button>
           </Group>
-
-          {/* Preview */}
-          <Alert color="gray" variant="light" mt="md">
-            <Text fw={600} size="sm" mb="xs">
-              معاينة الزر:
-            </Text>
-            <div
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "150px",
-                background: "#f3f4f6",
-                borderRadius: "8px",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "flex-end",
-                justifyContent:
-                  buttonPosition === "bottom-center"
-                    ? "center"
-                    : buttonPosition === "bottom-left"
-                    ? "flex-start"
-                    : "flex-end",
-                padding: "20px",
-              }}
-            >
-              <button
-                style={{
-                  background: buttonBgColor,
-                  color: buttonTextColor,
-                  border: "none",
-                  padding: "14px 28px",
-                  borderRadius: "50px",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 8px 20px rgba(0, 0, 0, 0.25)",
-                  width:
-                    buttonWidthType === "full"
-                      ? "calc(100% - 40px)"
-                      : buttonWidthType === "custom"
-                      ? `${Math.min(buttonCustomWidth, 100)}px`
-                      : "auto",
-                  maxWidth:
-                    buttonWidthType === "full"
-                      ? "none"
-                      : buttonWidthType === "custom"
-                      ? `${buttonCustomWidth}px`
-                      : "calc(100% - 40px)",
-                  whiteSpace: buttonWidthType === "auto" ? "nowrap" : "normal",
-                  textAlign: "center",
-                }}
-              >
-                {buttonText}
-              </button>
-            </div>
-          </Alert>
         </>
       )}
     </Stack>
