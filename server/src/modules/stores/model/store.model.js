@@ -38,7 +38,7 @@ const StoreSchema = new mongoose.Schema(
     bundle_settings: {
       max_bundles_per_store: {
         type: Number,
-        default: 3, // Default to basic plan limit
+        default: 3, 
       },
       analytics_enabled: {
         type: Boolean,

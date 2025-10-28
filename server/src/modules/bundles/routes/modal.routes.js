@@ -15,1859 +15,43 @@ router.get("/modal.js", (req, res) => {
 (function() {
   'use strict';
 
-  // Modern Boxy Modal Styles - Based on popup.style.jsx
-  const modalStyles = \`
-    /* Design tokens */
-    :root {
-      --bg-page:  #FAFBFC;
-      --bg-soft:  #F6F8FA;
-      --bg-elev:  #F4F6F8;
-      --bg-panel: #F2F4F7;
-      --bg-card:  #FFFFFF;
-      --bg-thumb: #EEF1F4;
-      --border:   #E5E8EC;
-      --text-1:   #0E1012;
-      --text-2:   #60646C;
-      --ok:       #2F3136;
-      --brand:    #0E1012;
-      --shadow-1: 0 1px 2px rgba(16,24,40,.06), 0 1px 1px rgba(16,24,40,.04);
-      --shadow-2: 0 10px 28px rgba(15,17,19,.08);
-    }
-
-    button, .salla-bundle-button, .salla-step-btn, .salla-checkout-button,
-    .salla-bundle-card, .salla-review-dot, .salla-bundle-details-toggle,
-    [onclick], .salla-bundle-close {
-      touch-action: manipulation !important;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .salla-bundle-modal {
-      font-family: system-ui, -apple-system, sans-serif !important;
-      direction: rtl;
-      display: none;
-      position: fixed;
-      z-index: 999999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-    }
-
-    .salla-bundle-modal.show {
-      display: block;
-    }
-
-    .salla-bundle-panel {
-      position: absolute;
-      right: 0;
-      top: 0;
-      height: 100%;
-      width: 100%;
-      max-width: 720px;
-      background: var(--bg-panel);
-      box-shadow: var(--shadow-2);
-      border-left: 1px solid var(--border);
-      border-radius: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    /* Mobile-first responsive design */
-    @media (max-width: 640px) {
-      .salla-bundle-panel {
-        position: fixed;
-        top: 16px;
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
-        transform: none;
-        width: auto;
-        max-width: none;
-        height: auto;
-        max-height: none;
-        border-radius: 16px;
-        border: none;
-        animation: slideInMobile 0.3s ease-out;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-bundle-panel {
-        border-radius: 16px 0 0 16px;
-      }
-    }
-
-    .salla-bundle-header {
-      padding: 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-panel);
-    }
-
-    /* Mobile header adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-header {
-        padding: 16px;
-        background: var(--bg-panel);
-        border-bottom: 1px solid var(--border);
-        border-radius: 16px 16px 0 0;
+  // ═══════════════════════════════════════════════════════════════
+  // 1️  CSS LOADER - Load external CSS file with promise
+  // ═══════════════════════════════════════════════════════════════
+  const loadModalCSS = () => {
+    return new Promise((resolve, reject) => {
+      const cssId = 'salla-bundle-modal-styles';
+      const existing = document.getElementById(cssId);
+      
+      if (existing) {
+        resolve(); // Already loaded
+        return;
       }
       
-      .salla-bundle-header-row {
-        flex-wrap: wrap;
-      }
+      const link = document.createElement('link');
+      link.id = cssId;
+      link.rel = 'stylesheet';
+      link.href = 'https://${req.get("host")}/css/modal-bundle.css';
       
-      .salla-bundle-title {
-        font-size: 14px;
-        flex: 1;
-        min-width: 0;
-      }
-    }
-
-    .salla-bundle-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .salla-bundle-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin: 0;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-close {
-      width: 32px;
-      height: 32px;
-      display: grid;
-      place-items: center;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--text-1);
-      cursor: pointer;
-      font-size: 18px;
-      line-height: 1;
-    }
-
-    .salla-bundle-close:hover {
-      background: var(--bg-elev);
-    }
-
-    .salla-bundle-body {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 16px;
-      background: var(--bg-soft);
-    }
-
-    /* Mobile body adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-body {
-        padding: 12px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-    }
-
-    .salla-bundle-section {
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-
-    /* Mobile section adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-section {
-        border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 8px;
-      }
-    }
-
-    .salla-bundle-section h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin: 0 0 6px 0;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-section .subtitle {
-      font-size: 12px;
-      color: var(--text-2);
-      margin-bottom: 12px;
-    }
-
-    /* Product header with image */
-    .salla-product-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      padding: 12px;
-      background: var(--bg-card);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-
-    .salla-product-image {
-      width: 56px;
-      height: 56px;
-      border-radius: 10px;
-      object-fit: cover;
-      background: var(--bg-soft);
-      flex-shrink: 0;
-    }
-
-    .salla-product-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .salla-product-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-1);
-      margin: 0 0 4px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .salla-product-meta {
-      font-size: 12px;
-      color: var(--text-2);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* Compact variant selectors */
-    .salla-variant-compact {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .salla-variant-compact-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .salla-variant-compact-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-2);
-      white-space: nowrap;
-      min-width: 50px;
-    }
-
-    .salla-variant-compact-label.required:after {
-      content: " *";
-      color: #ef4444;
-    }
-
-    .salla-variant-compact-select {
-      flex: 1;
-      padding: 5px 8px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: white;
-      color: var(--text-1);
-      font-size: 12px;
-      font-weight: 500;
-      font-family: inherit;
-      outline: none;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      min-width: 0;
-    }
-
-    .salla-variant-compact-select:hover {
-      border-color: var(--text-1);
-    }
-
-    .salla-variant-compact-select:focus {
-      border-color: var(--text-1);
-      box-shadow: 0 0 0 2px rgba(14, 16, 18, 0.08);
-    }
-
-    /* Multiple quantity accordion */
-    /* Direct Variant Display - Clean & Minimal */
-    .salla-quantity-direct {
-      margin-bottom: 12px;
-    }
-
-    .salla-quantity-direct-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .salla-quantity-badge {
-      font-size: 10px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: var(--brand);
-      color: white;
-      font-weight: 600;
-    }
-
-    .salla-quantity-direct-variants {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-
-    .salla-bundle-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    /* Responsive grid layout */
-    @media (max-width: 640px) {
-      .salla-bundle-grid {
-        grid-template-columns: 1fr;
-        gap: 8px;
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-bundle-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-      }
-    }
-
-    .salla-bundle-card {
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      background: var(--bg-card);
-      padding: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      transition: all 0.2s ease;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .salla-bundle-card.active {
-      border: 1px solid var(--text-1);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-      transform: translateY(-2px);
-    }
-
-    .salla-bundle-card:not(.active) {
-      opacity: 0.85;
-      background: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    .salla-bundle-card:not(.active):hover {
-      opacity: 0.95;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .salla-bundle-card-header {
-      display: flex;
-      align-items: start;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .salla-bundle-card-title {
-      font-size: 14px;
-      font-weight: 600;
-      line-height: 1.3;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-card-value {
-      font-size: 12px;
-      color: var(--text-2);
-    }
-
-    .salla-bundle-badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 50px;
-      border: 1px solid var(--border);
-      background: var(--bg-soft);
-      color: var(--text-2);
-    }
-
-    .salla-bundle-items {
-      list-style: disc;
-      list-style-position: inside;
-      font-size: 13px;
-      color: var(--text-1);
-      margin: 0 0 12px 0;
-      padding: 0;
-    }
-
-    .salla-bundle-items li {
-      margin-bottom: 4px;
-    }
-
-    .salla-bundle-card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: auto;
-    }
-
-    .salla-bundle-price {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-1);
-    }
-
-    .salla-bundle-button {
-      height: 44px;
-      padding: 0 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--text-1);
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-    }
-
-    /* Mobile bundle button adjustments */
-    @media (max-width: 640px) {
-      .salla-bundle-button {
-        height: 48px;
-        font-size: 15px;
-        font-weight: 600;
-        border-radius: 10px;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-bundle-button {
-        height: 36px;
-      }
-    }
-
-    .salla-bundle-button:hover {
-      background: var(--bg-elev);
-    }
-
-    .salla-bundle-button.active {
-      background: transparent !important;
-      color: var(--text-1) !important;
-      border-color: var(--text-1);
-    }
-
-    .salla-gifts-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-
-    @media (min-width: 640px) {
-      .salla-gifts-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    .salla-gift-card {
-      border-radius: 14px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-
-    .salla-gift-image {
-      aspect-ratio: 1;
-      background: var(--bg-soft);
-    }
-
-    .salla-gift-content {
-      padding: 12px;
-    }
-
-    .salla-gift-badges {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    .salla-gift-badge {
-      font-size: 12px;
-      padding: 2px 8px;
-      border-radius: 50px;
-      border: 1px solid var(--border);
-      background: var(--bg-soft);
-    }
-
-    .salla-gift-free {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--ok);
-    }
-
-    .salla-gift-title {
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1.4;
-      margin-bottom: 4px;
-      color: var(--text-1);
-    }
-
-    .salla-gift-value {
-      font-size: 13px;
-      color: var(--text-2);
-      text-decoration: line-through;
-    }
-
-    .salla-sticky-summary {
-      padding: 12px;
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
-      box-shadow: var(--shadow-1);
-    }
-
-    /* Desktop Summary - Collapsible */
-    .salla-summary-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      padding: 12px;
-      background: var(--bg-panel);
-      border: none;
-      width: 100%;
-      text-align: right;
-      transition: background 0.2s;
-    }
-
-    .salla-summary-toggle:hover {
-      background: var(--bg-card);
-    }
-
-    .salla-summary-toggle-icon {
-      display: inline-block;
-      transition: transform 0.3s ease;
-      font-size: 16px;
-      color: var(--text-2);
-    }
-
-    .salla-summary-toggle.expanded .salla-summary-toggle-icon {
-      transform: rotate(180deg);
-    }
-
-    .salla-summary-total {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-1);
-    }
-
-    .salla-summary-details {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease, opacity 0.3s ease;
-      opacity: 0;
-    }
-
-    .salla-summary-details.expanded {
-      max-height: 1000px;
-      opacity: 1;
-      padding: 12px;
-    }
-
-    /* Mobile sticky summary adjustments */
-    @media (max-width: 640px) {
-      .salla-sticky-summary {
-        padding: 16px;
-        background: var(--bg-panel);
-        border-top: 1px solid var(--border);
-        border-radius: 0 0 16px 16px;
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-      }
-
-      /* Mobile: Hide toggle button - summary always expanded */
-      .salla-summary-toggle {
-        display: none !important;
-      }
-
-      .salla-summary-details {
-        max-height: none !important;
-        opacity: 1 !important;
-        overflow: visible !important;
-        padding: 12px !important;
-      }
-    }
-
-    .salla-summary-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
-
-    .salla-summary-label {
-      color: var(--text-2);
-    }
-
-    .salla-summary-value {
-      font-weight: 600;
-      color: var(--text-1);
-    }
-
-    .salla-summary-savings {
-      color: #10b981;
-      font-weight: 600;
-      text-decoration: line-through;
-      position: relative;
-    }
-
-    .salla-summary-savings:before {
-      content: '−';
-      margin-left: 4px;
-      text-decoration: none;
-      font-weight: 700;
-    }
-
-    .salla-checkout-button {
-      width: 100%;
-      height: 56px;
-      border-radius: 14px;
-      background: var(--brand);
-      color: white;
-      border: none;
-      font-size: 16px;
-      font-weight: 500;
-      cursor: pointer;
-      box-shadow: var(--shadow-2);
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    /* Mobile checkout button adjustments */
-    @media (max-width: 640px) {
-      .salla-checkout-button {
-        height: 56px;
-        font-size: 16px;
-        font-weight: 600;
-        border-radius: 12px;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-      }
-    }
-
-    @media (min-width: 641px) {
-      .salla-checkout-button {
-        height: 48px;
-      }
-    }
-
-    .salla-checkout-button:hover {
-      opacity: 0.95;
-    }
-
-    .salla-checkout-button:active {
-      opacity: 0.9;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    @keyframes slideInMobile {
-      from {
-        transform: translateY(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
-    .no-scrollbar {
-      scrollbar-width: none;
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-
-    /* Variant Selector Styles */
-    .salla-variant-section {
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
-    }
-
-    .salla-variant-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-1);
-      margin-bottom: 6px;
-    }
-
-    .salla-variant-label.required:after {
-      content: " *";
-      color: #ef4444;
-    }
-
-    .salla-variant-select {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg-card);
-      color: var(--text-1);
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s ease;
-    }
-
-    .salla-variant-select:focus {
-      border-color: var(--text-1);
-    }
-
-    .salla-variant-select.variant-error {
-      border: 2px solid #ef4444 !important;
-      outline: 3px solid rgba(239, 68, 68, 0.3) !important;
-      outline-offset: 1px !important;
-      background: rgba(239, 68, 68, 0.05) !important;
-      box-shadow: 0 0 0 1px #ef4444, 0 0 8px rgba(239, 68, 68, 0.2) !important;
-    }
-
-    .salla-variant-select.variant-error:focus {
-      outline: 3px solid rgba(239, 68, 68, 0.5) !important;
-      box-shadow: 0 0 0 2px #ef4444, 0 0 12px rgba(239, 68, 68, 0.3) !important;
-    }
-
-    .salla-variant-select.all-out-of-stock {
-      background: rgba(156, 163, 175, 0.1);
-      border-color: #9ca3af;
-      color: #6b7280;
-      cursor: not-allowed;
-    }
-
-    .salla-variant-select.all-out-of-stock:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px #9ca3af;
-    }
-
-    .salla-variant-group {
-      margin-bottom: 12px;
-    }
-
-    .salla-variant-error {
-      font-size: 12px;
-      color: #ef4444;
-      margin-top: 4px;
-    }
-
-    /* Out of Stock Product Styles */
-    .salla-gift-unavailable {
-      opacity: 0.7;
-      position: relative;
-    }
-
-    .salla-gift-unavailable .salla-gift-image {
-      position: relative;
-    }
-
-    .salla-gift-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px 14px 0 0;
-    }
-
-    .salla-gift-overlay-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    /* Bundle card styling for unavailable products */
-    .salla-bundle-card.unavailable {
-      opacity: 0.6;
-      background: #f8f9fa;
-      border-color: #e9ecef;
-      position: relative;
-    }
-
-    .salla-bundle-card.unavailable::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(156, 163, 175, 0.1) 10px,
-        rgba(156, 163, 175, 0.1) 20px
-      );
-      border-radius: 14px;
-      pointer-events: none;
-    }
-
-    .salla-bundle-card.unavailable .salla-bundle-button {
-      background: #e5e7eb;
-      color: #9ca3af;
-      cursor: not-allowed;
-      border-color: #d1d5db;
-    }
-
-    .salla-bundle-card.unavailable .salla-bundle-button:hover {
-      background: #e5e7eb;
-      transform: none;
-      box-shadow: none;
-    }
-
-    /* ============================================
-       MOBILE-ONLY STEPPER REDESIGN (≤640px)
-       ============================================ */
-
-    @media (max-width: 640px) {
+      link.onload = () => resolve();
+      link.onerror = () => {
+        console.error('Failed to load modal CSS from:', link.href);
+        reject(new Error('CSS load failed'));
+      };
       
-      /* ===== HEADER: Sticky with Progress Bar ===== */
-      .salla-bundle-header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        padding: 12px 16px 8px;
-      }
+      document.head.appendChild(link);
+    });
+  };
 
-      .salla-bundle-title {
-        font-size: 16px;
-        margin-bottom: 8px;
-      }
+  // Load CSS immediately (don't wait for it to block script execution)
+  loadModalCSS().catch(err => console.error('Modal CSS error:', err));
 
-      .salla-mobile-progress {
-        display: flex;
-        gap: 4px;
-        margin-top: 8px;
-      }
-
-      .salla-progress-step {
-        flex: 1;
-        height: 3px;
-        background: var(--border);
-        border-radius: 2px;
-        transition: background 0.3s;
-      }
-
-      .salla-progress-step.active {
-        background: var(--brand);
-      }
-
-      .salla-progress-step.completed {
-        background: #10b981;
-      }
-
-      /* ===== BODY: Scrollable Steps ===== */
-      .salla-bundle-body {
-        padding: 8px 12px 16px;
-      }
-
-      .salla-bundle-section {
-        padding: 10px;
-        margin-bottom: 8px;
-        border-radius: 10px;
-      }
-
-      .salla-bundle-section h3 {
-        font-size: 16px;
-        margin-bottom: 4px;
-      }
-
-      .salla-bundle-section .subtitle {
-        font-size: 12px;
-        margin-bottom: 8px;
-      }
-
-      /* ===== STEP 1: Compact Bundle Radio List ===== */
-      .salla-bundle-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .salla-bundle-card {
-        display: flex;
-        align-items: flex-start;
-        padding: 10px 12px;
-        border-radius: 10px;
-        gap: 10px;
-        position: relative;
-        min-height: auto;
-        cursor: pointer;
-        transition: all 0.2s;
-        flex-direction: row-reverse; /* RTL: Radio on right */
-      }
-
-      .salla-bundle-card:active {
-        transform: scale(0.98);
-      }
-
-      .salla-bundle-card.active {
-        border-color: var(--brand);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-      }
-
-      /* Radio indicator - on RIGHT side for RTL */
-      .salla-bundle-radio {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        border: 2px solid var(--border);
-        flex-shrink: 0;
-        position: relative;
-        transition: all 0.2s;
-        margin-top: 2px;
-      }
-
-      .salla-bundle-card.active .salla-bundle-radio {
-        border-color: var(--brand);
-        background: var(--brand);
-      }
-
-      .salla-bundle-card.active .salla-bundle-radio::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 8px;
-        height: 8px;
-        background: white;
-        border-radius: 50%;
-      }
-
-      /* Compact content */
-      .salla-bundle-card-compact {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .salla-bundle-card-summary {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--text-1);
-        margin-bottom: 2px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .salla-bundle-card-pricing {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--text-1);
-      }
-
-      .salla-bundle-savings-badge {
-        font-size: 11px;
-        padding: 2px 6px;
-        border-radius: 4px;
-        background: #d1fae5;
-        color: #065f46;
-        font-weight: 600;
-      }
-
-      .salla-bundle-details-toggle {
-        font-size: 11px;
-        color: var(--text-2);
-        text-decoration: underline;
-        margin-top: 4px;
-        cursor: pointer;
-      }
-
-      /* Collapsible full list */
-      .salla-bundle-items {
-        display: none;
-        font-size: 12px;
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px solid var(--border);
-      }
-
-      .salla-bundle-items.expanded {
-        display: block;
-      }
-
-      .salla-bundle-items li {
-        margin-bottom: 3px;
-      }
-
-      /* Hide desktop-only elements in mobile cards */
-      .salla-bundle-card .salla-bundle-card-header,
-      .salla-bundle-card .salla-bundle-card-footer,
-      
-      .salla-bundle-card .salla-bundle-card-value,
-      .salla-bundle-card .salla-bundle-badge,
-      .salla-bundle-card .salla-bundle-price,
-      .salla-bundle-card .salla-bundle-button {
-        display: none;
-      }
-
-      /* ===== STEP 2: Target Product Variants (Compressed) ===== */
-      .salla-product-header {
-        padding: 8px;
-        margin-bottom: 8px;
-        border-radius: 8px;
-      }
-
-      .salla-product-image {
-        width: 56px;
-        height: 56px;
-        border-radius: 8px;
-      }
-
-      .salla-product-name {
-        font-size: 14px;
-      }
-
-      .salla-product-meta {
-        font-size: 11px;
-      }
-
-      /* Quantity direct display - mobile */
-      .salla-quantity-direct {
-        margin-bottom: 8px;
-      }
-
-      .salla-quantity-direct-variants {
-        gap: 4px;
-      }
-
-      /* Compact variant selectors - mobile */
-      .salla-variant-compact {
-        gap: 4px;
-      }
-
-      .salla-variant-compact-select {
-        padding: 6px 8px;
-        font-size: 12px;
-      }
-
-      /* ===== STEP 3: Free Gifts (Compact Grid) ===== */
-      .salla-gifts-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 8px;
-        margin-bottom:10px;
-      }
-
-      .salla-gift-card {
-        display: flex;
-        gap: 10px;
-        padding: 10px;
-        border-radius: 10px;
-      }
-
-      .salla-gift-image {
-        width: 64px;
-        height: 64px;
-        min-width: 64px;
-        border-radius: 8px;
-        background-size: cover;
-        background-position: center;
-      }
-
-      .salla-gift-content {
-        flex: 1;
-        padding: 0;
-        min-width: 0;
-      }
-
-      .salla-gift-badges {
-        gap: 4px;
-        margin-bottom: 3px;
-      }
-
-      .salla-gift-badge {
-        font-size: 10px;
-        padding: 2px 6px;
-      }
-
-      .salla-gift-free {
-        font-size: 11px;
-      }
-
-      .salla-gift-title {
-        font-size: 13px;
-        margin-bottom: 3px;
-        line-height: 1.3;
-      }
-
-      .salla-gift-value {
-        font-size: 11px;
-        margin-bottom: 6px;
-      }
-
-      /* ===== Free Shipping Banner (Dynamically styled) ===== */
-
-      .salla-free-shipping-banner {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 16px;
-        margin: 0 0 12px 0;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .salla-free-shipping-banner span {
-        line-height: 1.4;
-      }
-
-      .salla-discounted-scroll {
-        display: flex;
-        gap: 8px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 4px 2px 8px;
-        scrollbar-width: none;
-      }
-
-      .salla-discounted-scroll::-webkit-scrollbar {
-        display: none;
-      }
-
-      .salla-discounted-card {
-        min-width: 160px;
-        max-width: 160px;
-        border-radius: 10px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        padding: 8px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .salla-discounted-image {
-        width: 100%;
-        height: 120px;
-        border-radius: 8px;
-        background-size: cover;
-        background-position: center;
-        margin-bottom: 6px;
-      }
-
-      .salla-discounted-title {
-        font-size: 12px;
-        font-weight: 500;
-        margin-bottom: 4px;
-        line-height: 1.3;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-      }
-
-      .salla-discounted-pricing {
-        font-size: 11px;
-        margin-bottom: 6px;
-      }
-
-      .salla-discounted-pricing .original {
-        text-decoration: line-through;
-        color: var(--text-2);
-      }
-
-      .salla-discounted-pricing .final {
-        font-weight: 600;
-        color: var(--text-1);
-        margin-right: 4px;
-      }
-
-      /* ===== STEP 5: Review Summary (Collapsible Invoice) ===== */
-      /* Mobile Review Summary - Always Expanded */
-      .salla-review-static {
-        background: var(--bg-soft);
-        border-radius: 8px;
-        margin-bottom: 12px;
-        padding: 12px;
-      }
-
-      .salla-review-content {
-        /* Content always visible */
-      }
-
-      .salla-summary-row {
-        margin-bottom: 6px;
-        font-size: 13px;
-      }
-
-      /* ===== STICKY FOOTER: Minimal Total + CTA ===== */
-      .salla-sticky-summary {
-        position: sticky;
-        bottom: 0;
-        z-index: 10;
-        padding: 12px 16px;
-      }
-
-      .salla-footer-compact {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-      }
-
-      .salla-footer-total {
-        font-size: 13px;
-      }
-
-      .salla-footer-price {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--text-1);
-      }
-
-      .salla-checkout-button {
-        height: 48px;
-        font-size: 15px;
-        font-weight: 600;
-        border-radius: 10px;
-        margin-top: 0;
-      }
-
-      .salla-checkout-button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      /* Navigation buttons */
-      .salla-step-navigation {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .salla-step-btn {
-        flex: 1;
-        height: 40px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        background: white;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .salla-step-btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
-
-      .salla-step-btn.primary {
-        background: var(--brand);
-        color: white;
-        border-color: var(--brand);
-      }
-
-      /* ===== STEP VISIBILITY ===== */
-      .salla-step-container {
-        display: none;
-      }
-
-      .salla-step-container.active {
-        display: block;
-      }
-
-      /* ===== RESPONSIVE TWEAKS ===== */
-      .salla-bundle-body {
-        font-size: 13px;
-      }
-
-      .salla-bundle-price {
-        font-size: 18px;
-      }
-
-      /* Hide currency icons on mobile for cleaner look */
-      .salla-hide-icon-mobile svg {
-        display: none;
-      }
-    }
-    /* ============================================
-       END MOBILE-ONLY STEPPER REDESIGN
-       ============================================ */
-
-    /* ============================================
-       TIMER, REVIEWS, DISCOUNT & PAYMENT STYLES
-       ============================================ */
-    
-    /* Timer Component - Compact (Always in header) */
-    .salla-timer-container {
-      background: var(--timer-bg-color, var(--bg-card));
-      border: 1px solid var(--timer-border-color, var(--border));
-      border-radius: var(--timer-border-radius, 8px);
-      padding: 6px 12px;
-      margin: 0;
-      text-align: center;
-      transition: all 0.3s ease;
-      display: flex;
-      width: 100%;
-      align-items: center;
-      gap: 8px;
-      justify-content: center;
-    }
-
-    .salla-timer-label {
-      font-size: var(--timer-font-size, 11px);
-      color: var(--timer-label-color, var(--text-2));
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .salla-timer-display {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--timer-text-color, var(--brand));
-      font-family: 'Courier New', monospace;
-      letter-spacing: 1px;
-      direction: ltr;
-    }
-
-    .salla-timer-display.pulse {
-      animation: timerPulse 2s infinite;
-    }
-
-    .salla-timer-display.glow {
-      animation: timerGlow 2s infinite;
-    }
-
-    /* Mobile timer adjustments - show on smaller screens */
-    @media (max-width: 640px) {
-      .salla-timer-container {
-        padding: 8px 12px;
-        margin: 0;
-      }
-      
-      .salla-timer-label {
-        font-size: 10px;
-      }
-      
-      .salla-timer-display {
-        font-size: 16px;
-      }
-    }
-
-    @keyframes timerPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    @keyframes timerGlow {
-      0%, 100% { filter: drop-shadow(0 0 0px currentColor); }
-      50% { filter: drop-shadow(0 0 8px currentColor); }
-    }
-
-    /* Enhanced Progress and Feedback Animations */
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.1);
-        opacity: 0.8;
-      }
-    }
-
-    @keyframes successPulse {
-      0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      }
-      50% {
-        transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-      }
-    }
-
-    @keyframes checkmarkBounce {
-      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-      40% { transform: translateY(-8px); }
-      60% { transform: translateY(-4px); }
-    }
-
-    @keyframes fadeInSlide {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes shimmer {
-      0% { left: -100%; }
-      100% { left: 200%; }
-    }
-
-    @keyframes progressShimmer {
-      0% { left: -100%; }
-      100% { left: 200%; }
-    }
-
-    @keyframes truckBounce {
-      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-      40% { transform: translateY(-3px); }
-      60% { transform: translateY(-2px); }
-    }
-
-    @keyframes popIn {
-      0% {
-        opacity: 0;
-        transform: scale(0.8);
-      }
-      80% {
-        opacity: 1;
-        transform: scale(1.05);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    @keyframes progressBarGlow {
-      0%, 100% {
-        filter: brightness(1) drop-shadow(0 0 8px rgba(255,255,255,0.3));
-      }
-      50% {
-        filter: brightness(1.1) drop-shadow(0 0 16px rgba(255,255,255,0.6));
-      }
-    }
-
-    @keyframes progressSlideIn {
-      0% {
-        width: 0%;
-        opacity: 0;
-      }
-      10% {
-        opacity: 1;
-      }
-      100% {
-        width: var(--target-width, 100%);
-        opacity: 1;
-      }
-    }
-
-    @keyframes bannerSlideIn {
-      0% {
-        transform: translateY(20px);
-        opacity: 0;
-      }
-      100% {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
-    /* Reviews Carousel */
-    .salla-reviews-section {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin: 20px 0;
-    }
-
-    .salla-reviews-header {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-1);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .salla-reviews-carousel {
-      position: relative;
-      overflow: hidden;
-      padding: 12px 0;
-    }
-
-    .salla-reviews-track {
-      display: flex;
-      gap: 16px;
-      overflow-x: auto;
-      scroll-behavior: smooth;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
-    .salla-reviews-track::-webkit-scrollbar {
-      display: none;
-    }
-
-    .salla-review-card {
-      flex: 0 0 280px;
-      background: var(--bg-soft);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .salla-review-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-1);
-    }
-
-    .salla-review-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .salla-review-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--bg-thumb);
-      object-fit: cover;
-    }
-
-    .salla-review-customer {
-      flex: 1;
-    }
-
-    .salla-review-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-1);
-      margin-bottom: 2px;
-    }
-
-    .salla-review-rating {
-      color: #f59e0b;
-      font-size: 12px;
-    }
-
-    .salla-review-content {
-      font-size: 13px;
-      color: var(--text-2);
-      line-height: 1.5;
-      margin-bottom: 8px;
-    }
-
-    .salla-review-time {
-      font-size: 11px;
-      color: var(--text-2);
-      opacity: 0.7;
-    }
-
-    .salla-reviews-dots {
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-      margin-top: 12px;
-    }
-
-    .salla-review-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--border);
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .salla-review-dot.active {
-      background: var(--brand);
-      width: 24px;
-      border-radius: 4px;
-    }
-
-    /* Discount Code Section */
-    .salla-discount-section {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin: 16px 0;
-    }
-
-    .salla-discount-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .salla-discount-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-1);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .salla-discount-toggle {
-      font-size: 12px;
-      color: var(--text-2);
-      transition: transform 0.3s;
-    }
-
-    .salla-discount-toggle.expanded {
-      transform: rotate(180deg);
-    }
-
-    .salla-discount-body {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease;
-    }
-
-    .salla-discount-body.expanded {
-      max-height: 200px;
-      margin-top: 12px;
-    }
-
-    /* Desktop: Discount always visible */
-    @media (min-width: 641px) {
-      .salla-discount-header {
-        pointer-events: none;
-        cursor: default;
-      }
-
-      .salla-discount-toggle {
-        display: none;
-      }
-
-      .salla-discount-body {
-        max-height: none;
-        overflow: visible;
-        margin-top: 12px;
-      }
-    }
-
-    .salla-discount-input-group {
-      display: flex;
-      gap: 8px;
-    }
-
-    .salla-discount-input {
-      flex: 1;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 14px;
-      direction: ltr;
-      text-align: right;
-      transition: all 0.2s;
-    }
-
-    .salla-discount-input:focus {
-      outline: none;
-      border-color: var(--brand);
-      box-shadow: 0 0 0 3px rgba(14, 16, 18, 0.1);
-    }
-
-    .salla-discount-apply-btn {
-      padding: 10px 20px;
-      background: var(--brand);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .salla-discount-apply-btn:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-
-    .salla-discount-apply-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .salla-discount-message {
-      margin-top: 8px;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 13px;
-    }
-
-    .salla-discount-message.success {
-      background: #d1fae5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
-    }
-
-    .salla-discount-message.error {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-    }
-
-    /* Payment Methods - Minimal Gray Slider */
-    .salla-payment-methods {
-      margin-top: 12px;
-      padding: 0;
-    }
-
-    .salla-payment-slider {
-      display: flex;
-      gap: 16px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      padding: 6px 2px;
-      align-items: center;
-      will-change: scroll-position;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .salla-payment-slider::-webkit-scrollbar {
-      display: none;
-    }
-
-    .salla-payment-badge {
-      flex: 0 0 auto;
-      width: 40px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      border: none;
-      transition: opacity 0.2s;
-      opacity: 0.6;
-    }
-
-    .salla-payment-badge:hover {
-      opacity: 1;
-    }
-
-    .salla-payment-logo,
-    .salla-payment-icon {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      filter: grayscale(100%);
-      transition: filter 0.2s;
-    }
-
-    .salla-payment-badge:hover .salla-payment-logo,
-    .salla-payment-badge:hover .salla-payment-icon {
-      filter: grayscale(0%);
-    }
-
-    .salla-payment-icon {
-      font-size: 24px;
-    }
-
-    /* Mobile responsive adjustments */
-    @media (max-width: 640px) {
-      .salla-timer-container {
-        margin: 12px 0;
-        padding: 12px;
-      }
-
-      .salla-timer-display {
-        font-size: 20px;
-      }
-
-      .salla-review-card {
-        flex: 0 0 240px;
-      }
-
-      .salla-reviews-section {
-        padding: 16px;
-        margin: 16px 0;
-      }
-
-      .salla-discount-input-group {
-        flex-direction: column;
-      }
-
-      .salla-discount-apply-btn {
-        width: 100%;
-      }
-    }
-  \`;
-
-  // Inject styles
-  if (!document.getElementById('salla-bundle-modal-styles')) {
-    const styleSheet = document.createElement('style');
-    styleSheet.id = 'salla-bundle-modal-styles';
-    styleSheet.textContent = modalStyles;
-    document.head.appendChild(styleSheet);
-  }
-
-  // Riyal SVG icon (inline)
   const riyalSvgIcon = \`<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display: inline-block; vertical-align: middle; margin: 0 2px;">
     <path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/>
     <path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/>
   </svg>\`;
 
-  // Price formatting utility
   function formatPrice(price) {
-    // Ensure price is a valid number
     const numPrice = parseFloat(price) || 0;
     const formatted = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
@@ -1876,23 +60,19 @@ router.get("/modal.js", (req, res) => {
     return formatted + '&nbsp;' + riyalSvgIcon;
   }
 
-  // Bundle Modal Class - Modern Boxy Design
+  // Bundle Modal Class 
   class SallaBundleModal {
-    // Static cache for preloaded data (shared across all instances)
     static dataCache = {
       timerSettings: null,
       reviews: null,
       paymentMethods: null,
-      bundleData: {}  // keyed by productId
+      bundleData: {} 
     };
 
-    // Static flag to track if preloading is in progress
     static isPreloading = false;
     static preloadPromise = null;
 
-    // Haptic feedback, sound, and vibration system
     static feedbackSystem = {
-      // Audio context for sound effects
       audioContext: null,
       sounds: {
         click: null,
@@ -1900,8 +80,6 @@ router.get("/modal.js", (req, res) => {
         complete: null,
         success: null
       },
-
-      // Initialize audio context and sounds
       initAudio() {
         if (this.audioContext) return;
 
@@ -1913,25 +91,19 @@ router.get("/modal.js", (req, res) => {
         }
       },
 
-      // Create procedural sound effects
       createSounds() {
-        // Click sound - short and satisfying
         this.sounds.click = () => this.playTone(800, 0.05, 'sine', 0.1);
 
-        // Progress sound - ascending tone
         this.sounds.progress = () => {
           this.playTone(600, 0.1, 'square', 0.05);
           setTimeout(() => this.playTone(800, 0.1, 'square', 0.05), 50);
         };
 
-        // Complete sound - celebration
         this.sounds.complete = () => {
           this.playTone(523, 0.15, 'sine', 0.2); // C5
           setTimeout(() => this.playTone(659, 0.15, 'sine', 0.2), 100); // E5
           setTimeout(() => this.playTone(784, 0.2, 'sine', 0.3), 200); // G5
         };
-
-        // Success sound - triumphant
         this.sounds.success = () => {
           this.playTone(523, 0.1, 'triangle', 0.15); // C5
           setTimeout(() => this.playTone(659, 0.1, 'triangle', 0.15), 75); // E5
@@ -1940,7 +112,6 @@ router.get("/modal.js", (req, res) => {
         };
       },
 
-      // Play a tone with given parameters
       playTone(frequency, duration, type = 'sine', volume = 0.1) {
         if (!this.audioContext) return;
 
@@ -1959,8 +130,6 @@ router.get("/modal.js", (req, res) => {
         oscillator.start(this.audioContext.currentTime);
         oscillator.stop(this.audioContext.currentTime + duration);
       },
-
-      // Haptic feedback for mobile devices
       triggerHaptic(type = 'light') {
         if (!window.navigator.vibrate) return;
 
@@ -1980,8 +149,6 @@ router.get("/modal.js", (req, res) => {
           console.log('Vibration not supported:', e);
         }
       },
-
-      // Trigger combined feedback
       triggerFeedback(type) {
         this.initAudio();
 
@@ -2017,13 +184,11 @@ router.get("/modal.js", (req, res) => {
       this.bundleData = null;
       this.modalElement = null;
       this.selectedBundle = null;
-      this.isInitializing = false; // Prevent duplicate initialization
+      this.isInitializing = false; 
 
-      // Initialize feedback system on first user interaction
       this.feedbackInitialized = false;
       this.initializeFeedbackOnFirstInteraction();
 
-      // Mobile stepper state
       this.currentStep = 1;
       this.totalSteps = 5;
       this.stepLabels = [
@@ -2034,30 +199,25 @@ router.get("/modal.js", (req, res) => {
         'الفاتورة'
       ];
 
-      // Initialize feature state
       this.initializeFeatureState();
     }
 
-    // Initialize feedback system on first user interaction (to avoid browser audio restrictions)
     initializeFeedbackOnFirstInteraction() {
       const initFeedback = (e) => {
         if (!this.feedbackInitialized) {
           SallaBundleModal.feedbackSystem.initAudio();
           this.feedbackInitialized = true;
-          // Remove listeners after initialization
           document.removeEventListener('click', initFeedback);
           document.removeEventListener('touchstart', initFeedback);
           document.removeEventListener('keydown', initFeedback);
         }
       };
 
-      // Add listeners for first user interaction
       document.addEventListener('click', initFeedback, { once: true });
       document.addEventListener('touchstart', initFeedback, { once: true });
       document.addEventListener('keydown', initFeedback, { once: true });
     }
 
-    // Trigger feedback with error handling
     triggerFeedback(type) {
       try {
         SallaBundleModal.feedbackSystem.triggerFeedback(type);
@@ -2066,16 +226,13 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
-    // Setup global feedback listeners for all interactive elements
     setupGlobalFeedbackListeners() {
       if (!this.modalElement) return;
 
-      // Add feedback to button clicks
       const buttons = this.modalElement.querySelectorAll('button, .salla-bundle-button, .salla-step-btn, .salla-checkout-button');
       buttons.forEach(button => {
         if (!button.hasFeedbackListener) {
           button.addEventListener('click', (e) => {
-            // Don't trigger feedback for close button since it's handled separately
             if (!e.target.classList.contains('salla-bundle-close')) {
               this.triggerFeedback('click');
             }
@@ -2629,6 +786,13 @@ router.get("/modal.js", (req, res) => {
       const selectedBundleData = bundleDisplayData.find(b => b.id === this.selectedBundle);
       const selectedTier = selectedBundleData ? selectedBundleData.tier : bundles[0];
 
+      // Calculate price variables before building HTML (needed for free shipping banner)
+      const selectedBundle = selectedBundleData || bundleDisplayData[0];
+      const totalPrice = selectedBundle.price; // This is what customer actually pays
+      const originalValue = selectedBundle.originalPrice || selectedBundle.price; // Target product price
+      const offersPrice = selectedBundle.offersCost || 0; // What customer pays for offers
+      const bundleSavings = selectedBundle.savings || 0; // What customer saves
+
       // Check if any bundles have unavailable products
       const hasAnyUnavailableProducts = bundleDisplayData.some(bundle => bundle.hasUnavailableProducts);
       const allBundlesUnavailable = bundleDisplayData.every(bundle => bundle.hasUnavailableProducts);
@@ -2708,18 +872,17 @@ router.get("/modal.js", (req, res) => {
           </div>
         \` : ''}
 
+        <!-- Reviews Section (Show on both mobile and desktop) -->
+        \${this.renderReviews()}
+
         <!-- Offers Section -->
         \${this.renderOffersSection(selectedTier, selectedBundleData)}
+        
+        <!-- Free Shipping Banner (Show on both mobile and desktop) -->
+        \${this.renderFreeShippingBanner(totalPrice)}
       \`;
 
       body.innerHTML = html;
-
-      // Render summary with accurate calculations
-      const selectedBundle = selectedBundleData || bundleDisplayData[0];
-      const totalPrice = selectedBundle.price; // This is what customer actually pays
-      const originalValue = selectedBundle.originalPrice || selectedBundle.price; // Target product price
-      const offersPrice = selectedBundle.offersCost || 0; // What customer pays for offers
-      const bundleSavings = selectedBundle.savings || 0; // What customer saves
 
       // Desktop: Collapsible summary (collapsed by default)
       let summaryDetailsHtml = \`
@@ -5160,29 +3323,20 @@ router.get("/modal.js", (req, res) => {
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
               <span style="display: flex; align-items: center; animation: checkmarkBounce 1s ease-in-out;">\${checkIcon}</span>
               <span style="flex: 1; text-align: center; font-weight: 600; animation: fadeInSlide 0.6s ease-out;">\${text}</span>
-              <span style="
-                background: rgba(255,255,255,0.3);
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 12px;
-                font-weight: 600;
-                min-width: 45px;
-                text-align: center;
-                animation: popIn 0.6s ease-out;
-              ">100%</span>
             </div>
 
             <!-- ALWAYS show progress bar at 100% for visual consistency -->
-            <div style="
-              width: 100%;
-              background: ' + progressBgColor + ';
-              border-radius: 25px;
-              height: 14px;
-              overflow: hidden;
-              position: relative;
-              box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
-              border: 1px solid rgba(0,0,0,0.2);
-            ">
+            <div style="position: relative; width: 100%;">
+              <div style="
+                width: 100%;
+                background: \${progressBgColor};
+                border-radius: 25px;
+                height: 14px;
+                overflow: hidden;
+                position: relative;
+                box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+                border: 1px solid rgba(0,0,0,0.2);
+              ">
               <!-- Background segments -->
               <div style="
                 position: absolute;
@@ -5202,7 +3356,7 @@ router.get("/modal.js", (req, res) => {
               <!-- Progress fill at 100% with special success gradient -->
               <div style="
                 width: 100%;
-                background: linear-gradient(90deg, ' + progressColor + ', rgba(255,255,255,0.6), ' + progressColor + ');
+                background: linear-gradient(90deg, \${progressColor}, rgba(255,255,255,0.6), \${progressColor});
                 height: 100%;
                 transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
                 border-radius: 25px;
@@ -5241,7 +3395,25 @@ router.get("/modal.js", (req, res) => {
                 <div style="width: 4px; height: 4px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.8);"></div>
                 <div style="width: 4px; height: 4px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 8px rgba(255,255,255,0.8);"></div>
               </div>
+              
+              <!-- 100% Badge positioned at the right end of progress bar (RTL) -->
+              <span style="
+                position: absolute;
+                right: -55px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(255,255,255,0.3);
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                min-width: 45px;
+                text-align: center;
+                animation: popIn 0.6s ease-out;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              ">100%</span>
             </div>
+          </div>
 
             <!-- Success motivation text -->
             <div style="
@@ -5309,13 +3481,13 @@ router.get("/modal.js", (req, res) => {
                 min-width: 45px;
                 text-align: center;
                 animation: popIn 0.6s ease-out;
-              ">' + Math.round(percentage) + '%</span>
+              ">\${Math.round(percentage)}%</span>
             </div>
 
             <!-- Enhanced progress bar with segments -->
             <div style="
               width: 100%;
-              background: ' + progressBgColor + ';
+              background: \${progressBgColor};
               border-radius: 25px;
               height: 14px;
               overflow: hidden;
@@ -5341,8 +3513,8 @@ router.get("/modal.js", (req, res) => {
 
               <!-- Progress fill with gradient -->
               <div style="
-                width: ' + percentage + '%;
-                background: linear-gradient(90deg, ' + progressColor + ', rgba(255,255,255,0.4));
+                width: \${percentage}%;
+                background: linear-gradient(90deg, \${progressColor}, rgba(255,255,255,0.4));
                 height: 100%;
                 transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
                 border-radius: 25px;
@@ -5860,7 +4032,7 @@ router.get("/modal.js", (req, res) => {
         'google_pay': 'google.svg',
         'mokafaa_alrajhi_loyalty': 'rajhy.svg',
         'madfu_installment': 'madfu.svg',
-        'emkan_installment': 'emkano.svg',
+        'emkan_installment': 'emkan.svg',
         'mada': 'mada.svg'
       };
 
@@ -5912,12 +4084,12 @@ router.get("/modal.js", (req, res) => {
         'google_pay': 'google.svg',
         'mokafaa_alrajhi_loyalty': 'rajhy.svg',
         'madfu_installment': 'madfu.svg',
-        'emkan_installment': 'emkano.svg',
+        'emkan_installment': 'emkan.svg',
         'mada': 'mada.svg'
       };
 
       if (!iconMap.hasOwnProperty(slug)) {
-        return ''; // Don't return anything if icon doesn't exist
+        return '';
       }
 
       const iconFile = iconMap[slug];
@@ -5926,9 +4098,7 @@ router.get("/modal.js", (req, res) => {
       return '<img src="' + iconPath + '" alt="' + slug + '" class="salla-payment-logo" />';
     }
 
-    // Start Payment Slider Auto-Scroll
     startPaymentSliderAutoScroll() {
-      // Clear existing animation frame if any
       if (this.paymentSliderAnimationFrame) {
         cancelAnimationFrame(this.paymentSliderAnimationFrame);
         this.paymentSliderAnimationFrame = null;
@@ -5939,15 +4109,12 @@ router.get("/modal.js", (req, res) => {
         return;
       }
 
-      // Check if slider has content
       if (slider.scrollWidth <= slider.clientWidth) {
         return;
       }
 
-      // Disable smooth scrolling for seamless loop
       slider.style.scrollBehavior = 'auto';
 
-      // Calculate the width of one set (we have 3 copies)
       const oneSetWidth = slider.scrollWidth / 3;
 
       let lastTime = performance.now();
@@ -6015,11 +4182,7 @@ router.get("/modal.js", (req, res) => {
       if (this.modalElement) {
         this.modalElement.classList.add('show');
         document.body.style.overflow = 'hidden';
-
-        // Trigger satisfying feedback when modal opens
         this.triggerFeedback('success');
-
-        // Start timer, reviews, and payment slider after modal shows
         setTimeout(() => {
           this.startTimer();
           this.startReviewsAutoScroll();
@@ -6032,8 +4195,6 @@ router.get("/modal.js", (req, res) => {
       if (this.modalElement) {
         this.modalElement.classList.remove('show');
         document.body.style.overflow = '';
-
-        // Clear intervals
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
           this.timerInterval = null;
@@ -6053,13 +4214,9 @@ router.get("/modal.js", (req, res) => {
           cancelAnimationFrame(this.paymentSliderAnimationFrame);
           this.paymentSliderAnimationFrame = null;
         }
-
-        // Clear global reference
         if (window.sallaBundleModal === this) {
           window.sallaBundleModal = null;
         }
-
-        // Remove modal after animation
         setTimeout(() => {
           if (this.modalElement && this.modalElement.parentNode) {
             this.modalElement.parentNode.removeChild(this.modalElement);
@@ -6069,10 +4226,8 @@ router.get("/modal.js", (req, res) => {
     }
   }
 
-  // Export to global scope
   window.SallaBundleModal = SallaBundleModal;
 
-  // Global reference for modal instance
   window.sallaBundleModal = null;
 
 })();
