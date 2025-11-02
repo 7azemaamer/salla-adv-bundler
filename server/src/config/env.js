@@ -24,5 +24,10 @@ export const config = {
   emailHost: process.env.EMAIL_HOST || "smtp.gmail.com",
   emailPort: process.env.EMAIL_PORT || 587,
   emailUser: process.env.EMAIL_USER,
-  emailPassword: process.env.EMAIL_PASSWORD,
+  // Accept either EMAIL_PASSWORD or EMAIL_PASS for compatibility with .env
+  emailPassword: process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS,
+  // Optionally disable TLS/STARTTLS for SMTP (set to 'true' to disable)
+  emailDisableTls:
+    process.env.EMAIL_DISABLE_TLS === "true" ||
+    process.env.EMAIL_IGNORE_TLS === "true",
 };

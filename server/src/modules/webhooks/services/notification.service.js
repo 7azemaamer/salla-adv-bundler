@@ -13,6 +13,10 @@ const createTransporter = () => {
       user: config.emailUser,
       pass: config.emailPassword,
     },
+    ignoreTLS: config.emailDisableTls === true,
+    tls: {
+      rejectUnauthorized: !config.emailDisableTls,
+    },
   });
 };
 
