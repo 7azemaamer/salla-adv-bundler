@@ -65,8 +65,11 @@ class StoreService {
       deleted_at: null, // Clear deletion date
     };
 
-    // Generate secure setup token if first install or reinstall
-    if (!existingStore || !existingStore.first_login_completed) {
+    if (
+      !existingStore ||
+      existingStore.is_deleted === true ||
+      !existingStore.first_login_completed
+    ) {
       updateData.setup_token = crypto.randomBytes(32).toString("hex");
     }
 
@@ -204,6 +207,20 @@ class StoreService {
     );
 
     if (!store) throw new Error("Store not found");
+    return store;
+  }
+
+  /* ===============
+   * Get store by domain
+   * ===============*/
+  async getStoreByDomain(domain) {
+    // Clean domain (remove www, http, https, trailing slash)
+    const cleanDomain = domain
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/$/, '');
+    
+    const store = await Store.findOne({ domain: cleanDomain });
     return store;
   }
 }

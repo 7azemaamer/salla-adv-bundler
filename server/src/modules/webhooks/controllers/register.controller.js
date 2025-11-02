@@ -19,6 +19,25 @@ export const registerNewStore = asyncWrapper(async (req, res) => {
   console.log("=".repeat(80) + "\n");
 
   switch (event) {
+    case "coupon.applied":
+      // Handle coupon applied webhook
+      const cartData = payload?.cart;
+      if (cartData && cartData.coupon) {
+        console.log(
+          `[Webhook]: Coupon "${cartData.coupon.code}" applied to cart ${cartData.id} for store ${merchant}`
+        );
+        console.log(`  Coupon type: ${cartData.coupon.type}`);
+        console.log(
+          `  Discount amount: ${cartData.coupon.amount.amount} ${cartData.coupon.amount.currency}`
+        );
+        console.log(
+          `  Cart total after discount: ${cartData.total.amount} ${cartData.total.currency}`
+        );
+      }
+      // Note: The bundle modal will fetch current cart state from Salla API
+      // so coupon discounts will be reflected automatically
+      break;
+
     case "app.store.authorize":
       const existingStore = await Store.findOne({ store_id: merchant });
       const isNewInstall = !existingStore;

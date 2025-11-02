@@ -917,6 +917,21 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
+      // NOTE: Salla Coupon Integration
+      // ================================
+      // When a customer applies a coupon code in Salla's cart:
+      // 1. Salla automatically applies the coupon to the cart total
+      // 2. The coupon discount is calculated AFTER products are added to cart
+      // 3. Our webhook receives "coupon.applied" event for logging/tracking
+      // 4. The final price the customer pays includes the coupon discount
+      // 5. Bundle offers work INDEPENDENTLY of coupon codes:
+      //    - Bundle = Special product combinations with discounts
+      //    - Coupon = Additional discount applied to final cart total
+      //    - Both can be used together for maximum savings
+      // 
+      // The bundle modal shows bundle savings here. Coupon discounts are
+      // applied at checkout and shown in Salla's native cart/checkout flow.
+
       // Add discount code section (always visible on desktop)
       // summaryDetailsHtml += this.renderDiscountCode();
 

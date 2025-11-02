@@ -114,7 +114,7 @@ class SnippetController {
     )}/api/v1', // Force HTTPS for mixed content
 
     storeDomain: extractSallaValue(storeContext.storeDomain) || window.location.hostname.replace(/^www\./, ''),
-    storeId: sallaStoreId || extractSallaValue(storeContext.storeId) || (window.Salla?.config?.store?.id) || '1711260943',
+    storeId: sallaStoreId || extractSallaValue(storeContext.storeId) || (window.Salla?.config?.store?.id),
     storeUsername: extractSallaValue(storeContext.storeUsername) || (window.Salla?.config?.store?.username),
     storeEmail: extractSallaValue(storeContext.storeEmail) || (window.Salla?.config?.store?.email),
 

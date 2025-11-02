@@ -28,6 +28,14 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     product_id = req.params.product_id;
   }
 
+  // If store is a domain (contains dots), look up the store_id from database
+  if (store_id && store_id.includes('.')) {
+    const storeDoc = await storeService.getStoreByDomain(store_id);
+    if (storeDoc) {
+      store_id = storeDoc.store_id;
+    }
+  }
+
   if (!store_id || !product_id) {
     return res.status(400).json({
       success: false,

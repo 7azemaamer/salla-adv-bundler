@@ -20,12 +20,6 @@ const createTransporter = () => {
   });
 };
 
-/**
- * Send welcome email to store owner in Arabic
- * @param {string} storeId - Store ID
- * @param {string} accessToken - Salla access token
- * @param {string} type - 'install' or 'reinstall'
- */
 export const sendWelcomeMessage = async (
   storeId,
   accessToken,
@@ -33,8 +27,6 @@ export const sendWelcomeMessage = async (
 ) => {
   try {
     const dashboardUrl = config.dashboard || "http://localhost:3999";
-
-    // Get store from database to retrieve setup_token
     const storeDoc = await Store.findOne({ store_id: storeId });
 
     if (!storeDoc || !storeDoc.setup_token) {
@@ -44,7 +36,6 @@ export const sendWelcomeMessage = async (
       return;
     }
 
-    // Get store info to get merchant email
     const storeResponse = await axios.get(
       "https://api.salla.dev/admin/v2/store/info",
       {
@@ -64,17 +55,11 @@ export const sendWelcomeMessage = async (
       return;
     }
 
-    // Generate secure setup link with token instead of store_id
     const setupLink = `${dashboardUrl}/setup?token=${storeDoc.setup_token}`;
     const isReinstall = type === "reinstall";
 
     // Log to console until SMTP is configured
     console.log("\n" + "=".repeat(80));
-    console.log(
-      `📧 ${
-        isReinstall ? "WELCOME BACK" : "WELCOME"
-      } EMAIL DATA (SMTP NOT CONFIGURED)`
-    );
     console.log("=".repeat(80));
     console.log(`Store ID: ${storeId}`);
     console.log(`Store Name: ${storeName}`);
