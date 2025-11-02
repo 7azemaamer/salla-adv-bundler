@@ -20,4 +20,9 @@ export const config = {
   webhookSecret: process.env.WEBHOOK_SECRET,
   //dashboard
   dashboard: process.env.DASHBOARD_URL || "http://localhost:3999",
+  // Email Configuration (for welcome emails)
+  emailHost: process.env.EMAIL_HOST || "smtp.gmail.com",
+  emailPort: process.env.EMAIL_PORT || 587,
+  emailUser: process.env.EMAIL_USER,
+  emailPassword: process.env.EMAIL_PASSWORD,
 };

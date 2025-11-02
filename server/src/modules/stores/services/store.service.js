@@ -1,19 +1,42 @@
 import Store from "../model/store.model.js";
 import { fetchPaymentMethods } from "../../bundles/services/payment.service.js";
+import axios from "axios";
+import crypto from "crypto";
 
 class StoreService {
   /* ===============
    * Save new stores in database (handles both new installs and reinstalls)
    * ===============*/
   async saveStore({ store_id, payload }) {
-    const {
-      access_token,
-      refresh_token,
-      expires,
-      store_name,
-      token_type,
-      scope,
-    } = payload;
+    const { access_token, refresh_token, expires, token_type, scope } = payload;
+
+    // Fetch store info from Salla API to get name and other details
+    let storeInfo = null;
+    try {
+      const response = await axios.get(
+        "https://api.salla.dev/admin/v2/store/info",
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        }
+      );
+      storeInfo = response.data.data;
+      console.log(
+        `[Store Service]: COMPLETE SALLA API RESPONSE FOR STORE ${store_id}`
+      );
+
+      console.log(
+        `[Store Service]: Fetched store info for ${store_id} - Name: ${
+          storeInfo?.name || "EMPTY"
+        }`
+      );
+    } catch (error) {
+      console.error(
+        `[Store Service]: Failed to fetch store info for ${store_id}:`,
+        error.response?.data || error.message
+      );
+    }
 
     // Set default bundle settings for new stores
     const defaultBundleSettings = {
@@ -26,7 +49,12 @@ class StoreService {
 
     const updateData = {
       store_id,
-      name: store_name,
+      name: storeInfo?.name || `Store ${store_id}`,
+      domain: storeInfo?.domain,
+      avatar: storeInfo?.avatar,
+      description: storeInfo?.description,
+      merchant_email: storeInfo?.email, // Save merchant email from Salla
+      plan: storeInfo?.plan || "basic",
       access_token,
       refresh_token,
       scope,
@@ -36,6 +64,11 @@ class StoreService {
       is_deleted: false, // Reactivate if was deleted
       deleted_at: null, // Clear deletion date
     };
+
+    // Generate secure setup token if first install or reinstall
+    if (!existingStore || !existingStore.first_login_completed) {
+      updateData.setup_token = crypto.randomBytes(32).toString("hex");
+    }
 
     // Calculate token expiration date if expires value is valid
     if (expires && !isNaN(expires) && expires > 0) {
@@ -61,18 +94,15 @@ class StoreService {
       new: true,
     });
 
-
     // Fetch and cache payment methods on installation/reactivation
     if (access_token) {
       try {
-
         const paymentMethodsResult = await fetchPaymentMethods(access_token);
 
         if (paymentMethodsResult && paymentMethodsResult.data) {
           store.payment_methods = paymentMethodsResult.data;
           store.payment_methods_updated_at = new Date();
           await store.save();
-
         }
       } catch (error) {
         console.error(

@@ -8,6 +8,7 @@ import firstVersion from "./src/routes/v1.routes.js";
 import { errorMiddleware } from "./src/utils/errorHandler.js";
 import "./src/workers/bundleCleanup.worker.js";
 import { startReviewCountWorker } from "./src/workers/reviewCount.worker.js";
+import { startTokenRefreshWorker } from "./src/workers/tokenRefresh.worker.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,8 +65,9 @@ const startServer = async () => {
     app.listen(config.port, () => {
       console.log("[Server_Init]: Server is running on port " + config.port);
 
-      // Start review count worker after server is running
+      // Start background workers after server is running
       startReviewCountWorker();
+      startTokenRefreshWorker(); // Easy Mode: Auto-refresh tokens every 5 days
     });
   } catch (err) {
     console.error("[Server_Init]: Failed to start server:", err);

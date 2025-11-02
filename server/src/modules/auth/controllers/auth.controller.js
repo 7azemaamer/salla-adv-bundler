@@ -4,204 +4,424 @@ import axios from "axios";
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 /* ===================================
- * Login (only via salla)
+ * EASY MODE: Get store info for setup
+ * Uses secure token instead of store_id
  * =================================== */
-export const loginViaSalla = (req, res) => {
-  const state = crypto.randomBytes(8).toString("hex");
+export const getSetupInfo = asyncWrapper(async (req, res) => {
+  const { token } = req.query;
 
-  // store in cookie/session
-  res.cookie("oauth_state_seo_booster", state, {
-    httpOnly: true,
-    maxAge: 5 * 60 * 1000,
-  });
-
-  const sallaUrl = new URL("https://accounts.salla.sa/oauth2/auth");
-  sallaUrl.searchParams.set("response_type", "code");
-  sallaUrl.searchParams.set("client_id", config.clientKey);
-  sallaUrl.searchParams.set("redirect_uri", config.redirectUri);
-  sallaUrl.searchParams.set(
-    "scope",
-    "offline_access specialoffers.read_write products.read webhooks.read_write orders.read metadata.read payments.read"
-  );
-  sallaUrl.searchParams.set("state", state);
-
-  res.redirect(sallaUrl.toString());
-};
-
-/* ===================================
- * redirect to correct callback
- * =================================== */
-export const sallaCallback = asyncWrapper(async (req, res) => {
-  const { code } = req.query;
-  if (!code) return res.status(400).send("Missing code");
-
-  const tokenData = new URLSearchParams();
-  tokenData.append("grant_type", "authorization_code");
-  tokenData.append("code", code);
-  tokenData.append("client_id", config.clientKey);
-  tokenData.append("client_secret", config.clientSecretKey);
-  tokenData.append("redirect_uri", config.redirectUri);
-
-  const tokenRes = await axios.post(
-    "https://accounts.salla.sa/oauth2/token",
-    tokenData.toString(),
-    {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    }
-  );
-
-  const { access_token, refresh_token, expires_in, scope } = tokenRes.data;
-
-  const storeRes = await axios.get(
-    "https://api.salla.dev/admin/v2/store/info",
-    {
-      headers: { Authorization: `Bearer ${access_token}` },
-    }
-  );
-
-  const store = storeRes.data.data;
-
-  const storePlan = store.plan || "basic";
-
-  // Calculate bundle limit based on plan
-  let maxBundles = 3; // default
-  switch (storePlan) {
-    case "basic":
-      maxBundles = 3;
-      break;
-    case "pro":
-      maxBundles = 10;
-      break;
-    case "enterprise":
-      maxBundles = 50;
-      break;
-    case "special":
-      maxBundles = 100;
-      break;
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing setup token",
+    });
   }
 
-  await Store.findOneAndUpdate(
-    { store_id: store.id },
-    {
-      name: store.name,
-      domain: store.domain,
-      description: store.description,
-      plan: storePlan,
-      access_token,
-      refresh_token,
-      scope,
-      access_token_expires_at: new Date(Date.now() + expires_in * 1000),
-      installed_at: new Date(),
-      avatar: store.avatar,
-      bundle_settings: {
-        max_bundles_per_store: maxBundles,
-        analytics_enabled: true,
-      },
-      bundles_enabled: true,
-      status: "active",
-    },
-    { upsert: true }
-  );
-
-  const jwtPayload = {
-    store_id: store.id,
-    name: store.name,
-    domain: store.domain,
-  };
-
-  const token = jwt.sign(jwtPayload, config.jwtSecret, {
-    expiresIn: "7d",
+  // Find store by setup_token
+  const storeDoc = await Store.findOne({
+    setup_token: token,
+    is_deleted: false,
   });
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>تسجيل الدخول...</title>
-        <style>
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-                direction: rtl;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
-            .container {
-                text-align: center;
-                background: white;
-                padding: 2rem;
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-                max-width: 400px;
-            }
-            .spinner {
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #667eea;
-                border-radius: 50%;
-                width: 50px;
-                height: 50px;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 1.5rem;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            h2 {
-                color: #333;
-                margin-bottom: 0.5rem;
-            }
-            p {
-                color: #666;
-                font-size: 0.9rem;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="spinner"></div>
-            <h2>جاري تسجيل الدخول...</h2>
-            <p>سيتم توجيهك إلى لوحة التحكم خلال لحظات</p>
-        </div>
-        
-        <script>
-            // Authentication data from backend
-            const authData = ${JSON.stringify({
-              success: true,
-              message: "Authentication successful",
-              data: {
-                token,
-                user: {
-                  store_id: store.id,
-                  name: store.name,
-                  domain: store.domain,
-                  avatar: store.avatar,
-                  plan: store.plan || "basic",
-                },
-              },
-            })};
-            
-            // Encode auth data for URL
-            const encodedToken = encodeURIComponent(authData.data.token);
-            const encodedUser = encodeURIComponent(JSON.stringify(authData.data.user));
-            
-            // Redirect to frontend with auth data in URL
-            setTimeout(() => {
-                window.location.href = '${
-                  config.dashboard
-                }/auth/callback?token=' + encodedToken + '&user=' + encodedUser;
-            }, 1500);
-        </script>
-    </body>
-    </html>
-  `;
+  if (!storeDoc) {
+    return res.status(404).json({
+      success: false,
+      message: "Invalid or expired setup link",
+      error_code: "INVALID_TOKEN",
+    });
+  }
 
-  res.send(html);
+  if (storeDoc.first_login_completed) {
+    return res.status(400).json({
+      success: false,
+      message: "Setup already completed",
+      error_code: "ALREADY_SETUP",
+    });
+  }
+
+  // Fetch store info from Salla to get merchant email
+  let merchantEmail = null;
+  try {
+    const storeInfoRes = await axios.get(
+      "https://api.salla.dev/admin/v2/store/info",
+      {
+        headers: {
+          Authorization: `Bearer ${storeDoc.access_token}`,
+        },
+      }
+    );
+    merchantEmail = storeInfoRes.data.data.email;
+  } catch (error) {
+    console.error("[Setup]: Failed to fetch merchant email:", error.message);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      store_id: storeDoc.store_id,
+      name: storeDoc.name,
+      domain: storeDoc.domain,
+      merchant_email: merchantEmail, // Merchant's email from Salla (optional)
+    },
+  });
+});
+
+/* ===================================
+ * EASY MODE: Complete first-time setup
+ * POST /api/v1/auth/setup
+ * Creates email/password for merchant
+ * Uses secure token instead of store_id
+ * =================================== */
+export const completeSetup = asyncWrapper(async (req, res) => {
+  const { token, email, password } = req.body;
+
+  if (!token || !email || !password) {
+    return res.status(400).json({ message: "جميع الحقول مطلوبة" });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "البريد الإلكتروني غير صحيح" });
+  }
+
+  // Validate password length
+  if (password.length < 8) {
+    return res
+      .status(400)
+      .json({ message: "كلمة المرور يجب أن تكون 8 أحرف على الأقل" });
+  }
+
+  const store = await Store.findOne({
+    setup_token: token,
+    is_deleted: false,
+  });
+
+  if (!store) {
+    return res.status(404).json({
+      message: "رابط الإعداد غير صالح",
+      error_code: "INVALID_TOKEN",
+    });
+  }
+
+  if (store.first_login_completed) {
+    return res.status(400).json({
+      message: "تم إعداد هذا الحساب مسبقاً. يرجى تسجيل الدخول",
+      error_code: "ALREADY_SETUP",
+    });
+  }
+
+  // Check if this store already has email and password set
+  if (store.email && store.password) {
+    return res.status(400).json({
+      message: "الحساب موجود بالفعل. يرجى تسجيل الدخول",
+      error_code: "ALREADY_SETUP",
+    });
+  }
+
+  // Check if email already used by another store
+  const existingEmail = await Store.findOne({
+    email: email.toLowerCase(),
+    _id: { $ne: store._id },
+  });
+
+  if (existingEmail) {
+    return res.status(400).json({ message: "البريد الإلكتروني مستخدم بالفعل" });
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Update store with credentials and remove setup token
+  store.email = email.toLowerCase();
+  store.password = hashedPassword;
+  store.first_login_completed = true;
+  store.setup_token = undefined; // Remove field entirely to avoid unique index conflict
+  await store.save();
+
+  // Generate JWT for dashboard
+  const jwtToken = jwt.sign(
+    {
+      store_id: store.store_id,
+      name: store.name,
+      domain: store.domain,
+      plan: store.plan,
+      email: store.email,
+    },
+    config.jwtSecret,
+    { expiresIn: "30d" } // Long-lived token
+  );
+
+  console.log(
+    `[Setup Complete]: Store ${store.store_id} (${email}) completed first-time setup`
+  );
+
+  res.json({
+    success: true,
+    token: jwtToken,
+    message: "تم إنشاء الحساب بنجاح",
+  });
+});
+
+/* ===================================
+ * Email/Password Login
+ * Merchants use this to login directly to dashboard
+ * =================================== */
+export const loginWithCredentials = asyncWrapper(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ message: "البريد الإلكتروني وكلمة المرور مطلوبين" });
+  }
+
+  const store = await Store.findOne({
+    email: email.toLowerCase(),
+    is_deleted: false,
+  }).select("+password");
+
+  if (!store) {
+    return res
+      .status(401)
+      .json({ message: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
+  }
+
+  const isValidPassword = await bcrypt.compare(password, store.password);
+
+  if (!isValidPassword) {
+    return res
+      .status(401)
+      .json({ message: "البريد الإلكتروني أو كلمة المرور غير صحيحة" });
+  }
+
+  if (!store.access_token) {
+    return res.status(403).json({
+      message:
+        "يبدو أن التطبيق غير مثبت أو تم إلغاؤه. يرجى إعادة التثبيت من متجر سلة",
+      error_code: "APP_NOT_INSTALLED",
+    });
+  }
+
+  // If access token is expired, refresh it automatically
+  if (
+    store.access_token_expires_at &&
+    store.access_token_expires_at < new Date()
+  ) {
+    console.log(
+      `[Login]: Access token expired for store ${store.store_id}, refreshing...`
+    );
+
+    if (!store.refresh_token) {
+      return res.status(403).json({
+        message:
+          "انتهت صلاحية الوصول ولا يوجد رمز تحديث. يرجى إعادة تثبيت التطبيق",
+        error_code: "NO_REFRESH_TOKEN",
+      });
+    }
+
+    try {
+      const tokenData = new URLSearchParams();
+      tokenData.append("grant_type", "refresh_token");
+      tokenData.append("refresh_token", store.refresh_token);
+      tokenData.append("client_id", config.clientKey);
+      tokenData.append("client_secret", config.clientSecretKey);
+
+      const tokenResponse = await axios.post(
+        "https://accounts.salla.sa/oauth2/token",
+        tokenData.toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+
+      const { access_token, refresh_token, expires_in } = tokenResponse.data;
+
+      store.access_token = access_token;
+      if (refresh_token) {
+        store.refresh_token = refresh_token;
+      }
+      store.access_token_expires_at = new Date(Date.now() + expires_in * 1000);
+      await store.save();
+
+      console.log(
+        `[Login]: Successfully refreshed token for store ${store.store_id}`
+      );
+    } catch (error) {
+      console.error(
+        `[Login]: Failed to refresh token for store ${store.store_id}:`,
+        error.response?.data || error.message
+      );
+
+      return res.status(403).json({
+        message: "فشل تحديث صلاحية الوصول. يرجى إعادة تثبيت التطبيق",
+        error_code: "TOKEN_REFRESH_FAILED",
+      });
+    }
+  }
+
+  // Generate JWT
+  const jwtToken = jwt.sign(
+    {
+      store_id: store.store_id,
+      name: store.name,
+      domain: store.domain,
+      plan: store.plan,
+      email: store.email,
+    },
+    config.jwtSecret,
+    { expiresIn: "30d" }
+  );
+
+  console.log(
+    `[Login]: Store ${store.store_id} (${email}) logged in successfully`
+  );
+
+  res.json({
+    success: true,
+    token: jwtToken,
+    store: {
+      store_id: store.store_id,
+      name: store.name,
+      domain: store.domain,
+      plan: store.plan,
+      email: store.email,
+    },
+  });
+});
+
+/* ===================================
+ * Forgot Password - Send reset code
+ * POST /api/v1/auth/forgot-password
+ * Generates 6-digit code and logs it (or emails it)
+ * =================================== */
+export const forgotPassword = asyncWrapper(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "البريد الإلكتروني مطلوب",
+    });
+  }
+
+  const store = await Store.findOne({
+    email: email.toLowerCase(),
+    is_deleted: false,
+  }).select("+reset_code +reset_code_expires");
+
+  if (!store) {
+    // Don't reveal if email exists or not (security)
+    return res.json({
+      success: true,
+      message: "إذا كان البريد الإلكتروني موجوداً، سيتم إرسال رمز التحقق",
+    });
+  }
+
+  // Generate 6-digit reset code
+  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Code expires in 15 minutes
+  store.reset_code = resetCode;
+  store.reset_code_expires = new Date(Date.now() + 15 * 60 * 1000);
+  await store.save();
+
+  // TODO: Send email with reset code
+  // For now, log it to console
+  console.log("\n" + "=".repeat(80));
+  console.log("🔐 PASSWORD RESET CODE (SMTP NOT CONFIGURED)");
+  console.log("=".repeat(80));
+  console.log(`Store: ${store.name} (${store.store_id})`);
+  console.log(`Email: ${email}`);
+  console.log(`\n🔢 RESET CODE:`);
+  console.log(`   ${resetCode}`);
+  console.log(`\n⏰ Expires in 15 minutes`);
+  console.log("=".repeat(80) + "\n");
+
+  res.json({
+    success: true,
+    message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+  });
+});
+
+/* ===================================
+ * Reset Password with code
+ * POST /api/v1/auth/reset-password
+ * Verifies code and updates password
+ * =================================== */
+export const resetPassword = asyncWrapper(async (req, res) => {
+  const { email, code, new_password } = req.body;
+
+  if (!email || !code || !new_password) {
+    return res.status(400).json({
+      success: false,
+      message: "جميع الحقول مطلوبة",
+    });
+  }
+
+  // Validate password length
+  if (new_password.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+    });
+  }
+
+  const store = await Store.findOne({
+    email: email.toLowerCase(),
+    is_deleted: false,
+  }).select("+reset_code +reset_code_expires +password");
+
+  if (!store) {
+    return res.status(404).json({
+      success: false,
+      message: "البريد الإلكتروني غير موجود",
+    });
+  }
+
+  // Check if code exists and not expired
+  if (!store.reset_code || !store.reset_code_expires) {
+    return res.status(400).json({
+      success: false,
+      message: "لم يتم طلب إعادة تعيين كلمة المرور",
+    });
+  }
+
+  if (store.reset_code_expires < new Date()) {
+    return res.status(400).json({
+      success: false,
+      message: "انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد",
+    });
+  }
+
+  // Verify code
+  if (store.reset_code !== code) {
+    return res.status(400).json({
+      success: false,
+      message: "رمز التحقق غير صحيح",
+    });
+  }
+
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(new_password, 10);
+
+  // Update password and clear reset code
+  store.password = hashedPassword;
+  store.reset_code = undefined;
+  store.reset_code_expires = undefined;
+  await store.save();
+
+  console.log(
+    `[Password Reset]: Store ${store.store_id} (${email}) password updated successfully`
+  );
+
+  res.json({
+    success: true,
+    message: "تم تحديث كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول",
+  });
 });

@@ -1,20 +1,67 @@
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import storeService from "../../stores/services/store.service.js";
+import { sendWelcomeMessage } from "../services/notification.service.js";
+import Store from "../../stores/model/store.model.js";
 
 /* ===============
- * listen for new stores and register them in db
+ * listen for new stores and register them in db (Easy Mode)
  * ===============*/
 export const registerNewStore = asyncWrapper(async (req, res) => {
   const { event, merchant } = req.body;
   const payload = req.body?.data;
 
+  // Log all webhook data for debugging
+  console.log("\n" + "=".repeat(80));
+  console.log(`🔔 WEBHOOK RECEIVED: ${event}`);
+  console.log("=".repeat(80));
+  console.log("Full Request Body:");
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log("=".repeat(80) + "\n");
+
   switch (event) {
     case "app.store.authorize":
-    case "app.installed":
+      const existingStore = await Store.findOne({ store_id: merchant });
+      const isNewInstall = !existingStore;
+      const isReinstall = existingStore && existingStore.is_deleted === true;
+
       await storeService.saveStore({ store_id: merchant, payload });
+
+      if (isNewInstall) {
+        console.log(
+          `[Webhook - Easy Mode]: Store ${merchant} NEW INSTALL - tokens saved`
+        );
+      } else if (isReinstall) {
+        console.log(
+          `[Webhook - Easy Mode]: Store ${merchant} RE-INSTALLED - reactivated with new tokens`
+        );
+      } else {
+        console.log(`[Webhook - Easy Mode]: Store ${merchant} tokens updated`);
+      }
+
+      if ((isNewInstall || isReinstall) && payload.access_token) {
+        try {
+          await sendWelcomeMessage(
+            merchant,
+            payload.access_token,
+            isReinstall ? "reinstall" : "install"
+          );
+        } catch (error) {
+          console.error(
+            `[Webhook]: Failed to send welcome message to ${merchant}:`,
+            error.message
+          );
+        }
+      }
+      break;
+
+    case "app.installed":
       console.log(
-        `[Webhook]: Store ${merchant} installed & saved (event: ${event})`
+        `[Webhook]: Store ${merchant} app.installed event received (waiting for app.store.authorize with tokens)`
       );
+
+      // Respond immediately so Salla knows we received it
+      res.status(200).send("ok");
+      return; // Don't continue to the end
       break;
     case "app.uninstalled":
       await storeService.deleteStore(merchant);
@@ -53,6 +100,13 @@ export const registerNewStore = asyncWrapper(async (req, res) => {
       await storeService.updateStorePlan(merchant, "basic");
       console.log(
         `[Webhook]: Store ${merchant} subscription expired, reverted to basic plan`
+      );
+      break;
+
+    case "app.updated":
+      // Easy Mode: After app.updated, Salla will send app.store.authorize with new tokens
+      console.log(
+        `[Webhook - Easy Mode]: App updated for store ${merchant}, waiting for app.store.authorize with new tokens`
       );
       break;
 

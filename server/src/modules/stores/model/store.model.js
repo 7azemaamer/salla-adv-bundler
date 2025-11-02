@@ -12,6 +12,7 @@ const StoreSchema = new mongoose.Schema(
     scope: String,
     avatar: String,
     description: String,
+    merchant_email: String, // Merchant's email from Salla store info
     plan: {
       type: String,
       enum: ["basic", "pro", "enterprise", "special"],
@@ -30,6 +31,36 @@ const StoreSchema = new mongoose.Schema(
     json_path: {
       type: String,
     },
+    // Dashboard login credentials
+    email: {
+      type: String,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      select: false, // Don't include password in queries by default
+    },
+    first_login_completed: {
+      type: Boolean,
+      default: false,
+    },
+    // Secure setup token (generated on install)
+    setup_token: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null, but if set, must be unique
+    },
+    // Password reset code (6-digit)
+    reset_code: {
+      type: String,
+      select: false,
+    },
+    reset_code_expires: {
+      type: Date,
+      select: false,
+    },
     // Bundle system fields
     bundles_enabled: {
       type: Boolean,
@@ -38,7 +69,7 @@ const StoreSchema = new mongoose.Schema(
     bundle_settings: {
       max_bundles_per_store: {
         type: Number,
-        default: 3, 
+        default: 3,
       },
       analytics_enabled: {
         type: Boolean,
@@ -56,7 +87,7 @@ const StoreSchema = new mongoose.Schema(
     // Track store status for bundle system
     status: {
       type: String,
-      enum: ["active", "inactive", "uninstalled"],
+      enum: ["active", "inactive", "uninstalled", "needs_reauth"],
       default: "active",
     },
     // Soft deletion flag

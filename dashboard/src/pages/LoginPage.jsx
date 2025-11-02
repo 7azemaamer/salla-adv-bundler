@@ -1,32 +1,92 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Container,
   Paper,
   Title,
   Text,
+  TextInput,
+  PasswordInput,
   Button,
   Stack,
   Group,
   ThemeIcon,
-  List,
   Alert,
+  Anchor,
 } from "@mantine/core";
 import {
   IconShoppingBag,
-  IconGift,
   IconTrendingUp,
   IconShield,
   IconInfoCircle,
+  IconCheck,
+  IconMail,
+  IconLock,
 } from "@tabler/icons-react";
+import axios from "axios";
 import useAuthStore from "../stores/useAuthStore";
 
 export default function LoginPage() {
-  const { isAuthenticated, loginViaSalla, error } = useAuthStore();
+  const { isAuthenticated, setAuth } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  // Check for success messages from setup or pre-fill email
+  useEffect(() => {
+    const message = searchParams.get("message");
+    const email = searchParams.get("email");
+
+    if (message === "setup_complete") {
+      setSuccessMessage("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول");
+    } else if (message === "already_setup") {
+      setSuccessMessage("الحساب موجود بالفعل. يرجى تسجيل الدخول");
+    }
+
+    // Pre-fill email if provided
+    if (email) {
+      setFormData((prev) => ({ ...prev, email: decodeURIComponent(email) }));
+    }
+  }, [searchParams]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const response = await axios.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+
+      const { token, store } = response.data;
+
+      // Save to auth store
+      setAuth(token, store);
+
+      // Redirect to dashboard
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(
+        err.response?.data?.message ||
+          "حدث خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-
   const features = [
     {
       icon: <IconShoppingBag size="1.2rem" />,
@@ -113,6 +173,17 @@ export default function LoginPage() {
                   </Text>
                 </div>
 
+                {successMessage && (
+                  <Alert
+                    icon={<IconCheck size="1rem" />}
+                    title="نجح"
+                    color="green"
+                    variant="light"
+                  >
+                    {successMessage}
+                  </Alert>
+                )}
+
                 {error && (
                   <Alert
                     icon={<IconInfoCircle size="1rem" />}
@@ -124,25 +195,68 @@ export default function LoginPage() {
                   </Alert>
                 )}
 
-                <Button
-                  size="lg"
-                  fullWidth
-                  onClick={loginViaSalla}
-                  style={{ backgroundColor: "#004b58" }}
-                  className="hover:opacity-90"
-                  leftSection={
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
+                <form onSubmit={handleSubmit}>
+                  <Stack gap="md">
+                    <TextInput
+                      label="البريد الإلكتروني"
+                      placeholder="example@domain.com"
+                      type="email"
+                      required
+                      leftSection={<IconMail size="1rem" />}
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      styles={{
+                        input: {
+                          "&:focus": {
+                            borderColor: "#004b58",
+                          },
+                        },
+                      }}
+                    />
+
+                    <PasswordInput
+                      label="كلمة المرور"
+                      placeholder="أدخل كلمة المرور"
+                      required
+                      leftSection={<IconLock size="1rem" />}
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      styles={{
+                        input: {
+                          "&:focus": {
+                            borderColor: "#004b58",
+                          },
+                        },
+                      }}
+                    />
+
+                    <Group justify="flex-end">
+                      <Anchor
+                        component={Link}
+                        to="/forgot-password"
+                        size="sm"
+                        style={{ color: "#004b58" }}
+                      >
+                        نسيت كلمة المرور؟
+                      </Anchor>
+                    </Group>
+
+                    <Button
+                      type="submit"
+                      size="lg"
+                      fullWidth
+                      loading={loading}
+                      style={{ backgroundColor: "#004b58" }}
+                      className="hover:opacity-90"
                     >
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                    </svg>
-                  }
-                >
-                  تسجيل الدخول عبر سلة
-                </Button>
+                      تسجيل الدخول
+                    </Button>
+                  </Stack>
+                </form>
 
                 <Text size="xs" className="text-gray-500 text-center">
                   بالمتابعة، أنت توافق على{" "}

@@ -7,6 +7,8 @@ import {
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import AuthCallback from "../components/auth/AuthCallback";
 import LoginPage from "../pages/LoginPage";
+import SetupPage from "../pages/SetupPage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import DashboardHome from "../pages/DashboardHome";
 import BundlesPage from "../pages/BundlesPage";
@@ -22,6 +24,8 @@ export default function AppRouter() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/setup" element={<SetupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Protected Routes - All wrapped in DashboardLayout */}

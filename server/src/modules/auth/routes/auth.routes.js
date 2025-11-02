@@ -1,17 +1,28 @@
 import { Router } from "express";
 import {
-  loginViaSalla,
-  sallaCallback,
+  getSetupInfo,
+  completeSetup,
+  loginWithCredentials,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/auth.controller.js";
 import { validateToken } from "../controllers/validate.controller.js";
 import { authenticateToken } from "../../../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.get("/login", loginViaSalla);
-router.get("/callback", sallaCallback);
+// First-time setup
+router.get("/setup", getSetupInfo);
+router.post("/setup", completeSetup);
 
-// Protected route to validate token
+// Email/Password login
+router.post("/login", loginWithCredentials);
+
+// Password reset flow
+router.post("/forgot-password", forgotPassword); // Send 6-digit code
+router.post("/reset-password", resetPassword); // Verify code & update password
+
+// Protected route to validate JWT token
 router.get("/validate", authenticateToken, validateToken);
 
 export default router;
