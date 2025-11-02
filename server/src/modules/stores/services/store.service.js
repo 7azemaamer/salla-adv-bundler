@@ -216,10 +216,10 @@ class StoreService {
   async getStoreByDomain(domain) {
     // Clean domain (remove www, http, https, trailing slash)
     const cleanDomain = domain
-      .replace(/^https?:\/\//, '')
-      .replace(/^www\./, '')
-      .replace(/\/$/, '');
-    
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .replace(/\/$/, "");
+
     const store = await Store.findOne({ domain: cleanDomain });
     return store;
   }
