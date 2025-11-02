@@ -225,14 +225,17 @@ class StoreService {
 
     // Try exact match first
     let store = await Store.findOne({ domain: cleanDomain });
-    
+
     // If not found, try to find by domain substring (for cases like demostore.salla.sa matching https://demostore.salla.sa/dev-xxx)
     if (!store && cleanDomain) {
-      store = await Store.findOne({ 
-        domain: { $regex: cleanDomain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } 
+      store = await Store.findOne({
+        domain: {
+          $regex: cleanDomain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          $options: "i",
+        },
       });
     }
-    
+
     return store;
   }
 }
