@@ -748,6 +748,7 @@ class SpecialOffersService {
             applied_channel: "browser_and_application",
             offer_type: "buy_x_get_y",
             applied_to: "product",
+            applied_with_coupon: true,
             start_date: effectiveStartDate,
             ...(expiryDate && { expiry_date: expiryDate }),
             buy: {
