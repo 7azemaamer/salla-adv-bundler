@@ -113,7 +113,21 @@ class SnippetController {
       "host"
     )}/api/v1', // Force HTTPS for mixed content
 
-    storeDomain: extractSallaValue(storeContext.storeDomain) || window.location.hostname.replace(/^www\./, ''),
+    // For test domains like demostore.salla.sa/dev-xxx, capture the full path
+    // For production domains like mystorename.com, just use the hostname
+    storeDomain: (() => {
+      const hostname = window.location.hostname.replace(/^www\./, '');
+      const pathname = window.location.pathname;
+      
+      // If it's a Salla test domain (demostore.salla.sa) with a dev/test path
+      if (hostname.includes('demostore.salla.sa') && pathname.match(/^\\/dev-[a-zA-Z0-9]+/)) {
+        const match = pathname.match(/^\\/dev-[a-zA-Z0-9]+/);
+        return hostname + match[0];
+      }
+      
+      // Otherwise just return the hostname (production domains)
+      return extractSallaValue(storeContext.storeDomain) || hostname;
+    })(),
     storeId: sallaStoreId || extractSallaValue(storeContext.storeId) || (window.Salla?.config?.store?.id),
     storeUsername: extractSallaValue(storeContext.storeUsername) || (window.Salla?.config?.store?.username),
     storeEmail: extractSallaValue(storeContext.storeEmail) || (window.Salla?.config?.store?.email),
