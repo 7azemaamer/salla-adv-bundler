@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Stack,
   Switch,
@@ -7,11 +8,77 @@ import {
   Select,
   Paper,
   Badge,
+  Button,
+  TextInput,
+  Textarea,
+  Radio,
+  Divider,
+  ActionIcon,
+  Avatar,
+  Card,
+  Rating,
+  Alert,
 } from "@mantine/core";
-import { IconStar, IconTrendingUp } from "@tabler/icons-react";
+import {
+  IconStar,
+  IconTrendingUp,
+  IconPlus,
+  IconTrash,
+  IconUserCircle,
+  IconShoppingBag,
+  IconInfoCircle,
+} from "@tabler/icons-react";
 
 export default function ReviewCountSettingsPanel({ settings, onToggle }) {
   const reviewCountSettings = settings?.review_count || {};
+  const customReviews = settings?.custom_reviews || [];
+
+  // State for new review form
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newReview, setNewReview] = useState({
+    name: "",
+    is_verified: false,
+    date_text: "قبل يومين",
+    stars: 5,
+    gender: "male",
+    comment: "",
+  });
+
+  const handleAddReview = () => {
+    if (!newReview.name.trim()) return;
+
+    const updatedReviews = [
+      ...customReviews,
+      {
+        ...newReview,
+        created_at: new Date().toISOString(),
+      },
+    ];
+
+    onToggle("custom_reviews", updatedReviews);
+
+    // Reset form
+    setNewReview({
+      name: "",
+      is_verified: false,
+      date_text: "قبل يومين",
+      stars: 5,
+      gender: "male",
+      comment: "",
+    });
+    setShowAddForm(false);
+  };
+
+  const handleDeleteReview = (index) => {
+    const updatedReviews = customReviews.filter((_, i) => i !== index);
+    onToggle("custom_reviews", updatedReviews);
+  };
+
+  const getAvatarUrl = (gender) => {
+    return gender === "female"
+      ? "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_female.png"
+      : "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png";
+  };
 
   return (
     <Stack gap="xl">
@@ -63,6 +130,10 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
                 { value: "custom", label: "عدد مخصص (يزيد تلقائياً كل يوم)" },
               ]}
               disabled={false}
+              comboboxProps={{
+                position: "bottom",
+                middlewares: { flip: false, shift: false },
+              }}
             />
             <Text size="xs" c="dimmed">
               {reviewCountSettings.mode === "custom"
@@ -188,6 +259,183 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
             )}
           </>
         )}
+
+      {/* Custom Reviews Section */}
+      <Divider
+        label={
+          <Group gap="xs">
+            <IconUserCircle size="1.1rem" />
+            <Text fw={600}>التقييمات المخصصة</Text>
+          </Group>
+        }
+        labelPosition="center"
+      />
+
+      <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
+        <Text size="xs">
+          يمكنك إضافة تقييمات مخصصة لتظهر في قسم آراء العملاء داخل نافذة الباقة
+        </Text>
+      </Alert>
+
+      {/* Existing Reviews List */}
+      {customReviews.length > 0 && (
+        <Stack gap="md">
+          {customReviews.map((review, index) => (
+            <Card key={index} withBorder padding="md" radius="md">
+              <Group justify="space-between" mb="sm">
+                <Group gap="sm">
+                  <Avatar
+                    src={getAvatarUrl(review.gender)}
+                    alt={review.name}
+                    radius="xl"
+                    size="md"
+                  />
+                  <div>
+                    <Group gap="xs">
+                      <Text fw={600} size="sm">
+                        {review.name}
+                      </Text>
+                      {review.is_verified && (
+                        <Badge
+                          size="xs"
+                          variant="light"
+                          color="green"
+                          leftSection={<IconShoppingBag size="0.7rem" />}
+                        >
+                          قام بالشراء والتقييم
+                        </Badge>
+                      )}
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      {review.date_text}
+                    </Text>
+                  </div>
+                </Group>
+                <ActionIcon
+                  color="red"
+                  variant="light"
+                  onClick={() => handleDeleteReview(index)}
+                >
+                  <IconTrash size="1rem" />
+                </ActionIcon>
+              </Group>
+              <Rating value={review.stars} readOnly size="sm" mb="xs" />
+              {review.comment && (
+                <Text size="sm" c="dimmed">
+                  {review.comment}
+                </Text>
+              )}
+            </Card>
+          ))}
+        </Stack>
+      )}
+
+      {/* Add New Review Button */}
+      {!showAddForm && (
+        <Button
+          leftSection={<IconPlus size="1rem" />}
+          variant="light"
+          onClick={() => setShowAddForm(true)}
+        >
+          إضافة تقييم جديد
+        </Button>
+      )}
+
+      {/* Add Review Form */}
+      {showAddForm && (
+        <Paper withBorder p="md" radius="md" bg="gray.0">
+          <Stack gap="md">
+            <Group justify="space-between">
+              <Text fw={600} size="sm">
+                تقييم جديد
+              </Text>
+              <Button
+                variant="subtle"
+                size="xs"
+                onClick={() => setShowAddForm(false)}
+              >
+                إلغاء
+              </Button>
+            </Group>
+
+            <TextInput
+              label="اسم العميل"
+              placeholder="أدخل اسم العميل"
+              value={newReview.name}
+              onChange={(e) =>
+                setNewReview({ ...newReview, name: e.target.value })
+              }
+              required
+            />
+
+            <Group grow>
+              <Radio.Group
+                label="النوع"
+                value={newReview.gender}
+                onChange={(value) =>
+                  setNewReview({ ...newReview, gender: value })
+                }
+              >
+                <Group mt="xs">
+                  <Radio value="male" label="ذكر" />
+                  <Radio value="female" label="أنثى" />
+                </Group>
+              </Radio.Group>
+
+              <div>
+                <Text size="sm" fw={500} mb="xs">
+                  عدد النجوم
+                </Text>
+                <Rating
+                  value={newReview.stars}
+                  onChange={(value) =>
+                    setNewReview({ ...newReview, stars: value })
+                  }
+                  size="lg"
+                />
+              </div>
+            </Group>
+
+            <TextInput
+              label="التاريخ"
+              placeholder="مثال: قبل يومين، منذ أسبوع"
+              value={newReview.date_text}
+              onChange={(e) =>
+                setNewReview({ ...newReview, date_text: e.target.value })
+              }
+            />
+
+            <Switch
+              label="قام بالشراء والتقييم"
+              checked={newReview.is_verified}
+              onChange={(e) =>
+                setNewReview({
+                  ...newReview,
+                  is_verified: e.currentTarget.checked,
+                })
+              }
+            />
+
+            <Textarea
+              label="التعليق (اختياري)"
+              placeholder="أدخل تعليق العميل..."
+              value={newReview.comment}
+              onChange={(e) =>
+                setNewReview({ ...newReview, comment: e.target.value })
+              }
+              minRows={3}
+            />
+
+            <Button
+              leftSection={<IconPlus size="1rem" />}
+              onClick={handleAddReview}
+              disabled={!newReview.name.trim()}
+            >
+              إضافة التقييم
+            </Button>
+          </Stack>
+        </Paper>
+      )}
     </Stack>
   );
 }

@@ -142,7 +142,7 @@ export default function EditBundlePage() {
           ? currentBundle.bundles.map((bundle) => ({
               tier: bundle.tier,
               buy_quantity: bundle.buy_quantity,
-              tier_title: bundle.tier_title || `المستوى ${bundle.tier}`,
+              tier_title: bundle.tier_title || `العرض ${bundle.tier}`,
               tier_highlight_text: bundle.tier_highlight_text || "",
               tier_bg_color: bundle.tier_bg_color || "#f8f9fa",
               tier_text_color: bundle.tier_text_color || "#212529",
@@ -304,7 +304,7 @@ export default function EditBundlePage() {
           ? "باقة الأصدقاء"
           : tierNum === 3
           ? "باقة العائلة"
-          : `المستوى ${tierNum}`,
+          : `العرض ${tierNum}`,
       tier_highlight_text:
         tierNum === 2 ? "وفر أكثر" : tierNum === 3 ? "أفضل قيمة" : "",
       tier_bg_color: colorScheme.bg,
@@ -456,7 +456,7 @@ export default function EditBundlePage() {
               المنتج المستهدف:{" "}
               {currentBundle.target_product_name ||
                 currentBundle.target_product_id}
-              | المستويات: {currentBundle.bundles?.length || 0}
+              | العروض: {currentBundle.bundles?.length || 0}
             </Text>
           )}
         </div>
@@ -471,7 +471,7 @@ export default function EditBundlePage() {
                 icon={<IconPackage size="1.1rem" />}
               />
               <Stepper.Step
-                label="إعداد المستويات"
+                label="إعداد العروض"
                 description="تحديد مستويات الباقة والهدايا"
                 icon={<IconGift size="1.1rem" />}
               />
@@ -631,7 +631,7 @@ export default function EditBundlePage() {
                           order={4}
                           style={{ color: tier.tier_text_color || "#212529" }}
                         >
-                          {tier.tier_title || `المستوى ${tier.tier}`}
+                          {tier.tier_title || `العرض ${tier.tier}`}
                         </Title>
                         {tier.tier_highlight_text && (
                           <Badge
@@ -670,7 +670,7 @@ export default function EditBundlePage() {
                     <Grid>
                       <Grid.Col span={6}>
                         <TextInput
-                          label="عنوان المستوى"
+                          label="عنوان العرض"
                           placeholder="مثال: باقة البداية"
                           leftSection={<IconPackage size="0.9rem" />}
                           {...form.getInputProps(
@@ -700,8 +700,8 @@ export default function EditBundlePage() {
                       </Grid.Col>
                       <Grid.Col span={6}>
                         <Switch
-                          label="جعل هذا المستوى افتراضياً"
-                          description="سيتم تحديد هذا المستوى مسبقاً في الواجهة"
+                          label="جعل هذا العرض افتراضياً"
+                          description="سيتم تحديد هذا العرض مسبقاً في الواجهة"
                           checked={tier.is_default}
                           onChange={(event) => {
                             const updatedBundles = form.values.bundles.map(
@@ -723,7 +723,7 @@ export default function EditBundlePage() {
                       my="md"
                       label={
                         <Group gap="xs">
-                          <IconPalette size="1rem" /> ألوان المستوى
+                          <IconPalette size="1rem" /> ألوان العرض
                         </Group>
                       }
                       labelPosition="center"
@@ -732,7 +732,7 @@ export default function EditBundlePage() {
                     <Grid>
                       <Grid.Col span={6}>
                         <ColorInput
-                          label="لون خلفية المستوى"
+                          label="لون خلفية العرض"
                           description="لون الخلفية للبطاقة في الواجهة"
                           placeholder="اختر اللون"
                           format="hex"
@@ -743,7 +743,7 @@ export default function EditBundlePage() {
                       </Grid.Col>
                       <Grid.Col span={6}>
                         <ColorInput
-                          label="لون نص المستوى"
+                          label="لون نص العرض"
                           description="لون النصوص داخل البطاقة"
                           placeholder="اختر اللون"
                           format="hex"
@@ -787,7 +787,7 @@ export default function EditBundlePage() {
                         onClick={() => addOffer(tierIndex)}
                         disabled={tier.offers.length >= 3}
                       >
-                        إضافة عرض
+                        إضافة منتج
                       </Button>
                     </Group>
 
@@ -1058,7 +1058,7 @@ export default function EditBundlePage() {
                       <Text>{form.values.target_product_name}</Text>
                     </Group>
                     <Group justify="space-between">
-                      <Text fw={500}>عدد المستويات:</Text>
+                      <Text fw={500}>عدد العروض:</Text>
                       <Text>{form.values.bundles.length}</Text>
                     </Group>
                     <Group justify="space-between">
@@ -1132,7 +1132,7 @@ export default function EditBundlePage() {
                             order={5}
                             style={{ color: tier.tier_text_color || "#212529" }}
                           >
-                            {tier.tier_title || `المستوى ${tier.tier}`}
+                            {tier.tier_title || `العرض ${tier.tier}`}
                           </Title>
                           {tier.tier_highlight_text && (
                             <Badge

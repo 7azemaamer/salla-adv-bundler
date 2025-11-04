@@ -8,6 +8,12 @@ const settingsSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    // Salla theme selector for proper element targeting
+    salla_theme: {
+      type: String,
+      enum: ["basic", "raed", "wathiq", "on-demand"],
+      default: "basic",
+    },
     // Hide Salla default buttons on products with active bundles
     hide_default_buttons: {
       type: Boolean,
@@ -118,6 +124,18 @@ const settingsSchema = new mongoose.Schema(
         min: 0,
         max: 50,
       },
+      show_in_step: {
+        type: String,
+        enum: [
+          "bundles",
+          "target_variants",
+          "free_gifts",
+          "discounted",
+          "review",
+          "all",
+        ],
+        default: "review", // Show free shipping in review step by default
+      },
     },
     // Timer settings (nested object)
     timer: {
@@ -177,12 +195,36 @@ const settingsSchema = new mongoose.Schema(
         min: 10,
         max: 24,
       },
+      show_in_step: {
+        type: String,
+        enum: [
+          "bundles",
+          "target_variants",
+          "free_gifts",
+          "discounted",
+          "review",
+          "all",
+        ],
+        default: "bundles", // Show timer in bundle selection step by default
+      },
     },
     // Review count settings (nested object)
     review_count: {
       enabled: {
         type: Boolean,
         default: true,
+      },
+      show_in_step: {
+        type: String,
+        enum: [
+          "bundles",
+          "target_variants",
+          "free_gifts",
+          "discounted",
+          "review",
+          "all",
+        ],
+        default: "bundles", // Show reviews in bundle selection step by default
       },
       mode: {
         type: String,
@@ -214,6 +256,60 @@ const settingsSchema = new mongoose.Schema(
       last_update_date: {
         type: Date,
         default: Date.now,
+      },
+    },
+    // Custom reviews (array of review objects)
+    custom_reviews: {
+      type: [
+        {
+          name: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          is_verified: {
+            type: Boolean,
+            default: false, // "قام بالشراء والتقييم"
+          },
+          date_text: {
+            type: String,
+            default: "قبل يومين", // e.g., "قبل يومين", "منذ أسبوع"
+          },
+          stars: {
+            type: Number,
+            required: true,
+            min: 1,
+            max: 5,
+          },
+          gender: {
+            type: String,
+            enum: ["male", "female"],
+            required: true,
+          },
+          comment: {
+            type: String,
+            default: "",
+          },
+          created_at: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
+    // Custom CSS selectors to hide (array of strings)
+    custom_hide_selectors: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function (arr) {
+          return arr.every(
+            (selector) =>
+              typeof selector === "string" && selector.trim().length > 0
+          );
+        },
+        message: "Each selector must be a non-empty string",
       },
     },
     // Future settings can be added here

@@ -9,6 +9,7 @@ import { errorMiddleware } from "./src/utils/errorHandler.js";
 import "./src/workers/bundleCleanup.worker.js";
 import { startReviewCountWorker } from "./src/workers/reviewCount.worker.js";
 import { startTokenRefreshWorker } from "./src/workers/tokenRefresh.worker.js";
+import { startCacheCleanupWorker } from "./src/workers/cacheCleanup.worker.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,26 +20,26 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests from dashboard
       if (origin === config.dashboard) {
         return callback(null, true);
       }
-      if (origin === "https://*.salla.sa") {
-        return callback(null, true);
-      }
 
-      // Allow requests from any Salla store domain (*.salla.sa)
       if (origin && origin.includes(".salla.sa")) {
         return callback(null, true);
       }
 
-      // Allow requests with no origin (like Postman, mobile apps, etc.)
+      if (
+        origin &&
+        (origin.startsWith("http://") || origin.startsWith("https://"))
+      ) {
+        return callback(null, true);
+      }
+
       if (!origin) {
         return callback(null, true);
       }
 
-      // Reject all other origins
-      callback(new Error("Not allowed by CORS"));
+      callback(null, true);
     },
     credentials: true,
   })
@@ -68,6 +69,7 @@ const startServer = async () => {
       // Start background workers after server is running
       startReviewCountWorker();
       startTokenRefreshWorker(); // Easy Mode: Auto-refresh tokens every 5 days
+      startCacheCleanupWorker(); // Cleanup expired product cache daily
     });
   } catch (err) {
     console.error("[Server_Init]: Failed to start server:", err);

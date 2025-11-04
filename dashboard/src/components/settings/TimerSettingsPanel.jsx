@@ -155,6 +155,10 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
                   { value: "24h", label: "24 ساعة" },
                   { value: "custom", label: "مدة مخصصة" },
                 ]}
+                comboboxProps={{
+                  position: "bottom",
+                  middlewares: { flip: false, shift: false },
+                }}
               />
             </Grid.Col>
 
@@ -181,6 +185,10 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
                   { value: "pulse", label: "نبض" },
                   { value: "glow", label: "توهج" },
                 ]}
+                comboboxProps={{
+                  position: "bottom",
+                  middlewares: { flip: false, shift: false },
+                }}
               />
             </Grid.Col>
 

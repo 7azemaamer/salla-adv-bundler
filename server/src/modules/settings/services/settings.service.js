@@ -73,15 +73,18 @@ class SettingsService {
     try {
       // Validate updates - now supports both flat fields and nested objects
       const allowedFields = [
+        "salla_theme",
         "hide_default_buttons",
         "hide_salla_offer_modal",
         "hide_product_options",
         "hide_quantity_input",
         "hide_price_section",
+        "custom_hide_selectors",
         "sticky_button", // Nested object
         "free_shipping", // Nested object
         "timer", // Nested object
         "review_count", // Nested object - review count settings
+        "custom_reviews", // Array of custom review objects
       ];
 
       const filteredUpdates = {};

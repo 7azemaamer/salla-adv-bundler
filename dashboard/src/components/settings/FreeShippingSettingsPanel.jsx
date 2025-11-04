@@ -172,6 +172,10 @@ export default function FreeShippingSettingsPanel({
                   { value: "hidden", label: "مخفي (لا يظهر)" },
                 ]}
                 description="متى تظهر لافتة الشحن المجاني"
+                comboboxProps={{
+                  position: "bottom",
+                  middlewares: { flip: false, shift: false },
+                }}
               />
             </Grid.Col>
 
@@ -298,8 +302,6 @@ export default function FreeShippingSettingsPanel({
               حفظ التخصيصات
             </Button>
           </Group>
-
-       
         </>
       )}
     </Stack>

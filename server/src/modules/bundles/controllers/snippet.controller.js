@@ -113,19 +113,15 @@ class SnippetController {
       "host"
     )}/api/v1', // Force HTTPS for mixed content
 
-    // For test domains like demostore.salla.sa/dev-xxx, capture the full path
-    // For production domains like mystorename.com, just use the hostname
     storeDomain: (() => {
       const hostname = window.location.hostname.replace(/^www\./, '');
       const pathname = window.location.pathname;
       
-      // If it's a Salla test domain (demostore.salla.sa) with a dev/test path
       if (hostname.includes('demostore.salla.sa') && pathname.match(/^\\/dev-[a-zA-Z0-9]+/)) {
         const match = pathname.match(/^\\/dev-[a-zA-Z0-9]+/);
         return hostname + match[0];
       }
       
-      // Otherwise just return the hostname (production domains)
       return extractSallaValue(storeContext.storeDomain) || hostname;
     })(),
     storeId: sallaStoreId || extractSallaValue(storeContext.storeId) || (window.Salla?.config?.store?.id),
@@ -175,11 +171,13 @@ class SnippetController {
       this.modalScriptLoaded = false;
       this.isModalLoading = false;
       this.settings = {
+        salla_theme: 'basic',
         hide_default_buttons: false,
         hide_salla_offer_modal: false,
         hide_product_options: false,
         hide_quantity_input: false,
         hide_price_section: false,
+        custom_hide_selectors: [],
         sticky_button_enabled: false,
         sticky_button_text: ' اطلب باقتك الآن',
         sticky_button_bg_color: '#10b981',
@@ -289,6 +287,7 @@ class SnippetController {
         this.hideProductOptions();
         this.hideQuantityInput();
         this.hidePriceSection();
+        this.hideCustomSelectors();
 
       } catch (error) {
         console.error('[Salla Bundle] Error:', error);
@@ -416,22 +415,91 @@ class SnippetController {
       }
     }
 
+    getThemeSelectors() {
+      const theme = this.settings.salla_theme || 'basic';
+      
+      const selectors = {
+        basic: {
+          buttons: [
+            'form.product-form salla-add-product-button',
+            'form.product-form .salla-add-product-button',
+            'form.product-form button[type="submit"]',
+            '.product-form .add-to-cart-btn',
+            '.product-actions .buy-now-btn',
+            '.s-button-btn',
+            'button.add-to-cart'
+          ],
+          options: ['salla-product-options', '.product-options'],
+          quantity: [
+            'salla-quantity-input',
+            '.quantity-input',
+            'section:has(salla-quantity-input)',
+            '.s-quantity-input'
+          ],
+          price: [
+            '.price-wrapper',
+            '.total-price',
+            '.before-price',
+            '.price_is_on_sale',
+            '.starting-or-normal-price',
+            '.s-product-price'
+          ]
+        },
+        raed: {
+          buttons: [
+            'form.product-form salla-add-product-button',
+            'form.product-form button[type="submit"]',
+            'salla-add-product-button',
+            '.btn-add-to-cart',
+            '.product-actions button'
+          ],
+          options: ['salla-product-options', '.product-options'],
+          quantity: ['salla-quantity-input', '.quantity-input'],
+          price: ['.price-wrapper', '.total-price', '.product-price', '.s-product-price']
+        },
+        wathiq: {
+          buttons: [
+            'form.product-form salla-add-product-button',
+            'form.product-form button[type="submit"]',
+            'salla-add-product-button',
+            '.add-to-cart',
+            '.product-form button'
+          ],
+          options: ['salla-product-options'],
+          quantity: ['salla-quantity-input', '.quantity'],
+          price: ['.price-wrapper', '.price', '.product-price']
+        },
+        'on-demand': {
+          buttons: [
+            'form.product-form button[type="submit"]',
+            'salla-add-product-button',
+            '.add-to-cart',
+            '.buy-now',
+            'button.add-to-cart'
+          ],
+          options: ['salla-product-options', '.product-options'],
+          quantity: ['salla-quantity-input', '.quantity-selector', '.quantity'],
+          price: ['.price', '.price-wrapper', '.product-price']
+        }
+      };
+
+      return selectors[theme] || selectors.basic;
+    }
+
     hideSallaDefaultButtons() {
       if (!this.settings.hide_default_buttons) {
         return;
       }
 
+      const themeSelectors = this.getThemeSelectors();
+      const buttonSelectors = themeSelectors.buttons.map(s => \`\${s}:not(.salla-bundle-btn)\`).join(',\\n        ');
 
       // Add CSS to hide default buttons
       const style = document.createElement('style');
       style.id = 'salla-bundle-hide-defaults';
       style.textContent = \`
-        /* Hide Salla default add-to-cart buttons */
-        form.product-form salla-add-product-button,
-        form.product-form .salla-add-product-button,
-        form.product-form button[type="submit"]:not(.salla-bundle-btn),
-        .product-form .add-to-cart-btn:not(.salla-bundle-btn),
-        .product-actions .buy-now-btn:not(.salla-bundle-btn) {
+        /* Hide Salla default add-to-cart buttons (Theme: \${this.settings.salla_theme || 'default'}) */
+        \${buttonSelectors} {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -455,16 +523,8 @@ class SnippetController {
 
       document.head.appendChild(style);
 
-      // Also hide buttons via JS (backup method)
-      const selectors = [
-        'form.product-form salla-add-product-button',
-        'form.product-form .salla-add-product-button',
-        '.product-form .add-to-cart-btn',
-        '.product-actions .buy-now-btn',
-        'form.product-form button[type="submit"]'
-      ];
-
-      selectors.forEach(selector => {
+      // Also hide buttons via JS (backup method) - use theme-specific selectors
+      themeSelectors.buttons.forEach(selector => {
         document.querySelectorAll(selector).forEach(element => {
           // Don't hide if it's our bundle button
           if (!element.classList.contains('salla-bundle-btn')) {
@@ -830,6 +890,78 @@ class SnippetController {
             }
           });
         });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    hideCustomSelectors() {
+      const customSelectors = this.settings.custom_hide_selectors || [];
+      
+      if (!customSelectors || customSelectors.length === 0) {
+        return;
+      }
+
+      // Create CSS to hide custom selectors
+      const style = document.createElement('style');
+      style.id = 'salla-bundle-hide-custom-selectors';
+      
+      // Build CSS rules for each custom selector
+      const cssRules = customSelectors.map(selector => {
+        // Escape any problematic characters in selector for safety
+        try {
+          // Test if selector is valid by trying to query it
+          document.querySelector(selector);
+          return \`\${selector} {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }\`;
+        } catch (e) {
+          console.warn(\`[Salla Bundle] Invalid CSS selector: \${selector}\`);
+          return '';
+        }
+      }).filter(rule => rule !== '').join('\\n');
+
+      style.textContent = cssRules;
+
+      // Check if style already exists
+      const existingStyle = document.getElementById('salla-bundle-hide-custom-selectors');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      if (cssRules) {
+        document.head.appendChild(style);
+      }
+
+      // Also hide via JS (backup method)
+      const hideCustomElements = () => {
+        customSelectors.forEach(selector => {
+          try {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+              element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+            });
+          } catch (e) {
+            // Invalid selector, skip
+          }
+        });
+      };
+
+      // Hide existing elements immediately
+      hideCustomElements();
+
+      // Keep checking every 500ms for dynamically loaded elements
+      setInterval(hideCustomElements, 500);
+
+      // Observe for new elements being added to DOM
+      const observer = new MutationObserver(() => {
+        hideCustomElements();
       });
 
       observer.observe(document.body, {

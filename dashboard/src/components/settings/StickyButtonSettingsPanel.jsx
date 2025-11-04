@@ -29,7 +29,7 @@ export default function StickyButtonSettingsPanel({
   const stickyButton = settings.sticky_button || {};
 
   const [buttonText, setButtonText] = useState(
-    stickyButton.text || "🛍️ اطلب باقتك الآن"
+    stickyButton.text || "اطلب باقتك الآن"
   );
   const [buttonBgColor, setButtonBgColor] = useState(
     stickyButton.bg_color || "#10b981"
@@ -51,7 +51,7 @@ export default function StickyButtonSettingsPanel({
   useEffect(() => {
     if (settings.sticky_button) {
       const sb = settings.sticky_button;
-      setButtonText(sb.text || "🛍️ اطلب باقتك الآن");
+      setButtonText(sb.text || "اطلب باقتك الآن");
       setButtonBgColor(sb.bg_color || "#10b981");
       setButtonTextColor(sb.text_color || "#ffffff");
       setButtonPosition(sb.position || "bottom-center");
@@ -134,7 +134,7 @@ export default function StickyButtonSettingsPanel({
             <Grid.Col span={{ base: 12 }}>
               <TextInput
                 label="نص الزر"
-                placeholder="مثال: 🛍️ اطلب باقتك الآن"
+                placeholder="مثال: اطلب باقتك الآن"
                 value={buttonText}
                 onChange={(event) => setButtonText(event.currentTarget.value)}
                 description="النص الذي يظهر على الزر"
@@ -180,6 +180,10 @@ export default function StickyButtonSettingsPanel({
                   { value: "bottom-right", label: "أسفل على اليمين" },
                 ]}
                 description="موضع الزر في أسفل الصفحة"
+                comboboxProps={{
+                  position: "bottom",
+                  middlewares: { flip: false, shift: false },
+                }}
               />
             </Grid.Col>
 
@@ -195,6 +199,10 @@ export default function StickyButtonSettingsPanel({
                   { value: "custom", label: "عرض مخصص" },
                 ]}
                 description="كيفية عرض عرض الزر"
+                comboboxProps={{
+                  position: "bottom",
+                  middlewares: { flip: false, shift: false },
+                }}
               />
             </Grid.Col>
 

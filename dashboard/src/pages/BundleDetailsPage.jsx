@@ -442,7 +442,7 @@ export default function BundleDetailsPage() {
                   </ThemeIcon>
                   <div>
                     <Text size="sm" c="dimmed">
-                      عدد المستويات
+                      عدد العروض
                     </Text>
                     <Text size="sm" fw={500}>
                       {currentBundle.bundles?.length || 0} مستوى

@@ -123,8 +123,24 @@ export default function SettingsPage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <LoadingOverlay visible={loading.fetching} />
 
-          <Tabs defaultValue="display" variant="outline">
-            <Tabs.List grow>
+          <Tabs
+            defaultValue="display"
+            variant="outline"
+            style={{
+              position: "relative",
+            }}
+          >
+            <Tabs.List
+              grow
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 100,
+                backgroundColor: "white",
+                borderBottom: "1px solid #dee2e6",
+                paddingBottom: "8px",
+              }}
+            >
               <Tabs.Tab
                 value="display"
                 leftSection={<IconEyeOff size="1rem" />}
@@ -147,7 +163,7 @@ export default function SettingsPage() {
                 إعدادات المؤقت
               </Tabs.Tab>
               <Tabs.Tab value="reviews" leftSection={<IconStar size="1rem" />}>
-                عدد التقييمات
+                التقييمات
               </Tabs.Tab>
             </Tabs.List>
 

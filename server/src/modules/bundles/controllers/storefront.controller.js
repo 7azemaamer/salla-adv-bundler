@@ -9,6 +9,7 @@ import { fetchPaymentMethods } from "../services/payment.service.js";
 import axios from "axios";
 import storeService from "../../stores/services/store.service.js";
 import { getValidAccessToken } from "../../../utils/tokenHelper.js";
+import { getCachedReviews } from "../../products/services/productCache.service.js";
 
 /* ===============================================
  * Get bundles for a specific product (public endpoint)
@@ -154,40 +155,89 @@ export const trackBundleInteraction = asyncWrapper(async (req, res) => {
 
 /* ===============================================
  * Get Store Reviews (Public endpoint for modal)
+ * Uses cached reviews + custom reviews to reduce API calls
  * =============================================== */
 export const getStoreReviews = asyncWrapper(async (req, res) => {
   const { store_id } = req.params;
-  const { limit = 10 } = req.query;
+  const { limit = 10, product_id } = req.query;
 
   try {
-    // Get valid access token (will refresh if needed)
-    const accessToken = await getValidAccessToken(store_id);
+    // Get store settings (includes custom_reviews)
+    const settings = await settingsService.getSettings(store_id);
 
-    if (!accessToken) {
-      return res.status(200).json({
-        success: true,
-        data: [],
-        message: "No access token configured",
-      });
+    let cachedReviews = [];
+    let fromCache = false;
+
+    // If product_id provided, try to get cached reviews for this product
+    if (product_id) {
+      const accessToken = await getValidAccessToken(store_id);
+
+      if (accessToken) {
+        const cacheResult = await getCachedReviews(
+          store_id,
+          product_id,
+          accessToken
+        );
+        if (cacheResult.success) {
+          cachedReviews = cacheResult.data;
+          fromCache = cacheResult.fromCache;
+          console.log(
+            `[Reviews]: ${
+              fromCache ? "Using cached" : "Fetched fresh"
+            } reviews for product ${product_id}`
+          );
+        }
+      }
     }
 
-    // Fetch reviews from Salla API
-    const reviewsResult = await fetchStoreReviews(accessToken, {
-      type: "rating",
-      is_published: true,
-      per_page: parseInt(limit),
-    });
+    // Get custom reviews from settings
+    const customReviews = settings.custom_reviews || [];
 
-    // Format reviews for display
-    const formattedReviews = reviewsResult.data.map(formatReview);
+    // Format custom reviews to match API format
+    const formattedCustomReviews = customReviews.map((review) => ({
+      id: review._id || null,
+      name: review.name,
+      rating: review.stars,
+      comment: review.comment || "",
+      is_verified: review.is_verified,
+      avatar:
+        review.gender === "female"
+          ? "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_female.png"
+          : "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png",
+      date: review.date_text || "قبل يومين",
+      created_at: review.created_at || new Date(),
+    }));
+
+    // Merge cached reviews + custom reviews
+    let allReviews = [...cachedReviews, ...formattedCustomReviews];
+
+    // If no reviews at all, fallback to dummy reviews
+    if (allReviews.length === 0) {
+      console.log("[Reviews]: No cached or custom reviews, using fallback");
+      const accessToken = await getValidAccessToken(store_id);
+
+      if (accessToken) {
+        const reviewsResult = await fetchStoreReviews(accessToken, {
+          type: "rating",
+          is_published: true,
+          per_page: parseInt(limit),
+        });
+        allReviews = reviewsResult.data.map(formatReview);
+      }
+    }
+
+    // Limit results
+    const limitedReviews = allReviews.slice(0, parseInt(limit));
 
     res.status(200).json({
       success: true,
-      data: formattedReviews,
-      total: formattedReviews.length,
+      data: limitedReviews,
+      total: limitedReviews.length,
+      fromCache,
+      hasCustomReviews: formattedCustomReviews.length > 0,
     });
   } catch (error) {
-    console.error("Error fetching reviews:", error.message);
+    console.error("[Reviews]: Error fetching reviews:", error.message);
     return res.status(200).json({
       success: true,
       data: [],

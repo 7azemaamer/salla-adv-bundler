@@ -58,7 +58,7 @@ const BundleConfigSchema = new mongoose.Schema(
           trim: true,
           maxLength: 50,
           default: function () {
-            return `المستوى ${this.tier}`;
+            return `العرض ${this.tier}`;
           },
         },
         tier_highlight_text: {

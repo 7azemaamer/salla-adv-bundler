@@ -159,7 +159,7 @@ export default function CreateBundlePage() {
           ? "باقة الأصدقاء"
           : tierNum === 3
           ? "باقة العائلة"
-          : `المستوى ${tierNum}`,
+          : `العرض ${tierNum}`,
       tier_highlight_text:
         tierNum === 2 ? "وفر أكثر" : tierNum === 3 ? "أفضل قيمة" : "",
       tier_bg_color: colorScheme.bg,
@@ -291,7 +291,7 @@ export default function CreateBundlePage() {
                 icon={<IconPackage size="1.1rem" />}
               />
               <Stepper.Step
-                label="إعداد المستويات"
+                label="إعداد العروض"
                 description="تحديد مستويات الباقة والهدايا"
                 icon={<IconGift size="1.1rem" />}
               />
@@ -449,7 +449,7 @@ export default function CreateBundlePage() {
                           order={4}
                           style={{ color: tier.tier_text_color || "#212529" }}
                         >
-                          {tier.tier_title || `المستوى ${tier.tier}`}
+                          {tier.tier_title || `العرض ${tier.tier}`}
                         </Title>
                         {tier.tier_highlight_text && (
                           <Badge
@@ -488,7 +488,7 @@ export default function CreateBundlePage() {
                     <Grid>
                       <Grid.Col span={6}>
                         <TextInput
-                          label="عنوان المستوى"
+                          label="عنوان العرض"
                           placeholder="مثال: باقة البداية"
                           leftSection={<IconPackage size="0.9rem" />}
                           {...form.getInputProps(
@@ -518,8 +518,8 @@ export default function CreateBundlePage() {
                       </Grid.Col>
                       <Grid.Col span={6}>
                         <Switch
-                          label="جعل هذا المستوى افتراضياً"
-                          description="سيتم تحديد هذا المستوى مسبقاً في الواجهة"
+                          label="جعل هذا العرض افتراضياً"
+                          description="سيتم تحديد هذا العرض مسبقاً في الواجهة"
                           checked={tier.is_default}
                           onChange={(event) => {
                             // Uncheck all other tiers
@@ -542,7 +542,7 @@ export default function CreateBundlePage() {
                       my="md"
                       label={
                         <Group gap="xs">
-                          <IconPalette size="1rem" /> ألوان المستوى
+                          <IconPalette size="1rem" /> ألوان العرض
                         </Group>
                       }
                       labelPosition="center"
@@ -551,7 +551,7 @@ export default function CreateBundlePage() {
                     <Grid>
                       <Grid.Col span={6}>
                         <ColorInput
-                          label="لون خلفية المستوى"
+                          label="لون خلفية العرض"
                           description="لون الخلفية للبطاقة في الواجهة"
                           placeholder="اختر اللون"
                           format="hex"
@@ -562,7 +562,7 @@ export default function CreateBundlePage() {
                       </Grid.Col>
                       <Grid.Col span={6}>
                         <ColorInput
-                          label="لون نص المستوى"
+                          label="لون نص العرض"
                           description="لون النصوص داخل البطاقة"
                           placeholder="اختر اللون"
                           format="hex"
@@ -606,7 +606,7 @@ export default function CreateBundlePage() {
                         onClick={() => addOffer(tierIndex)}
                         disabled={tier.offers.length >= 3}
                       >
-                        إضافة عرض
+                        إضافة منتج
                       </Button>
                     </Group>
 
@@ -872,7 +872,7 @@ export default function CreateBundlePage() {
                       <Text>{form.values.target_product_name}</Text>
                     </Group>
                     <Group justify="space-between">
-                      <Text fw={500}>عدد المستويات:</Text>
+                      <Text fw={500}>عدد العروض:</Text>
                       <Text>{form.values.bundles.length}</Text>
                     </Group>
                     <Group justify="space-between">
@@ -927,7 +927,7 @@ export default function CreateBundlePage() {
                             order={5}
                             style={{ color: tier.tier_text_color || "#212529" }}
                           >
-                            {tier.tier_title || `المستوى ${tier.tier}`}
+                            {tier.tier_title || `العرض ${tier.tier}`}
                           </Title>
                           {tier.tier_highlight_text && (
                             <Badge

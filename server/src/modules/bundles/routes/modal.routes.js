@@ -598,7 +598,7 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-bundle-header-row">
               <h2 class="salla-bundle-title">\${modalTitle}</h2>
               <div style="display: flex; align-items: center; gap: 12px;">
-                \${!isMobile ? this.renderTimer() : ''}
+                \${!isMobile ? this.renderTimer('all') : ''}
                 <button class="salla-bundle-close">&times;</button>
               </div>
             </div>
@@ -742,7 +742,7 @@ router.get("/modal.js", (req, res) => {
 
         return {
           id: \`tier-\${tier.tier}\`,
-          name: tier.tier_title || \`المستوى \${tier.tier}\`,
+          name: tier.tier_title || \`العرض \${tier.tier}\`,
           price: totalCustomerPays, // What customer actually pays
           originalPrice: subtotal, // Just the target product price
           offersCost: offersCost, // What customer pays for offers
@@ -873,13 +873,13 @@ router.get("/modal.js", (req, res) => {
         \` : ''}
 
         <!-- Reviews Section (Show on both mobile and desktop) -->
-        \${this.renderReviews()}
+        \${this.renderReviews('all')}
 
         <!-- Offers Section -->
         \${this.renderOffersSection(selectedTier, selectedBundleData)}
         
         <!-- Free Shipping Banner (Show on both mobile and desktop) -->
-        \${this.renderFreeShippingBanner(totalPrice)}
+        \${this.renderFreeShippingBanner(totalPrice, 'all')}
       \`;
 
       body.innerHTML = html;
@@ -1032,7 +1032,7 @@ router.get("/modal.js", (req, res) => {
 
         return {
           id: \`tier-\${tier.tier}\`,
-          name: tier.tier_title || \`المستوى \${tier.tier}\`,
+          name: tier.tier_title || \`العرض \${tier.tier}\`,
           price: totalCustomerPays,
           originalPrice: subtotal,
           offersCost: offersCost,
@@ -1183,6 +1183,8 @@ router.get("/modal.js", (req, res) => {
               }).join('')}
             </div>
           </div>
+          \${this.renderReviews('bundles')}
+          \${this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'bundles')}
         </div>
       \`;
     }
@@ -1216,7 +1218,7 @@ router.get("/modal.js", (req, res) => {
             </div>
             \${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
             </div>
-            \${this.renderReviews()}
+            \${this.renderReviews('target_variants')}
         </div>
       \`;
     }
@@ -1247,7 +1249,7 @@ router.get("/modal.js", (req, res) => {
               \${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
             </div>
           </div>
-          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
+          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'free_gifts') : ''}
         </div>
       \`;
     }
@@ -1316,7 +1318,7 @@ router.get("/modal.js", (req, res) => {
               \${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
             </div>
           </div>
-          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal()) : ''}
+          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'discounted') : ''}
         </div>
       \`;
     }
@@ -1402,13 +1404,15 @@ router.get("/modal.js", (req, res) => {
               \${this.renderDiscountCode()}
               
               <!-- Timer at the end after discount code -->
-              \${this.renderTimer() ? \`
+              \${this.renderTimer('review') ? \`
                 <div style="margin-top: 16px; display: flex; justify-content: center;">
-                  \${this.renderTimer()}
+                  \${this.renderTimer('review')}
                 </div>
               \` : ''}
             </div>
           </div>
+          \${this.renderReviews('review')}
+          \${this.renderFreeShippingBanner(totalPrice, 'review')}
         </div>
       \`;
     }
@@ -1978,7 +1982,7 @@ router.get("/modal.js", (req, res) => {
 
       return {
         id: 'tier-' + selectedTier.tier,
-        name: selectedTier.tier_title || 'المستوى ' + selectedTier.tier,
+        name: selectedTier.tier_title || 'العرض ' + selectedTier.tier,
         price: totalCustomerPays,
         originalPrice: subtotal,
         offersCost: offersCost,
@@ -3151,9 +3155,35 @@ router.get("/modal.js", (req, res) => {
 
     // ===== NEW FEATURE COMPONENTS =====
 
-    // Render Timer Component (Always in header)
-    renderTimer() {
+    // Helper method to check if feature should show in current step
+    shouldShowInStep(featureName, currentStepType) {
+      const bundleConfig = this.bundleData?.data || this.bundleData;
+      const settings = bundleConfig?.settings || {};
+      
+      // If currentStepType is 'all' (non-stepper view), always show
+      if (currentStepType === 'all') return true;
+      
+      let showInStep = 'bundles'; // default
+      
+      if (featureName === 'timer' && settings.timer) {
+        showInStep = settings.timer.show_in_step || 'bundles';
+      } else if (featureName === 'reviews' && settings.review_count) {
+        showInStep = settings.review_count.show_in_step || 'bundles';
+      } else if (featureName === 'free_shipping' && settings.free_shipping) {
+        showInStep = settings.free_shipping.show_in_step || 'review';
+      }
+      
+      // Setting is 'all' means show in all steps
+      if (showInStep === 'all') return true;
+      
+      // Check if current step matches the configured step
+      return showInStep === currentStepType;
+    }
+
+    // Render Timer Component (Conditionally based on step)
+    renderTimer(currentStepType = 'bundles') {
       if (!this.timerSettings || !this.timerSettings.enabled) return '';
+      if (!this.shouldShowInStep('timer', currentStepType)) return '';
       
       const effectClass = this.timerSettings.effect !== 'none' ? this.timerSettings.effect : '';
       
@@ -3273,14 +3303,19 @@ router.get("/modal.js", (req, res) => {
       } : null;
     }
 
-    // Render Free Shipping Banner with dynamic settings
-    renderFreeShippingBanner(currentTotal = 0) {
+    // Render Free Shipping Banner with dynamic settings (Conditionally based on step)
+    renderFreeShippingBanner(currentTotal = 0, currentStepType = 'review') {
       const bundleConfig = this.bundleData.data || this.bundleData;
       const settings = bundleConfig.settings || {};
       const freeShipping = settings.free_shipping || {};
 
       // Check if free shipping is enabled and mode
       if (!freeShipping.enabled || freeShipping.mode === 'hidden') {
+        return '';
+      }
+      
+      // Check if should show in current step
+      if (!this.shouldShowInStep('free_shipping', currentStepType)) {
         return '';
       }
 
@@ -3645,9 +3680,10 @@ router.get("/modal.js", (req, res) => {
       \`;
     }
 
-    // Render Reviews Carousel (Old Style - Keep for backward compatibility)
-    renderReviews() {
+    // Render Reviews Carousel (Conditionally based on step)
+    renderReviews(currentStepType = 'bundles') {
       if (!this.reviews || this.reviews.length === 0) return '';
+      if (!this.shouldShowInStep('reviews', currentStepType)) return '';
       
       // Calculate average rating
       const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
