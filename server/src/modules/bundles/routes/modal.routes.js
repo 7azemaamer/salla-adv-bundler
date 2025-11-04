@@ -765,7 +765,9 @@ router.get("/modal.js", (req, res) => {
           <div class="salla-bundle-grid">
             \${bundleDisplayData.map(bundle => \`
               <div class="salla-bundle-card \${this.selectedBundle === bundle.id ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
-                   style="background-color: \${bundle.bgColor}; border-color: \${this.selectedBundle === bundle.id ? bundle.textColor : bundle.bgColor};">
+                   style="background-color: \${bundle.bgColor}; border-color: \${this.selectedBundle === bundle.id ? bundle.textColor : bundle.bgColor}; cursor: pointer;"
+                   onclick="if(window.sallaBundleModal && !\${bundle.hasUnavailableProducts}) window.sallaBundleModal.selectBundle('\${bundle.id}');"
+                   \${bundle.hasUnavailableProducts ? 'title="تحتوي هذه الباقة على منتجات غير متوفرة"' : ''}>
                 <div class="salla-bundle-card-header">
                   <div>
                     <div class="salla-bundle-card-title" style="color: \${bundle.textColor};">\${bundle.name}</div>
@@ -785,12 +787,9 @@ router.get("/modal.js", (req, res) => {
                 </ul>
                 <div class="salla-bundle-card-footer">
                   <div class="salla-bundle-price" style="color: \${bundle.textColor};">\${formatPrice(bundle.price)}</div>
-                  <button class="salla-bundle-button \${this.selectedBundle === bundle.id ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
-                          onclick="if(window.sallaBundleModal) window.sallaBundleModal.selectBundle('\${bundle.id}'); else console.error('Modal instance not found');"
-                          style="background-color: \${bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.cta_button_text_color || '#ffffff'};"
-                          \${bundle.hasUnavailableProducts ? 'title="تحتوي هذه الباقة على منتجات غير متوفرة"' : ''}>
-                    \${this.selectedBundle === bundle.id ? 'محدد' : (bundleConfig.cta_button_text || 'اختر الباقة')}
-                  </button>
+                  <div class="salla-bundle-radio-desktop" style="border-color: \${bundle.textColor};">
+                    \${this.selectedBundle === bundle.id ? \`<div class="salla-bundle-radio-inner" style="background-color: \${bundle.textColor};"></div>\` : ''}
+                  </div>
                 </div>
               </div>
             \`).join('')}
@@ -827,37 +826,47 @@ router.get("/modal.js", (req, res) => {
 
       body.innerHTML = html;
 
+      // Desktop summary matches mobile step 5 review exactly
+      const originalPriceBeforeDiscount = originalValue + bundleSavings;
+      const productsPrice = totalPrice;
+      
       let summaryDetailsHtml = \`
+        <!-- السعر الأصلي - Red color -->
         <div class="salla-summary-row">
-          <span class="salla-summary-label">المنتج الأساسي</span>
-          <span class="salla-summary-value">\${formatPrice(originalValue)}</span>
+          <span class="salla-summary-label">السعر الأصلي</span>
+          <span class="salla-summary-value" style="color: #dc2626; text-decoration: line-through;">\${formatPrice(originalPriceBeforeDiscount)}</span>
+        </div>
+        
+        <!-- سعر المنتجات - Black color -->
+        <div class="salla-summary-row">
+          <span class="salla-summary-label">السعر المخفض</span>
+          <span class="salla-summary-value">\${formatPrice(productsPrice)}</span>
+        </div>
+        
+        <!-- تكلفة الشحن - Black color -->
+        <div class="salla-summary-row">
+          <span class="salla-summary-label">تكلفة الشحن</span>
+          <span class="salla-summary-value">تُحسب في الخطوة القادمة</span>
         </div>
       \`;
 
-      if (offersPrice > 0) {
-        summaryDetailsHtml += \`
-          <div class="salla-summary-row">
-            <span class="salla-summary-label">المنتجات الإضافية</span>
-            <span class="salla-summary-value">\${formatPrice(offersPrice)}</span>
-          </div>
-        \`;
-      }
-
-      summaryDetailsHtml += \`
-        <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px;">
-          <span class="salla-summary-label" style="font-weight: 600;">المجموع الفرعي</span>
-          <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
-        </div>
-      \`;
-
+      // مبلغ الخصم - Green color (negative sign)
       if (bundleSavings > 0) {
         summaryDetailsHtml += \`
           <div class="salla-summary-row">
-            <span class="salla-summary-label">توفير الباقة</span>
-            <span class="salla-summary-value salla-summary-savings">\${formatPrice(bundleSavings)}</span>
+            <span class="salla-summary-label">مبلغ الخصم</span>
+            <span class="salla-summary-value" style="color: #16a34a;">-\${formatPrice(bundleSavings)}</span>
           </div>
         \`;
       }
+      
+      // إجمالي الطلب - Black color with border
+      summaryDetailsHtml += \`
+        <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
+          <span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>
+          <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
+        </div>
+      \`;
 
 
 
@@ -870,9 +879,9 @@ router.get("/modal.js", (req, res) => {
           \${summaryDetailsHtml}
         </div>
         <button class="salla-checkout-button"
-                style="background-color: \${bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.cta_button_text_color || '#ffffff'};"
+                style="background-color: \${bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff'};"
                 onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
-          <span>إتمام الطلب — \${formatPrice(totalPrice)}</span>
+          <span>\${(bundleConfig.checkout_button_text || 'إتمام الطلب — {total_price}').replace('{total_price}', formatPrice(totalPrice))}</span>
         </button>
         \${this.renderPaymentMethods()}
       \`;

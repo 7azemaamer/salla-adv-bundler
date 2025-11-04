@@ -429,20 +429,20 @@ class SnippetController {
             '.s-button-btn',
             'button.add-to-cart'
           ],
-          options: ['salla-product-options', '.product-options'],
+          options: ['salla-product-options'],
           quantity: [
             'salla-quantity-input',
-            '.quantity-input',
-            'section:has(salla-quantity-input)',
-            '.s-quantity-input'
+            'section:has(> salla-quantity-input)'
           ],
           price: [
             '.price-wrapper',
-            '.total-price',
-            '.before-price',
             '.price_is_on_sale',
             '.starting-or-normal-price',
-            '.s-product-price'
+            '.total-price',
+            '.before-price',
+            'section:has(.price-wrapper)',
+            'section:has(.total-price)',
+            'section:has(.price_is_on_sale)'
           ]
         },
         raed: {
@@ -600,12 +600,15 @@ class SnippetController {
         return;
       }
 
-      // Add CSS to hide salla-product-options within product-form
+      const themeSelectors = this.getThemeSelectors();
+      const optionSelectors = themeSelectors.options.map(s => \`form.product-form \${s}\`).join(',\\n        ');
+
+      // Add CSS to hide salla-product-options within product-form (Theme-specific)
       const style = document.createElement('style');
       style.id = 'salla-bundle-hide-product-options';
       style.textContent = \`
-        /* Hide Salla product options in product form for target products with bundles */
-        form.product-form salla-product-options {
+        /* Hide Salla product options in product form for target products with bundles (Theme: \${this.settings.salla_theme || 'basic'}) */
+        \${optionSelectors} {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -621,13 +624,15 @@ class SnippetController {
 
       document.head.appendChild(style);
 
-      // Also hide via JS (backup method)
+      // Also hide via JS (backup method) - use theme-specific selectors
       const hideProductOptionElements = () => {
         const productForms = document.querySelectorAll('form.product-form');
         productForms.forEach(form => {
-          const optionsElements = form.querySelectorAll('salla-product-options');
-          optionsElements.forEach(element => {
-            element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+          themeSelectors.options.forEach(selector => {
+            const optionsElements = form.querySelectorAll(selector);
+            optionsElements.forEach(element => {
+              element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+            });
           });
         });
       };
@@ -673,19 +678,15 @@ class SnippetController {
         return;
       }
 
-      // Add CSS to hide the parent section of salla-quantity-input within product-form
+      const themeSelectors = this.getThemeSelectors();
+      const quantitySelectors = themeSelectors.quantity.map(s => \`form.product-form \${s}\`).join(',\\n        ');
+
+      // Add CSS to hide the quantity input section within product-form (Theme-specific)
       const style = document.createElement('style');
       style.id = 'salla-bundle-hide-quantity-input';
       style.textContent = \`
-        /* Hide quantity input section in product form for target products with bundles */
-        form.product-form salla-quantity-input {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          pointer-events: none !important;
-        }
-        /* Also hide the parent section if it contains salla-quantity-input */
-        form.product-form section:has(> salla-quantity-input) {
+        /* Hide quantity input section in product form for target products with bundles (Theme: \${this.settings.salla_theme || 'basic'}) */
+        \${quantitySelectors} {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -711,20 +712,18 @@ class SnippetController {
 
       document.head.appendChild(style);
 
-      // Also hide via JS (backup method)
+      // Also hide via JS (backup method) - use theme-specific selectors
       const hideQuantityElements = () => {
         const productForms = document.querySelectorAll('form.product-form');
         productForms.forEach(form => {
-          // Find salla-quantity-input elements
-          const quantityInputs = form.querySelectorAll('salla-quantity-input');
-          quantityInputs.forEach(element => {
-            element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-
-            // Also hide parent section BUT NOT if it contains bundle UI
-            const parentSection = element.closest('section');
-            if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
-              parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-            }
+          themeSelectors.quantity.forEach(selector => {
+            const quantityElements = form.querySelectorAll(selector);
+            quantityElements.forEach(element => {
+              // Don't hide if it contains bundle UI
+              if (!element.querySelector('[data-salla-bundle]')) {
+                element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+              }
+            });
           });
 
           // Ensure bundle UI is always visible
@@ -742,39 +741,8 @@ class SnippetController {
       setInterval(hideQuantityElements, 500);
 
       // Observe for new elements being added to DOM
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) {
-              // Check if the node itself is salla-quantity-input within product-form
-              if (node.tagName === 'SALLA-QUANTITY-INPUT') {
-                const productForm = node.closest('form.product-form');
-                if (productForm) {
-                  node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-
-                  // Hide parent section BUT NOT if it contains bundle UI
-                  const parentSection = node.closest('section');
-                  if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
-                    parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-                  }
-                }
-              }
-              // Check children
-              if (node.querySelectorAll) {
-                const quantityInputs = node.querySelectorAll('form.product-form salla-quantity-input');
-                quantityInputs.forEach(element => {
-                  element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-
-                  // Hide parent section BUT NOT if it contains bundle UI
-                  const parentSection = element.closest('section');
-                  if (parentSection && !parentSection.querySelector('[data-salla-bundle]')) {
-                    parentSection.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-                  }
-                });
-              }
-            }
-          });
-        });
+      const observer = new MutationObserver(() => {
+        hideQuantityElements();
       });
 
       observer.observe(document.body, {
@@ -788,20 +756,15 @@ class SnippetController {
         return;
       }
 
-      // Add CSS to hide the price section within product-form
+      const themeSelectors = this.getThemeSelectors();
+      const priceSelectors = themeSelectors.price.map(s => \`form.product-form \${s}\`).join(',\\n        ');
+
+      // Add CSS to hide the price section within product-form (Theme-specific)
       const style = document.createElement('style');
       style.id = 'salla-bundle-hide-price-section';
       style.textContent = \`
-        /* Hide price section in product form for target products with bundles */
-        /* Target various price-related selectors */
-        form.product-form .price-wrapper,
-        form.product-form .price_is_on_sale,
-        form.product-form .starting-or-normal-price,
-        form.product-form .total-price,
-        form.product-form .before-price,
-        form.product-form section:has(.price-wrapper),
-        form.product-form section:has(.total-price),
-        form.product-form section:has(.price_is_on_sale) {
+        /* Hide price section in product form for target products with bundles (Theme: \${this.settings.salla_theme || 'basic'}) */
+        \${priceSelectors} {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -827,26 +790,18 @@ class SnippetController {
 
       document.head.appendChild(style);
 
-      // Also hide via JS (backup method)
+      // Also hide via JS (backup method) - use theme-specific selectors
       const hidePriceElements = () => {
         const productForms = document.querySelectorAll('form.product-form');
         productForms.forEach(form => {
-          // Find price-related elements
-          const priceElements = form.querySelectorAll(
-            '.price-wrapper, .price_is_on_sale, .starting-or-normal-price, .total-price, .before-price'
-          );
-          priceElements.forEach(element => {
-            element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-          });
-
-          // Also hide parent sections that contain price elements BUT NOT if they contain bundle UI
-          const priceSections = form.querySelectorAll('section');
-          priceSections.forEach(section => {
-            const hasPrice = section.querySelector('.price-wrapper, .total-price, .price_is_on_sale');
-            const hasBundle = section.querySelector('[data-salla-bundle]');
-            if (hasPrice && !hasBundle) {
-              section.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-            }
+          themeSelectors.price.forEach(selector => {
+            const priceElements = form.querySelectorAll(selector);
+            priceElements.forEach(element => {
+              // Don't hide if it contains bundle UI
+              if (!element.querySelector('[data-salla-bundle]')) {
+                element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
+              }
+            });
           });
 
           // Ensure bundle UI is always visible
@@ -864,32 +819,8 @@ class SnippetController {
       setInterval(hidePriceElements, 500);
 
       // Observe for new elements being added to DOM
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) {
-              // Check if the node contains price elements within product-form
-              if (node.closest && node.closest('form.product-form')) {
-                if (node.classList && (
-                  node.classList.contains('price-wrapper') ||
-                  node.classList.contains('total-price') ||
-                  node.classList.contains('price_is_on_sale') ||
-                  node.classList.contains('before-price') ||
-                  node.classList.contains('starting-or-normal-price')
-                )) {
-                  node.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-                }
-              }
-              // Check children
-              if (node.querySelectorAll) {
-                const priceElements = node.querySelectorAll('form.product-form .price-wrapper, form.product-form .total-price, form.product-form .price_is_on_sale, form.product-form .before-price');
-                priceElements.forEach(element => {
-                  element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-                });
-              }
-            }
-          });
-        });
+      const observer = new MutationObserver(() => {
+        hidePriceElements();
       });
 
       observer.observe(document.body, {
@@ -911,10 +842,13 @@ class SnippetController {
       
       // Build CSS rules for each custom selector
       const cssRules = customSelectors.map(selector => {
-        // Escape any problematic characters in selector for safety
+        // Validate selector syntax (basic check)
         try {
-          // Test if selector is valid by trying to query it
-          document.querySelector(selector);
+          // Test if selector is valid - just check syntax, not existence
+          // Use a dummy element to test selector validity
+          const testDiv = document.createElement('div');
+          testDiv.querySelector(selector);
+          
           return \`\${selector} {
             display: none !important;
             visibility: hidden !important;
@@ -922,7 +856,21 @@ class SnippetController {
             pointer-events: none !important;
           }\`;
         } catch (e) {
-          console.warn(\`[Salla Bundle] Invalid CSS selector: \${selector}\`);
+          // If selector has valid CSS syntax but querySelector fails, still try to use it
+          // This handles cases like :has() or other advanced selectors
+          try {
+            // Check if it at least looks like a valid selector (starts with . # [ or is an element)
+            if (selector.match(/^[.#[\w-]/)) {
+              return \`\${selector} {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+              }\`;
+            }
+          } catch (e2) {
+            console.warn(\`[Salla Bundle] Invalid CSS selector: \${selector}\`);
+          }
           return '';
         }
       }).filter(rule => rule !== '').join('\\n');

@@ -73,7 +73,9 @@ export default function EditBundlePage() {
       cta_button_text: "اختر الباقة",
       cta_button_bg_color: "#0066ff",
       cta_button_text_color: "#ffffff",
-      checkout_button_text: "إتمام الطلب",
+      checkout_button_text: "إتمام الطلب — {total_price}",
+      checkout_button_bg_color: "#0066ff",
+      checkout_button_text_color: "#ffffff",
       bundles: [
         {
           tier: 1,
@@ -216,7 +218,11 @@ export default function EditBundlePage() {
         cta_button_bg_color: currentBundle.cta_button_bg_color || "#0066ff",
         cta_button_text_color: currentBundle.cta_button_text_color || "#ffffff",
         checkout_button_text:
-          currentBundle.checkout_button_text || "إتمام الطلب",
+          currentBundle.checkout_button_text || "إتمام الطلب — {total_price}",
+        checkout_button_bg_color:
+          currentBundle.checkout_button_bg_color || "#0066ff",
+        checkout_button_text_color:
+          currentBundle.checkout_button_text_color || "#ffffff",
         bundles: formattedBundles,
       };
 
@@ -1019,12 +1025,35 @@ export default function EditBundlePage() {
                       {...form.getInputProps("cta_button_text_color")}
                     />
                   </Grid.Col>
-                  <Grid.Col span={6}>
+                </Grid>
+
+                <Divider label="زر إتمام الطلب" labelPosition="center" />
+
+                <Grid>
+                  <Grid.Col span={12}>
                     <TextInput
                       label="نص زر إتمام الطلب"
-                      placeholder="مثال: إتمام الطلب"
-                      description="النص الذي سيظهر على الزر في الخطوة الأخيرة"
+                      placeholder="مثال: إتمام الطلب — {total_price}"
+                      description="النص الذي سيظهر على الزر في الخطوة الأخيرة. يمكنك استخدام {total_price} لإظهار السعر الإجمالي"
                       {...form.getInputProps("checkout_button_text")}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <ColorInput
+                      label="لون خلفية زر إتمام الطلب"
+                      description="لون خلفية الزر"
+                      placeholder="اختر اللون"
+                      format="hex"
+                      {...form.getInputProps("checkout_button_bg_color")}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <ColorInput
+                      label="لون نص زر إتمام الطلب"
+                      description="لون النص داخل الزر"
+                      placeholder="اختر اللون"
+                      format="hex"
+                      {...form.getInputProps("checkout_button_text_color")}
                     />
                   </Grid.Col>
                 </Grid>

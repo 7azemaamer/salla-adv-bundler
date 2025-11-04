@@ -191,8 +191,18 @@ const BundleConfigSchema = new mongoose.Schema(
     checkout_button_text: {
       type: String,
       trim: true,
-      maxLength: 50,
-      default: "إتمام الطلب",
+      maxLength: 100,
+      default: "إتمام الطلب — {total_price}",
+    },
+    checkout_button_bg_color: {
+      type: String,
+      trim: true,
+      default: "#0066ff",
+    },
+    checkout_button_text_color: {
+      type: String,
+      trim: true,
+      default: "#ffffff",
     },
     config_hash: {
       type: String,

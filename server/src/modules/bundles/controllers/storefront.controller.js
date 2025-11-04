@@ -253,8 +253,11 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
   const { store_id } = req.params;
 
   try {
-    // First, try to get cached payment methods from store
-    const store = await storeService.getStoreByStoreId(store_id);
+    let store = await storeService.getStoreByDomain(store_id);
+
+    if (!store) {
+      store = await storeService.getStoreByStoreId(store_id);
+    }
 
     if (!store) {
       return res.status(404).json({
@@ -313,7 +316,11 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
     console.error("Error fetching payment methods:", error.message);
 
     // Fallback to cached data if available
-    const store = await storeService.getStoreByStoreId(store_id);
+    let store = await storeService.getStoreByDomain(store_id);
+    if (!store) {
+      store = await storeService.getStoreByStoreId(store_id);
+    }
+
     if (store && store.payment_methods && store.payment_methods.length > 0) {
       return res.status(200).json({
         success: true,

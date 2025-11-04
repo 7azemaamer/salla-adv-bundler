@@ -420,6 +420,27 @@ button,
   color: var(--text-1);
 }
 
+/* Desktop radio button indicator */
+.salla-bundle-radio-desktop {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.salla-bundle-radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
 .salla-bundle-button {
   height: 44px;
   padding: 0 12px;

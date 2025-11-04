@@ -296,6 +296,9 @@ export default function DisplaySettingsPanel({
                       onChange={(e) => setNewSelector(e.target.value)}
                       onKeyPress={handleKeyPress}
                       style={{ flex: 1 }}
+                      styles={{
+                        input: { direction: "ltr", textAlign: "left" },
+                      }}
                       leftSection={<IconCode size="1rem" />}
                       disabled={loading.updating}
                     />
@@ -323,7 +326,11 @@ export default function DisplaySettingsPanel({
                         <Group justify="space-between">
                           <Group gap="sm">
                             <IconCode size="0.9rem" color="gray" />
-                            <Text size="sm" ff="monospace">
+                            <Text
+                              size="sm"
+                              ff="monospace"
+                              style={{ direction: "ltr", textAlign: "left" }}
+                            >
                               {selector}
                             </Text>
                           </Group>
