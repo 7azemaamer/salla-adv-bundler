@@ -255,11 +255,49 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    // If no product_id and no custom reviews, return empty
+    // If no product_id and no custom reviews, fetch store-level reviews
     if (!product_id) {
       console.log(
-        "[Reviews]: No product_id provided and no custom reviews available"
+        "[Reviews]: No product_id provided, fetching store-level reviews from Salla API"
       );
+
+      try {
+        const accessToken = await getValidAccessToken(store_id);
+
+        if (accessToken) {
+          const storeReviewsResult = await fetchStoreReviews(accessToken, {
+            type: "rating",
+            is_published: true,
+            per_page: parseInt(limit),
+            page: 1,
+          });
+
+          if (storeReviewsResult.success && storeReviewsResult.data) {
+            const formattedStoreReviews =
+              storeReviewsResult.data.map(formatReview);
+
+            console.log(
+              `[Reviews]: Returning ${formattedStoreReviews.length} store-level reviews from Salla API`
+            );
+
+            return res.status(200).json({
+              success: true,
+              data: formattedStoreReviews,
+              total: formattedStoreReviews.length,
+              fromStore: true,
+              isDummy: storeReviewsResult.isDummy || false,
+            });
+          }
+        }
+      } catch (error) {
+        console.error(
+          "[Reviews]: Error fetching store-level reviews:",
+          error.message
+        );
+      }
+
+      // If all else fails, return empty
+      console.log("[Reviews]: No reviews available from any source");
       return res.status(200).json({
         success: true,
         data: [],

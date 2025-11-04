@@ -3696,6 +3696,7 @@ router.get("/modal.js", (req, res) => {
       
       if (!input || !messageEl) return;
       
+      // Check if user is logged in first
       if (!this.isUserLoggedIn()) {
         messageEl.innerHTML = '<div class="salla-discount-message error">يجب تسجيل الدخول لتطبيق كود الخصم</div>';
         setTimeout(() => {
@@ -3712,8 +3713,9 @@ router.get("/modal.js", (req, res) => {
       }
       
       try {
-        messageEl.innerHTML = '<div class="salla-discount-message">جاري التحقق...</div>';
+        messageEl.innerHTML = '<div class="salla-discount-message">جاري التحقق من الكود...</div>';
         
+        // Validate coupon first
         const storeId = this.contextData.storeId || this.storeDomain;
         const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/validate-coupon\`, {
           method: 'POST',
@@ -3726,15 +3728,131 @@ router.get("/modal.js", (req, res) => {
         
         const result = await response.json();
         
-        if (result.success && result.valid) {
+        if (!result.success || !result.valid) {
+          messageEl.innerHTML = \`<div class="salla-discount-message error">\${result.message || 'كود الخصم غير صالح'}</div>\`;
+          return;
+        }
+        
+        // Coupon is valid, now add items to cart
+        messageEl.innerHTML = '<div class="salla-discount-message">جاري إضافة المنتجات للسلة...</div>';
+        
+        const selectedBundleData = this.getSelectedBundleData();
+        if (!selectedBundleData) {
+          messageEl.innerHTML = '<div class="salla-discount-message error">يرجى اختيار باقة أولاً</div>';
+          return;
+        }
+        
+        const bundleConfig = this.bundleData.data || this.bundleData;
+        
+        // Check for missing variants
+        const missingVariants = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
+        if (missingVariants.length > 0) {
+          const missingDetails = missingVariants.map(mv => \`\${mv.productName}: \${mv.optionName}\`).join('، ');
+          messageEl.innerHTML = \`<div class="salla-discount-message error">يجب اختيار الخيارات أولاً: \${missingDetails}</div>\`;
+          this.highlightMissingVariants(missingVariants);
+          return;
+        }
+        
+        // Add items to cart (same logic as handleCheckout)
+        const addedProducts = [];
+        const targetQuantity = selectedBundleData.buy_quantity || 1;
+        const targetOptions = bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants ?
+          this.getSelectedVariantOptions(this.productId) : {};
+        
+        // Add target products
+        for (let i = 0; i < targetQuantity; i++) {
+          let targetOptionsForThisQuantity;
+          if (targetQuantity > 1 && bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants) {
+            const productIdWithIndex = \`\${this.productId}-qty\${i+1}\`;
+            targetOptionsForThisQuantity = this.getSelectedVariantOptions(productIdWithIndex);
+          } else {
+            targetOptionsForThisQuantity = targetOptions;
+          }
+          
+          const targetCartItem = {
+            id: this.productId,
+            quantity: 1,
+            options: targetOptionsForThisQuantity
+          };
+          
+          await window.salla.cart.addItem(targetCartItem);
+          addedProducts.push({
+            name: bundleConfig.target_product_data.name,
+            type: 'target',
+            quantity: 1
+          });
+        }
+        
+        // Add offer products
+        if (selectedBundleData.offers && selectedBundleData.offers.length > 0) {
+          for (const offer of selectedBundleData.offers) {
+            const isUnavailable = offer.product_data && this.isProductCompletelyUnavailable(offer.product_data);
+            if (isUnavailable) continue;
+            
+            try {
+              const offerOptions = offer.product_data && offer.product_data.has_variants ?
+                this.getSelectedOfferVariantOptions(offer.product_id) : {};
+              
+              const addToCartParams = {
+                id: offer.product_id,
+                quantity: offer.quantity || 1,
+                options: offerOptions
+              };
+              
+              await window.salla.cart.addItem(addToCartParams);
+              addedProducts.push({
+                name: offer.product_name,
+                type: 'discounted',
+                quantity: offer.quantity || 1
+              });
+            } catch (offerError) {
+              console.error('[Coupon] Failed to add offer:', offerError);
+            }
+          }
+        }
+        
+        // Now apply the coupon to the cart
+        messageEl.innerHTML = '<div class="salla-discount-message">جاري تطبيق كود الخصم...</div>';
+        
+        try {
+          const couponResponse = await window.salla.cart.addCoupon(code);
+          console.log('[Coupon] Applied successfully:', couponResponse);
+          
           this.appliedDiscount = result.data;
           this.discountCode = code;
-          messageEl.innerHTML = \`<div class="salla-discount-message success">\${result.data.message}</div>\`;
           
-          setTimeout(() => this.updateSummaryWithDiscount(), 300);
-        } else {
-          messageEl.innerHTML = \`<div class="salla-discount-message error">\${result.message || 'كود الخصم غير صالح'}</div>\`;
+          messageEl.innerHTML = \`<div class="salla-discount-message success">تم تطبيق الكود بنجاح! جاري التوجه للدفع...</div>\`;
+          
+          // Track the bundle selection
+          this.trackBundleSelection(selectedBundleData);
+          
+          // Submit cart and go to checkout (instead of cart page)
+          setTimeout(async () => {
+            try {
+              await window.salla.cart.submit();
+            } catch (submitError) {
+              console.error('[Coupon] Cart submit error:', submitError);
+              // Fallback to checkout page
+              const currentPath = window.location.pathname;
+              const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+              const basePath = pathMatch ? pathMatch[1] : '/';
+              window.location.href = \`\${window.location.origin}\${basePath}checkout\`;
+            }
+          }, 800);
+          
+        } catch (couponError) {
+          console.error('[Coupon] Failed to apply coupon:', couponError);
+          messageEl.innerHTML = \`<div class="salla-discount-message error">فشل تطبيق الكود. جاري التوجه للسلة...</div>\`;
+          
+          // Still go to cart even if coupon fails
+          setTimeout(() => {
+            const currentPath = window.location.pathname;
+            const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+            const basePath = pathMatch ? pathMatch[1] : '/';
+            window.location.href = \`\${window.location.origin}\${basePath}cart\`;
+          }, 1000);
         }
+        
       } catch (error) {
         console.error('[Discount] Apply error:', error);
         messageEl.innerHTML = '<div class="salla-discount-message error">حدث خطأ، حاول مرة أخرى</div>';
