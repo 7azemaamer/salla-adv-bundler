@@ -1,19 +1,12 @@
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import bundleService from "../services/bundle.service.js";
 import settingsService from "../../settings/services/settings.service.js";
-import {
-  fetchStoreReviews,
-  formatReview,
-} from "../services/reviews.service.js";
+import { formatReview } from "../services/reviews.service.js";
 import { fetchPaymentMethods } from "../services/payment.service.js";
 import axios from "axios";
 import storeService from "../../stores/services/store.service.js";
 import { getValidAccessToken } from "../../../utils/tokenHelper.js";
 import { getCachedReviews } from "../../products/services/productCache.service.js";
-
-// In-memory cache for store-level reviews (5 minutes TTL)
-const storeReviewsCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /* ===============================================
  * Get bundles for a specific product (public endpoint)
@@ -259,77 +252,14 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    // If no product_id and no custom reviews, fetch store-level reviews
+    // If no product_id, return empty (only show custom reviews or product-specific reviews)
     if (!product_id) {
-      // Check cache first
-      const cacheKey = `store_${store_id}_reviews`;
-      const cached = storeReviewsCache.get(cacheKey);
-
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log(
-          `[Reviews]: Returning ${cached.data.length} store-level reviews from cache`
-        );
-        return res.status(200).json({
-          success: true,
-          data: cached.data.slice(0, parseInt(limit)),
-          total: cached.data.length,
-          fromStore: true,
-          fromCache: true,
-        });
-      }
-
-      console.log(
-        "[Reviews]: No product_id provided, fetching store-level reviews from Salla API"
-      );
-
-      try {
-        const accessToken = await getValidAccessToken(store_id);
-
-        if (accessToken) {
-          const storeReviewsResult = await fetchStoreReviews(accessToken, {
-            type: "rating",
-            is_published: true,
-            per_page: parseInt(limit),
-            page: 1,
-          });
-
-          if (storeReviewsResult.success && storeReviewsResult.data) {
-            const formattedStoreReviews =
-              storeReviewsResult.data.map(formatReview);
-
-            // Cache the results
-            storeReviewsCache.set(cacheKey, {
-              data: formattedStoreReviews,
-              timestamp: Date.now(),
-            });
-
-            console.log(
-              `[Reviews]: Returning ${formattedStoreReviews.length} store-level reviews from Salla API (cached for 5min)`
-            );
-
-            return res.status(200).json({
-              success: true,
-              data: formattedStoreReviews,
-              total: formattedStoreReviews.length,
-              fromStore: true,
-              isDummy: storeReviewsResult.isDummy || false,
-            });
-          }
-        }
-      } catch (error) {
-        console.error(
-          "[Reviews]: Error fetching store-level reviews:",
-          error.message
-        );
-      }
-
-      // If all else fails, return empty
-      console.log("[Reviews]: No reviews available from any source");
+      console.log("[Reviews]: No product_id provided, no reviews available");
       return res.status(200).json({
         success: true,
         data: [],
         total: 0,
-        message: "No reviews available",
+        message: "No reviews available without product_id",
       });
     }
 
