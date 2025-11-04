@@ -1774,12 +1774,17 @@ router.get("/modal.js", (req, res) => {
           return;
         }
 
-        const currentPath = window.location.pathname;
-        const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
-        const basePath = pathMatch ? pathMatch[1] : '/';
-        const cartUrl = \`\${window.location.origin}\${basePath}cart\`;
-
-        window.location.href = cartUrl;
+        // Submit cart and go to checkout directly
+        try {
+          await window.salla.cart.submit();
+        } catch (submitError) {
+          console.error('[Checkout] Cart submit error:', submitError);
+          // Fallback to checkout page
+          const currentPath = window.location.pathname;
+          const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+          const basePath = pathMatch ? pathMatch[1] : '/';
+          window.location.href = \`\${window.location.origin}\${basePath}checkout\`;
+        }
 
       } catch (error) {
         this.showSallaToast('حدث خطأ. يرجى المحاولة مرة أخرى.', 'error');

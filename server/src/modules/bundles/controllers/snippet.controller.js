@@ -888,22 +888,13 @@ class SnippetController {
     injectStickyButton() {
       const stickyButton = this.settings.sticky_button || {};
       
-      console.log('[Sticky Button] Starting injection...');
-      console.log('[Sticky Button] Settings:', stickyButton);
-      console.log('[Sticky Button] Enabled:', stickyButton.enabled);
-      
       if (!stickyButton.enabled) {
-        console.log('[Sticky Button] Not enabled, returning');
         return;
       }
 
       if (document.querySelector('.salla-bundle-sticky-button')) {
-        console.log('[Sticky Button] Already exists, returning');
         return;
       }
-      
-      console.log('[Sticky Button] Creating button...');
-
 
       // Create sticky button
       const button = document.createElement('button');
@@ -916,13 +907,15 @@ class SnippetController {
 
       // Build position and width styles
       let positionStyle = 'bottom: 20px;';
-      let transformStyle = '';
+      let transformValue = ''; // Transform value only (no 'transform:' prefix)
+      let transformCss = ''; // Full CSS transform for inline styles
       let widthStyle = '';
       
       // Position handling
       if (position === 'bottom-center') {
         positionStyle += ' left: 50%; right: auto;';
-        transformStyle = 'transform: translateX(-50%);';
+        transformValue = 'translateX(-50%)';
+        transformCss = 'transform: translateX(-50%);';
       } else if (position === 'bottom-left') {
         positionStyle += ' left: 20px; right: auto;';
       } else { // bottom-right
@@ -934,7 +927,8 @@ class SnippetController {
         widthStyle = 'width: calc(100% - 40px); max-width: none;';
         // For full width, override position to stretch across
         positionStyle = 'bottom: 20px; left: 20px; right: 20px;';
-        transformStyle = ''; // No transform needed for full width
+        transformValue = '';
+        transformCss = '';
       } else if (widthType === 'custom') {
         const customWidth = stickyButton.custom_width || 250;
         widthStyle = \`width: \${customWidth}px; max-width: min(\${customWidth}px, calc(100vw - 40px));\`;
@@ -954,7 +948,7 @@ class SnippetController {
         position: fixed;
         \${positionStyle}
         \${widthStyle}
-        \${transformStyle}
+        \${transformCss}
         z-index: 999999;
         background: \${buttonBgColor};
         color: \${buttonTextColor};
@@ -1008,39 +1002,29 @@ class SnippetController {
       }
 
       button.style.opacity = '0';
-      button.style.transform = \`translateY(100px) \${transformStyle ? 'translateX(-50%)' : ''}\`;
+      button.style.transform = \`translateY(100px) \${transformValue ? transformValue : ''}\`;
       button.style.pointerEvents = 'none';
       document.body.appendChild(button);
 
       const setupStickyButtonVisibility = () => {
-        console.log('[Sticky Button] Setting up visibility observer...');
         const mainCTA = document.querySelector('.salla-bundle-btn, .salla-bundle-notice');
         
         if (!mainCTA) {
-          console.log('[Sticky Button] Main CTA not found yet, retrying in 500ms...');
           setTimeout(setupStickyButtonVisibility, 500);
           return;
         }
 
-        console.log('[Sticky Button] Main CTA found:', mainCTA);
-        console.log('[Sticky Button] Main CTA position:', mainCTA.getBoundingClientRect());
-
         const observer = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
-            console.log('[Sticky Button] Intersection change - isIntersecting:', entry.isIntersecting);
-            console.log('[Sticky Button] Entry:', entry);
-            
             if (entry.isIntersecting) {
               // Main CTA is visible - hide sticky button
-              console.log('[Sticky Button] Main CTA visible - hiding sticky button');
               button.style.opacity = '0';
-              button.style.transform = \`translateY(100px) \${transformStyle ? 'translateX(-50%)' : ''}\`;
+              button.style.transform = \`translateY(100px) \${transformValue ? transformValue : ''}\`;
               button.style.pointerEvents = 'none';
             } else {
               // Main CTA is NOT visible - show sticky button
-              console.log('[Sticky Button] Main CTA hidden - showing sticky button');
               button.style.opacity = '1';
-              button.style.transform = transformStyle || 'translateY(0)';
+              button.style.transform = transformValue || 'translateY(0)';
               button.style.pointerEvents = 'auto';
             }
           });
@@ -1050,10 +1034,8 @@ class SnippetController {
         });
 
         observer.observe(mainCTA);
-        console.log('[Sticky Button] Observer attached to main CTA');
       };
 
-      console.log('[Sticky Button] Button added to DOM, setting up visibility in 1000ms...');
       setTimeout(setupStickyButtonVisibility, 1000);
 
     }
