@@ -1,9 +1,5 @@
 import mongoose from "mongoose";
 
-/**
- * Product Cache Model
- * Stores cached product data including reviews to reduce Salla API calls
- */
 const ProductCacheSchema = new mongoose.Schema(
   {
     store_id: {
@@ -27,7 +23,6 @@ const ProductCacheSchema = new mongoose.Schema(
     product_price: {
       type: Number,
     },
-    // Cached reviews from Salla API (format matches storefront API response)
     cached_reviews: [
       {
         id: {
@@ -65,7 +60,6 @@ const ProductCacheSchema = new mongoose.Schema(
         },
       },
     ],
-    // Cache metadata
     last_fetched: {
       type: Date,
       default: Date.now,
@@ -84,10 +78,8 @@ const ProductCacheSchema = new mongoose.Schema(
   }
 );
 
-// Compound index for faster queries
 ProductCacheSchema.index({ store_id: 1, product_id: 1 }, { unique: true });
 
-// Index for cache expiry cleanup
 ProductCacheSchema.index({ cache_expiry: 1 });
 
 const ProductCache = mongoose.model("ProductCache", ProductCacheSchema);
