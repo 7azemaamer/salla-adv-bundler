@@ -1795,16 +1795,23 @@ router.get("/modal.js", (req, res) => {
           return;
         }
 
-        // Items added successfully - hide modal and sticky button (so Salla auth modal shows on top if needed)
+        // Show loading indicator
+        this.showLoadingIndicator('جاري تجهيز طلبك...');
+
+        // Wait a moment to show loading
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Close modal and hide sticky button
         const modal = document.getElementById('salla-product-modal');
         const stickyButton = document.querySelector('.salla-bundle-sticky-button');
+        
         if (modal) {
-          modal.style.display = 'none';
-          modal.style.zIndex = '-1';
+          modal.classList.remove('show');
+          modal.style.zIndex = '20'; // Less than Salla modals (z-index: 30)
         }
         if (stickyButton) {
           stickyButton.style.display = 'none';
-          stickyButton.style.zIndex = '-1';
+          stickyButton.style.zIndex = '20';
         }
 
         // Submit cart and go to checkout directly
@@ -1812,6 +1819,7 @@ router.get("/modal.js", (req, res) => {
           await window.salla.cart.submit();
         } catch (submitError) {
           console.error('[Checkout] Cart submit error:', submitError);
+          this.hideLoadingIndicator();
           // Fallback to checkout page
           const currentPath = window.location.pathname;
           const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
@@ -2366,6 +2374,78 @@ router.get("/modal.js", (req, res) => {
           }
         \`;
         document.head.appendChild(style);
+      }
+    }
+
+    showLoadingIndicator(message = 'جاري التحميل...') {
+      // Remove existing loader if any
+      this.hideLoadingIndicator();
+
+      const loader = document.createElement('div');
+      loader.id = 'salla-bundle-loader';
+      loader.style.cssText = \`
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.3s ease;
+      \`;
+
+      loader.innerHTML = \`
+        <div style="
+          width: 60px;
+          height: 60px;
+          border: 4px solid rgba(255, 255, 255, 0.2);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        "></div>
+        <div style="
+          color: white;
+          font-size: 16px;
+          font-weight: 600;
+          text-align: center;
+          direction: rtl;
+        ">\${message}</div>
+      \`;
+
+      document.body.appendChild(loader);
+
+      // Add animations if not already added
+      if (!document.getElementById('loader-animations')) {
+        const style = document.createElement('style');
+        style.id = 'loader-animations';
+        style.textContent = \`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        \`;
+        document.head.appendChild(style);
+      }
+    }
+
+    hideLoadingIndicator() {
+      const loader = document.getElementById('salla-bundle-loader');
+      if (loader) {
+        loader.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+          if (loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+        }, 300);
       }
     }
 
@@ -3849,24 +3929,29 @@ router.get("/modal.js", (req, res) => {
           // Track the bundle selection
           this.trackBundleSelection(selectedBundleData);
 
-          // Hide modal and sticky button before submitting (so Salla auth modal shows on top if needed)
-          const modal = document.getElementById('salla-product-modal');
-          const stickyButton = document.querySelector('.salla-bundle-sticky-button');
-          if (modal) {
-            modal.style.display = 'none';
-            modal.style.zIndex = '-1';
-          }
-          if (stickyButton) {
-            stickyButton.style.display = 'none';
-            stickyButton.style.zIndex = '-1';
-          }
+          // Show loading indicator
+          this.showLoadingIndicator('جاري تجهيز طلبك...');
 
           // Submit cart and go to checkout (instead of cart page)
           setTimeout(async () => {
+            // Close modal and hide sticky button
+            const modal = document.getElementById('salla-product-modal');
+            const stickyButton = document.querySelector('.salla-bundle-sticky-button');
+            
+            if (modal) {
+              modal.classList.remove('show');
+              modal.style.zIndex = '20'; // Less than Salla modals (z-index: 30)
+            }
+            if (stickyButton) {
+              stickyButton.style.display = 'none';
+              stickyButton.style.zIndex = '20';
+            }
+
             try {
               await window.salla.cart.submit();
             } catch (submitError) {
               console.error('[Coupon] Cart submit error:', submitError);
+              this.hideLoadingIndicator();
               // Fallback to checkout page
               const currentPath = window.location.pathname;
               const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);

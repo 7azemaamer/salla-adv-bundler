@@ -35,7 +35,7 @@ button,
   direction: rtl;
   display: none;
   position: fixed;
-  z-index: 999999;
+  z-index: 20;
   left: 0;
   top: 0;
   width: 100%;

@@ -949,7 +949,7 @@ class SnippetController {
         \${positionStyle}
         \${widthStyle}
         \${transformCss}
-        z-index: 999999;
+        z-index: 20;
         background: \${buttonBgColor};
         color: \${buttonTextColor};
         border: none;
