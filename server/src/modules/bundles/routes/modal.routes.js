@@ -1795,10 +1795,7 @@ router.get("/modal.js", (req, res) => {
           return;
         }
 
-        // Show loading indicator
-        this.showLoadingIndicator('جاري تجهيز طلبك...');
 
-        // Wait a moment to show loading
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Close modal and hide sticky button
@@ -2377,46 +2374,7 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
-    showLoadingIndicator(message = 'جاري التحميل...') {
-      // Remove existing loader if any
-      this.hideLoadingIndicator();
 
-      const loader = document.createElement('div');
-      loader.id = 'salla-bundle-loader';
-      loader.style.cssText = \`
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 999999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        backdrop-filter: blur(4px);
-        animation: fadeIn 0.3s ease;
-      \`;
-
-      loader.innerHTML = \`
-        <div style="
-          width: 60px;
-          height: 60px;
-          border: 4px solid rgba(255, 255, 255, 0.2);
-          border-top-color: #fff;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        "></div>
-        <div style="
-          color: white;
-          font-size: 16px;
-          font-weight: 600;
-          text-align: center;
-          direction: rtl;
-        ">\${message}</div>
-      \`;
 
       document.body.appendChild(loader);
 
@@ -3929,8 +3887,6 @@ router.get("/modal.js", (req, res) => {
           // Track the bundle selection
           this.trackBundleSelection(selectedBundleData);
 
-          // Show loading indicator
-          this.showLoadingIndicator('جاري تجهيز طلبك...');
 
           // Submit cart and go to checkout (instead of cart page)
           setTimeout(async () => {
