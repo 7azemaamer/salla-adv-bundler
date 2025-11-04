@@ -27,13 +27,11 @@ const ProductCacheSchema = new mongoose.Schema(
     product_price: {
       type: Number,
     },
-    // Cached reviews from Salla API (4-5 stars only)
+    // Cached reviews from Salla API (format matches storefront API response)
     cached_reviews: [
       {
-        id: String,
-        name: {
-          type: String,
-          required: true,
+        id: {
+          type: mongoose.Schema.Types.Mixed, // Can be number or string
         },
         rating: {
           type: Number,
@@ -41,25 +39,29 @@ const ProductCacheSchema = new mongoose.Schema(
           min: 1,
           max: 5,
         },
-        comment: {
+        content: {
           type: String,
           default: "",
         },
-        is_verified: {
-          type: Boolean,
-          default: false,
-        },
-        avatar: {
+        customerName: {
           type: String,
-          default: "",
+          default: "عميل",
         },
-        date: {
+        customerAvatar: {
           type: String,
-          default: "",
+          default: null,
         },
-        created_at: {
-          type: Date,
-          default: Date.now,
+        customerCity: {
+          type: String,
+          default: null,
+        },
+        createdAt: {
+          type: String, // ISO date string
+          default: () => new Date().toISOString(),
+        },
+        timeAgo: {
+          type: String,
+          default: "قبل يومين",
         },
       },
     ],

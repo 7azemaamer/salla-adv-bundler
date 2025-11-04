@@ -10,6 +10,7 @@ import "./src/workers/bundleCleanup.worker.js";
 import { startReviewCountWorker } from "./src/workers/reviewCount.worker.js";
 import { startTokenRefreshWorker } from "./src/workers/tokenRefresh.worker.js";
 import { startCacheCleanupWorker } from "./src/workers/cacheCleanup.worker.js";
+import { startReviewRefreshWorker } from "./src/workers/reviewRefresh.worker.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +71,7 @@ const startServer = async () => {
       startReviewCountWorker();
       startTokenRefreshWorker(); // Easy Mode: Auto-refresh tokens every 5 days
       startCacheCleanupWorker(); // Cleanup expired product cache daily
+      startReviewRefreshWorker(); // Refresh product reviews weekly on Sunday
     });
   } catch (err) {
     console.error("[Server_Init]: Failed to start server:", err);

@@ -5,21 +5,45 @@ import {
 } from "../../bundles/services/reviews.service.js";
 
 /**
+ * Calculate relative time ago in Arabic
+ */
+const calculateTimeAgo = (dateString) => {
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    const diffMonths = Math.floor(diffMs / 2592000000);
+
+    if (diffMins < 60) {
+      return `منذ ${diffMins} دقيقة`;
+    } else if (diffHours < 24) {
+      return `منذ ${diffHours} ساعة`;
+    } else if (diffDays < 30) {
+      return `منذ ${diffDays} يوم`;
+    } else {
+      return `منذ ${diffMonths} شهر`;
+    }
+  } catch (e) {
+    return "قبل يومين";
+  }
+};
+
+/**
  * Get cached reviews for a product
  * If cache expired or doesn't exist, fetch from Salla API and cache it
  */
 export const getCachedReviews = async (store_id, product_id, accessToken) => {
   try {
-    // Check if we have cached reviews
     const cachedData = await ProductCache.findOne({ store_id, product_id });
 
-    // If cache exists and not expired, return cached reviews
     if (cachedData && cachedData.cache_expiry > new Date()) {
       console.log(
         `[ProductCache]: Using cached reviews for product ${product_id}`
       );
 
-      // Update fetch count
       cachedData.fetch_count += 1;
       await cachedData.save();
 
@@ -31,31 +55,24 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
       };
     }
 
-    // Cache expired or doesn't exist - fetch from Salla API
-    console.log(
-      `[ProductCache]: Fetching fresh reviews for product ${product_id}`
-    );
-
     const reviewsResult = await fetchStoreReviews(accessToken, {
       type: "rating",
       is_published: true,
       per_page: 15,
-      product_id: product_id, // Filter by product
+      product_id: product_id,
     });
 
-    // Format reviews for storage
     const formattedReviews = reviewsResult.data.map((review) => ({
       id: review.id || null,
-      name: review.author?.name || review.customer?.name || "عميل",
       rating: review.rating || 5,
-      comment: review.comment || review.content || "",
-      is_verified: review.is_verified || false,
-      avatar: review.author?.avatar || review.customer?.avatar || "",
-      date: review.created_at || new Date().toISOString(),
-      created_at: new Date(),
+      content: review.comment || review.content || "",
+      customerName: review.author?.name || review.customer?.name || "عميل",
+      customerAvatar: review.author?.avatar || review.customer?.avatar || null,
+      customerCity: review.customer?.city || null,
+      createdAt: review.created_at || new Date().toISOString(),
+      timeAgo: calculateTimeAgo(review.created_at),
     }));
 
-    // Update or create cache
     const cacheData = {
       store_id,
       product_id,
@@ -86,7 +103,6 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
       error.message
     );
 
-    // On error, return cached data if available (even if expired)
     const cachedData = await ProductCache.findOne({ store_id, product_id });
     if (cachedData && cachedData.cached_reviews.length > 0) {
       console.log(`[ProductCache]: Returning expired cache due to error`);
@@ -99,7 +115,6 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
       };
     }
 
-    // No cache available, return empty
     return {
       success: false,
       data: [],
@@ -108,9 +123,6 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
   }
 };
 
-/**
- * Invalidate cache for a product (force refresh on next request)
- */
 export const invalidateProductCache = async (store_id, product_id) => {
   try {
     await ProductCache.findOneAndUpdate(

@@ -76,6 +76,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         hide_product_options: settings.hide_product_options,
         hide_quantity_input: settings.hide_quantity_input,
         hide_price_section: settings.hide_price_section,
+        custom_hide_selectors: settings.custom_hide_selectors || [],
         sticky_button: settings.sticky_button,
         free_shipping: settings.free_shipping,
         timer: settings.timer,
@@ -213,28 +214,33 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     // Get custom reviews from settings
     const customReviews = settings.custom_reviews || [];
 
-    // Format custom reviews to match API format
     const formattedCustomReviews = customReviews.map((review) => ({
       id: review._id || null,
-      name: review.name,
-      rating: review.stars,
-      comment: review.comment || "",
-      is_verified: review.is_verified,
-      avatar:
+      rating: review.stars || 5,
+      content: review.comment || "",
+      customerName: review.name || "عميل",
+      customerAvatar:
         review.gender === "female"
           ? "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_female.png"
           : "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png",
-      date: review.date_text || "قبل يومين",
-      created_at: review.created_at || new Date(),
+      customerCity: review.city || null,
+      createdAt: review.created_at || new Date().toISOString(),
+      timeAgo: review.date_text || "قبل يومين",
     }));
 
     // Merge cached reviews + custom reviews
     let allReviews = [...cachedReviews, ...formattedCustomReviews];
 
-    // If we have custom reviews, use them - don't fallback
+    // Sort by date - newest first
+    allReviews.sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateB - dateA; // Descending order (newest first)
+    });
+
     if (allReviews.length > 0) {
       console.log(
-        `[Reviews]: Returning ${allReviews.length} reviews (${formattedCustomReviews.length} custom, ${cachedReviews.length} cached)`
+        `[Reviews]: Returning ${allReviews.length} reviews (${formattedCustomReviews.length} custom, ${cachedReviews.length} cached) - sorted by newest`
       );
       const limitedReviews = allReviews.slice(0, parseInt(limit));
 
@@ -247,21 +253,47 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    console.log("[Reviews]: No cached or custom reviews, attempting API fetch");
+    if (!product_id) {
+      console.log("[Reviews]: No product_id provided, returning empty reviews");
+      return res.status(200).json({
+        success: true,
+        data: [],
+        total: 0,
+        message: "No reviews available",
+      });
+    }
+
+    console.log(
+      `[Reviews]: No cached reviews for product ${product_id}, fetching from API`
+    );
     try {
       const accessToken = await getValidAccessToken(store_id);
 
       if (accessToken) {
-        const reviewsResult = await fetchStoreReviews(accessToken, {
-          type: "rating",
-          is_published: true,
-          per_page: parseInt(limit),
-        });
-        allReviews = reviewsResult.data.map(formatReview);
+        const cacheResult = await getCachedReviews(
+          store_id,
+          product_id,
+          accessToken
+        );
+
+        if (cacheResult.success && cacheResult.data.length > 0) {
+          allReviews = cacheResult.data;
+          fromCache = cacheResult.fromCache;
+
+          console.log(
+            `[Reviews]: Fetched and cached ${allReviews.length} reviews for product ${product_id}`
+          );
+        }
       }
     } catch (apiError) {
       console.error("[Reviews]: API fetch failed:", apiError.message);
     }
+
+    allReviews.sort((a, b) => {
+      const dateA = new Date(a.createdAt);
+      const dateB = new Date(b.createdAt);
+      return dateB - dateA;
+    });
 
     const limitedReviews = allReviews.slice(0, parseInt(limit));
 
@@ -302,7 +334,7 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
       });
     }
 
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; 
+    const CACHE_DURATION = 24 * 60 * 60 * 1000;
     const isCacheFresh =
       store.payment_methods_updated_at &&
       Date.now() - new Date(store.payment_methods_updated_at).getTime() <
@@ -387,7 +419,6 @@ export const validateDiscountCode = asyncWrapper(async (req, res) => {
   }
 
   try {
-    // Get valid access token (will refresh if needed)
     const accessToken = await getValidAccessToken(store_id);
 
     if (!accessToken) {
