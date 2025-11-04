@@ -1774,6 +1774,12 @@ router.get("/modal.js", (req, res) => {
           return;
         }
 
+        // Hide modal and sticky button before submitting (so Salla login modal shows on top)
+        const modal = document.getElementById('salla-product-modal');
+        const stickyButton = document.querySelector('.salla-sticky-cta-button');
+        if (modal) modal.style.display = 'none';
+        if (stickyButton) stickyButton.style.display = 'none';
+
         // Submit cart and go to checkout directly
         try {
           await window.salla.cart.submit();
@@ -3718,27 +3724,7 @@ router.get("/modal.js", (req, res) => {
       }
       
       try {
-        messageEl.innerHTML = '<div class="salla-discount-message">جاري التحقق من الكود...</div>';
-        
-        // Validate coupon first
-        const storeId = this.contextData.storeId || this.storeDomain;
-        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/validate-coupon\`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
-          },
-          body: JSON.stringify({ code })
-        });
-        
-        const result = await response.json();
-        
-        if (!result.success || !result.valid) {
-          messageEl.innerHTML = \`<div class="salla-discount-message error">\${result.message || 'كود الخصم غير صالح'}</div>\`;
-          return;
-        }
-        
-        // Coupon is valid, now add items to cart
+        // Skip validation - Salla will validate when applying coupon
         messageEl.innerHTML = '<div class="salla-discount-message">جاري إضافة المنتجات للسلة...</div>';
         
         const selectedBundleData = this.getSelectedBundleData();
@@ -3823,7 +3809,6 @@ router.get("/modal.js", (req, res) => {
           const couponResponse = await window.salla.cart.addCoupon(code);
           console.log('[Coupon] Applied successfully:', couponResponse);
           
-          this.appliedDiscount = result.data;
           this.discountCode = code;
           
           messageEl.innerHTML = \`<div class="salla-discount-message success">تم تطبيق الكود بنجاح! جاري التوجه للدفع...</div>\`;
@@ -3831,6 +3816,12 @@ router.get("/modal.js", (req, res) => {
           // Track the bundle selection
           this.trackBundleSelection(selectedBundleData);
           
+          // Hide modal and sticky button before submitting (so Salla login modal shows on top)
+          const modal = document.getElementById('salla-product-modal');
+          const stickyButton = document.querySelector('.salla-sticky-cta-button');
+          if (modal) modal.style.display = 'none';
+          if (stickyButton) stickyButton.style.display = 'none';
+
           // Submit cart and go to checkout (instead of cart page)
           setTimeout(async () => {
             try {
