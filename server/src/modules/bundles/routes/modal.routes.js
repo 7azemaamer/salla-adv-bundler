@@ -2374,26 +2374,10 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+  
 
 
-      document.body.appendChild(loader);
 
-      // Add animations if not already added
-      if (!document.getElementById('loader-animations')) {
-        const style = document.createElement('style');
-        style.id = 'loader-animations';
-        style.textContent = \`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-        \`;
-        document.head.appendChild(style);
-      }
-    }
 
     hideLoadingIndicator() {
       const loader = document.getElementById('salla-bundle-loader');
