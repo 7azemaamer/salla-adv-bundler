@@ -1774,7 +1774,7 @@ router.get("/modal.js", (req, res) => {
           return;
         }
 
-        // Hide modal and sticky button before submitting (so Salla login modal shows on top)
+        // Items added successfully - hide modal and sticky button (so Salla auth modal shows on top if needed)
         const modal = document.getElementById('salla-product-modal');
         const stickyButton = document.querySelector('.salla-sticky-cta-button');
         if (modal) modal.style.display = 'none';
@@ -3802,6 +3802,12 @@ router.get("/modal.js", (req, res) => {
           }
         }
         
+        // Items added successfully - hide modal and sticky button (so Salla auth modal shows on top if needed)
+        const modal = document.getElementById('salla-product-modal');
+        const stickyButton = document.querySelector('.salla-sticky-cta-button');
+        if (modal) modal.style.display = 'none';
+        if (stickyButton) stickyButton.style.display = 'none';
+
         // Now apply the coupon to the cart
         messageEl.innerHTML = '<div class="salla-discount-message">جاري تطبيق كود الخصم...</div>';
         
@@ -3815,12 +3821,6 @@ router.get("/modal.js", (req, res) => {
           
           // Track the bundle selection
           this.trackBundleSelection(selectedBundleData);
-          
-          // Hide modal and sticky button before submitting (so Salla login modal shows on top)
-          const modal = document.getElementById('salla-product-modal');
-          const stickyButton = document.querySelector('.salla-sticky-cta-button');
-          if (modal) modal.style.display = 'none';
-          if (stickyButton) stickyButton.style.display = 'none';
 
           // Submit cart and go to checkout (instead of cart page)
           setTimeout(async () => {

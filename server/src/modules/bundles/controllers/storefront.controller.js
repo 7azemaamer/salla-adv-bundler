@@ -11,6 +11,10 @@ import storeService from "../../stores/services/store.service.js";
 import { getValidAccessToken } from "../../../utils/tokenHelper.js";
 import { getCachedReviews } from "../../products/services/productCache.service.js";
 
+// In-memory cache for store-level reviews (5 minutes TTL)
+const storeReviewsCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 /* ===============================================
  * Get bundles for a specific product (public endpoint)
  * =============================================== */
@@ -257,6 +261,21 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
 
     // If no product_id and no custom reviews, fetch store-level reviews
     if (!product_id) {
+      // Check cache first
+      const cacheKey = `store_${store_id}_reviews`;
+      const cached = storeReviewsCache.get(cacheKey);
+      
+      if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+        console.log(`[Reviews]: Returning ${cached.data.length} store-level reviews from cache`);
+        return res.status(200).json({
+          success: true,
+          data: cached.data.slice(0, parseInt(limit)),
+          total: cached.data.length,
+          fromStore: true,
+          fromCache: true,
+        });
+      }
+
       console.log(
         "[Reviews]: No product_id provided, fetching store-level reviews from Salla API"
       );
@@ -276,8 +295,14 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
             const formattedStoreReviews =
               storeReviewsResult.data.map(formatReview);
 
+            // Cache the results
+            storeReviewsCache.set(cacheKey, {
+              data: formattedStoreReviews,
+              timestamp: Date.now()
+            });
+
             console.log(
-              `[Reviews]: Returning ${formattedStoreReviews.length} store-level reviews from Salla API`
+              `[Reviews]: Returning ${formattedStoreReviews.length} store-level reviews from Salla API (cached for 5min)`
             );
 
             return res.status(200).json({
