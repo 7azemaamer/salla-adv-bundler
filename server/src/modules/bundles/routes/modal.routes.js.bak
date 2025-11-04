@@ -5,7 +5,7 @@ const router = Router();
 router.get("/modal.js", (req, res) => {
   res.set({
     "Content-Type": "application/javascript",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Cache-Control": "no-cache, no-store, must-revalidate", // Disable caching during development
     Pragma: "no-cache",
     Expires: "0",
     "Access-Control-Allow-Origin": "*",
@@ -15,6 +15,9 @@ router.get("/modal.js", (req, res) => {
 (function() {
   'use strict';
 
+  // ═══════════════════════════════════════════════════════════════
+  // 1️  CSS LOADER - Load external CSS file with promise
+  // ═══════════════════════════════════════════════════════════════
   const loadModalCSS = () => {
     return new Promise((resolve, reject) => {
       const cssId = 'salla-bundle-modal-styles';
@@ -40,6 +43,7 @@ router.get("/modal.js", (req, res) => {
     });
   };
 
+  // Load CSS immediately (don't wait for it to block script execution)
   loadModalCSS().catch(err => console.error('Modal CSS error:', err));
 
   const riyalSvgIcon = \`<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display: inline-block; vertical-align: middle; margin: 0 2px;">
@@ -56,6 +60,7 @@ router.get("/modal.js", (req, res) => {
     return formatted + '&nbsp;' + riyalSvgIcon;
   }
 
+  // Bundle Modal Class 
   class SallaBundleModal {
     static dataCache = {
       timerSettings: null,
@@ -145,18 +150,23 @@ router.get("/modal.js", (req, res) => {
         }
       },
       triggerFeedback(type) {
-        // Audio removed - keeping haptic feedback only
+        this.initAudio();
+
         const actions = {
           click: () => {
+            this.sounds.click?.();
             this.triggerHaptic('click');
           },
           progress: () => {
+            this.sounds.progress?.();
             this.triggerHaptic('progress');
           },
           complete: () => {
+            this.sounds.complete?.();
             this.triggerHaptic('complete');
           },
           success: () => {
+            this.sounds.success?.();
             this.triggerHaptic('success');
           }
         };
@@ -231,6 +241,7 @@ router.get("/modal.js", (req, res) => {
         }
       });
 
+      // Add feedback to bundle card selections
       const bundleCards = this.modalElement.querySelectorAll('.salla-bundle-card, .salla-bundle-card-compact');
       bundleCards.forEach(card => {
         if (!card.hasFeedbackListener) {
@@ -241,6 +252,7 @@ router.get("/modal.js", (req, res) => {
         }
       });
 
+      // Add feedback to gift and product selections
       const selectableItems = this.modalElement.querySelectorAll('.salla-gift-card, .salla-discounted-card, .salla-review-dot');
       selectableItems.forEach(item => {
         if (!item.hasFeedbackListener) {
@@ -251,6 +263,7 @@ router.get("/modal.js", (req, res) => {
         }
       });
 
+      // Add feedback to toggle elements
       const toggles = this.modalElement.querySelectorAll('.salla-summary-toggle, .salla-discount-header');
       toggles.forEach(toggle => {
         if (!toggle.hasFeedbackListener) {
@@ -261,6 +274,7 @@ router.get("/modal.js", (req, res) => {
         }
       });
 
+      // Add feedback to navigation buttons
       const navButtons = this.modalElement.querySelectorAll('button[aria-label]');
       navButtons.forEach(button => {
         if (!button.hasFeedbackListener) {
@@ -272,6 +286,7 @@ router.get("/modal.js", (req, res) => {
       });
     }
 
+    // Initialize new features state
     initializeFeatureState() {
       this.timerSettings = null;
       this.timerEndTime = null;
@@ -285,7 +300,9 @@ router.get("/modal.js", (req, res) => {
       this.appliedDiscount = null;
     }
 
+    // Static method to preload all common data (called from snippet on page load)
     static async preloadGlobalData(storeId, storeDomain) {
+      // If already preloading, return the existing promise
       if (SallaBundleModal.isPreloading) {
         return SallaBundleModal.preloadPromise;
       }
@@ -296,6 +313,7 @@ router.get("/modal.js", (req, res) => {
           const apiUrl = 'https://${req.get("host")}/api/v1';
           const storeIdentifier = storeId || storeDomain;
 
+          // Fetch all common data in parallel (non-product-specific)
           const [timerResult, reviewsResult, paymentResult] = await Promise.allSettled([
             fetch(\`\${apiUrl}/timer-settings/\${storeIdentifier}\`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
@@ -310,6 +328,7 @@ router.get("/modal.js", (req, res) => {
             }).then(r => r.ok ? r.json() : null)
           ]);
 
+          // Store results in cache
           if (timerResult.status === 'fulfilled' && timerResult.value) {
             SallaBundleModal.dataCache.timerSettings = timerResult.value.data;
           }
@@ -332,8 +351,10 @@ router.get("/modal.js", (req, res) => {
       return SallaBundleModal.preloadPromise;
     }
 
+    // Static method to preload bundle data for a specific product
     static async preloadBundleData(productId, storeId, storeDomain, customerId) {
       try {
+        // Check if already cached
         if (SallaBundleModal.dataCache.bundleData[productId]) {
           return SallaBundleModal.dataCache.bundleData[productId];
         }
@@ -366,6 +387,7 @@ router.get("/modal.js", (req, res) => {
           const responseText = await response.text();
           const bundleData = JSON.parse(responseText);
 
+          // Cache the bundle data
           SallaBundleModal.dataCache.bundleData[productId] = bundleData;
 
           return bundleData;
@@ -422,6 +444,7 @@ router.get("/modal.js", (req, res) => {
             params.append('customer_id', this.contextData.customerId);
           }
 
+          // Fetch bundle data with context headers
           const response = await fetch(\`\${this.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`, {
             method: 'GET',
             headers: {
@@ -441,6 +464,7 @@ router.get("/modal.js", (req, res) => {
 
           try {
             this.bundleData = JSON.parse(responseText);
+            // Cache it for future use
             SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
             console.log('[Modal] ✅ Bundle data fetched and cached');
           } catch (jsonError) {
@@ -450,6 +474,7 @@ router.get("/modal.js", (req, res) => {
           }
         }
 
+        // Extract timer settings from bundleData.settings
         const bundleConfig = this.bundleData.data || this.bundleData;
         if (bundleConfig.settings && bundleConfig.settings.timer) {
           this.timerSettings = {
@@ -469,12 +494,14 @@ router.get("/modal.js", (req, res) => {
             }
           };
 
+          // Initialize timer if enabled
           if (this.timerSettings && this.timerSettings.enabled) {
             const duration = this.timerSettings.duration || 21600;
             this.timerEndTime = Date.now() + (duration * 1000);
           }
         }
 
+        // Create modal element
         this.createModal();
 
       } catch (error) {
@@ -483,6 +510,7 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Fetch timer settings
     async fetchTimerSettings() {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
@@ -494,6 +522,7 @@ router.get("/modal.js", (req, res) => {
           const result = await response.json();
           this.timerSettings = result.data;
           
+          // Initialize timer if enabled
           if (this.timerSettings && this.timerSettings.enabled) {
             const duration = this.timerSettings.duration || 21600; // Default 6 hours
             this.timerEndTime = Date.now() + (duration * 1000);
@@ -504,6 +533,7 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Fetch store reviews
     async fetchReviews() {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
@@ -520,6 +550,7 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Fetch payment methods
     async fetchPaymentMethods() {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
@@ -548,8 +579,10 @@ router.get("/modal.js", (req, res) => {
       const bundleConfig = this.bundleData.data || this.bundleData;
       const modalTitle = bundleConfig.modal_title || bundleConfig.name || 'اختر باقتك';
       
+      // Detect mobile
       const isMobile = window.innerWidth <= 640;
 
+      // Apply timer CSS variables if timer is enabled
       const timerStyles = this.timerSettings && this.timerSettings.enabled ? \`
         --timer-text-color: \${this.timerSettings.style.text_color};
         --timer-bg-color: \${this.timerSettings.style.bg_color};
@@ -588,8 +621,10 @@ router.get("/modal.js", (req, res) => {
 
       document.body.appendChild(this.modalElement);
 
+      // Set global reference immediately
       window.sallaBundleModal = this;
 
+      // Event handlers
       this.modalElement.onclick = (e) => {
         if (e.target === this.modalElement) {
           this.hide();
@@ -602,8 +637,10 @@ router.get("/modal.js", (req, res) => {
         this.hide();
       };
 
+      // Add global feedback listeners for interactive elements
       this.setupGlobalFeedbackListeners();
 
+      // Render content (mobile or desktop)
       if (isMobile) {
         this.renderContentMobile();
       } else {
@@ -615,6 +652,7 @@ router.get("/modal.js", (req, res) => {
       const body = this.modalElement.querySelector('.salla-bundle-body');
       const summary = this.modalElement.querySelector('.salla-sticky-summary');
 
+      // Get bundle data (use data.bundles from API response)
       const bundleConfig = this.bundleData.data || this.bundleData;
       const bundles = bundleConfig.bundles || [];
 
@@ -629,23 +667,28 @@ router.get("/modal.js", (req, res) => {
         return;
       }
 
+      // Calculate bundle values and create bundle display data using real product data
       const targetProductData = bundleConfig.target_product_data;
       const baseProductPrice = targetProductData?.price || 100.00;
 
       const bundleDisplayData = bundles.map((tier, index) => {
+        // Ensure buy_quantity is defined
         const buyQuantity = tier.buy_quantity || 1;
         const subtotal = buyQuantity * baseProductPrice;
 
+        // Check for unavailable products in this tier
         const unavailableProducts = this.getUnavailableProducts(bundleConfig, tier);
         const hasUnavailableProducts = unavailableProducts.length > 0;
         const targetProductUnavailable = bundleConfig.target_product_data ? 
           this.isProductCompletelyUnavailable(bundleConfig.target_product_data) : false;
 
+        // Calculate gift/discount value and actual cost more precisely using real product data
         let giftValue = 0;
         let offersCost = 0;
         
         if (tier.offers) {
           tier.offers.forEach(offer => {
+            // Skip unavailable products
             if (offer.product_data && this.isProductCompletelyUnavailable(offer.product_data)) {
               return;
             }
@@ -653,23 +696,28 @@ router.get("/modal.js", (req, res) => {
             const productPrice = offer.product_data?.price || 100.00;
 
             if (offer.discount_type === 'free') {
+              // Free product: customer pays 0, saves full price
               giftValue += productPrice;
               offersCost += 0;
             } else if (offer.discount_type === 'percentage') {
+              // Percentage discount: customer pays discounted price
               const discountAmount = productPrice * (offer.discount_amount / 100);
               const customerPays = productPrice - discountAmount;
               giftValue += discountAmount;
               offersCost += customerPays;
             } else if (offer.discount_type === 'fixed_amount') {
+              // Fixed discount: customer pays price minus fixed amount
               const customerPays = Math.max(0, productPrice - offer.discount_amount);
               giftValue += offer.discount_amount;
               offersCost += customerPays;
             } else {
+              // No discount: customer pays full price
               offersCost += productPrice;
             }
           });
         }
 
+        // Generate item list with availability indicators
         const items = [
           \`\${buyQuantity} × \${targetProductData?.name || 'منتج'}\${targetProductUnavailable ? ' (غير متوفر)' : ''}\`,
           ...(tier.offers || []).map(offer => {
@@ -688,6 +736,7 @@ router.get("/modal.js", (req, res) => {
           })
         ];
 
+        // Calculate actual total price customer pays
         const totalCustomerPays = subtotal + offersCost;
 
 
@@ -707,6 +756,7 @@ router.get("/modal.js", (req, res) => {
           savings: giftValue,
           hasUnavailableProducts: hasUnavailableProducts || targetProductUnavailable,
           unavailableProducts: unavailableProducts,
+          // Add customization data
           bgColor: tier.tier_bg_color || '#f8f9fa',
           textColor: tier.tier_text_color || '#212529',
           highlightBgColor: tier.tier_highlight_bg_color || '#ffc107',
@@ -715,15 +765,19 @@ router.get("/modal.js", (req, res) => {
         };
       });
 
+      // Set default bundle based on admin configuration or first available
       if (!this.selectedBundle && bundleDisplayData.length > 0) {
+        // First priority: Find bundle marked as default (is_default = true)
         const defaultBundle = bundleDisplayData.find(bundle => bundle.isDefault === true);
         if (defaultBundle) {
           this.selectedBundle = defaultBundle.id;
         } else {
+          // Fallback: Select first bundle without unavailable products
           const availableBundle = bundleDisplayData.find(bundle => !bundle.hasUnavailableProducts);
           if (availableBundle) {
             this.selectedBundle = availableBundle.id;
           } else {
+            // Last resort: Select the first bundle
             this.selectedBundle = bundleDisplayData[0].id;
           }
         }
@@ -732,15 +786,18 @@ router.get("/modal.js", (req, res) => {
       const selectedBundleData = bundleDisplayData.find(b => b.id === this.selectedBundle);
       const selectedTier = selectedBundleData ? selectedBundleData.tier : bundles[0];
 
+      // Calculate price variables before building HTML (needed for free shipping banner)
       const selectedBundle = selectedBundleData || bundleDisplayData[0];
       const totalPrice = selectedBundle.price; // This is what customer actually pays
       const originalValue = selectedBundle.originalPrice || selectedBundle.price; // Target product price
       const offersPrice = selectedBundle.offersCost || 0; // What customer pays for offers
       const bundleSavings = selectedBundle.savings || 0; // What customer saves
 
+      // Check if any bundles have unavailable products
       const hasAnyUnavailableProducts = bundleDisplayData.some(bundle => bundle.hasUnavailableProducts);
       const allBundlesUnavailable = bundleDisplayData.every(bundle => bundle.hasUnavailableProducts);
 
+      // Get modal subtitle from bundle config (check multiple possible fields)
       const modalSubtitle = bundleConfig.modal_subtitle || bundleConfig.modalSubtitle || bundleConfig.subtitle || '';
 
       let html = \`
@@ -827,6 +884,7 @@ router.get("/modal.js", (req, res) => {
 
       body.innerHTML = html;
 
+      // Desktop: Collapsible summary (collapsed by default)
       let summaryDetailsHtml = \`
         <div class="salla-summary-row">
           <span class="salla-summary-label">المنتج الأساسي</span>
@@ -859,8 +917,25 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
+      // NOTE: Salla Coupon Integration
+      // ================================
+      // When a customer applies a coupon code in Salla's cart:
+      // 1. Salla automatically applies the coupon to the cart total
+      // 2. The coupon discount is calculated AFTER products are added to cart
+      // 3. Our webhook receives "coupon.applied" event for logging/tracking
+      // 4. The final price the customer pays includes the coupon discount
+      // 5. Bundle offers work INDEPENDENTLY of coupon codes:
+      //    - Bundle = Special product combinations with discounts
+      //    - Coupon = Additional discount applied to final cart total
+      //    - Both can be used together for maximum savings
+      // 
+      // The bundle modal shows bundle savings here. Coupon discounts are
+      // applied at checkout and shown in Salla's native cart/checkout flow.
 
+      // Add discount code section (always visible on desktop)
+      // summaryDetailsHtml += this.renderDiscountCode();
 
+      // Build full summary with collapsible structure
       let summaryHtml = \`
         <button class="salla-summary-toggle" onclick="if(window.sallaBundleModal) window.sallaBundleModal.toggleSummary();">
           <span class="salla-summary-toggle-icon">▼</span>
@@ -880,6 +955,7 @@ router.get("/modal.js", (req, res) => {
       summary.innerHTML = summaryHtml;
     }
 
+    // ===== MOBILE-SPECIFIC RENDER METHODS =====
 
     renderContentMobile() {
       const body = this.modalElement.querySelector('.salla-bundle-body');
@@ -893,6 +969,7 @@ router.get("/modal.js", (req, res) => {
         return;
       }
       
+      // Calculate bundle data (same as desktop)
       const targetProductData = bundleConfig.target_product_data;
       const baseProductPrice = targetProductData?.price || 100.00;
       
@@ -977,6 +1054,7 @@ router.get("/modal.js", (req, res) => {
         };
       });
       
+      // Set default bundle
       if (!this.selectedBundle && bundleDisplayData.length > 0) {
         const defaultBundle = bundleDisplayData.find(b => b.isDefault === true);
         if (defaultBundle) {
@@ -990,13 +1068,16 @@ router.get("/modal.js", (req, res) => {
       const selectedBundleData = bundleDisplayData.find(b => b.id === this.selectedBundle);
       const selectedTier = selectedBundleData ? selectedBundleData.tier : bundles[0];
       
+      // ===== DETERMINE WHICH STEPS TO SHOW =====
       const freeGifts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type === 'free') : [];
       const discountedProducts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type !== 'free') : [];
       const hasTargetVariants = targetProductData && targetProductData.has_variants;
       
+      // Build step array dynamically
       const steps = [];
       let stepNumber = 1;
       
+      // Step 1: Bundle selection (always present)
       steps.push({
         number: stepNumber++,
         label: 'اختر الباقة',
@@ -1004,6 +1085,7 @@ router.get("/modal.js", (req, res) => {
         type: 'bundles'
       });
       
+      // Step 2: Target variants (only if has variants)
       if (hasTargetVariants) {
         steps.push({
           number: stepNumber++,
@@ -1013,6 +1095,7 @@ router.get("/modal.js", (req, res) => {
         });
       }
       
+      // Step 3: Free gifts (only if has free gifts)
       if (freeGifts.length > 0) {
         steps.push({
           number: stepNumber++,
@@ -1022,6 +1105,7 @@ router.get("/modal.js", (req, res) => {
         });
       }
       
+      // Step 4: Discounted products (only if has discounted products)
       if (discountedProducts.length > 0) {
         steps.push({
           number: stepNumber++,
@@ -1031,6 +1115,7 @@ router.get("/modal.js", (req, res) => {
         });
       }
       
+      // Step 5: Review (always present)
       steps.push({
         number: stepNumber++,
         label: 'الفاتورة',
@@ -1038,20 +1123,26 @@ router.get("/modal.js", (req, res) => {
         type: 'review'
       });
       
+      // Update total steps and labels
       this.totalSteps = steps.length;
       this.stepLabels = steps.map(s => s.label);
       this.stepTypes = steps.map(s => s.type);
       
+      // Render all steps with corrected data-step numbers
       let mobileContent = steps.map((step, index) => {
+        // Replace ALL occurrences of data-step, not just the first one
         return step.html.replace(/data-step="\d+"/g, \`data-step="\${step.number}"\`);
       }).join('');
 
       body.innerHTML = mobileContent;
       
+      // Render footer with navigation (includes discount code & payment methods)
       this.renderMobileFooter(summary, selectedBundleData, bundleConfig);
       
+      // Initialize stepper UI
       this.updateStepUI();
       
+      // Auto-select single variants and initialize listeners
       setTimeout(() => {
         this.autoSelectSingleVariants();
         this.initializeVariantListeners();
@@ -1360,6 +1451,7 @@ router.get("/modal.js", (req, res) => {
       \`;
     }
 
+    // ===== END MOBILE-SPECIFIC RENDER METHODS =====
 
     renderOffersSection(selectedTier, selectedBundleData) {
       if (!selectedTier || !selectedTier.offers || selectedTier.offers.length === 0) {
@@ -1372,6 +1464,7 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
+      // Separate offers by type
       const freeGifts = selectedTier.offers.filter(offer => offer.discount_type === 'free');
       const discountedProducts = selectedTier.offers.filter(offer => offer.discount_type !== 'free');
 
@@ -1379,6 +1472,7 @@ router.get("/modal.js", (req, res) => {
 
       let sectionsHtml = '';
 
+      // Free gifts section
       if (freeGifts.length > 0) {
         sectionsHtml += \`
           <div class="salla-bundle-section">
@@ -1391,6 +1485,7 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
+      // Discounted products section
       if (discountedProducts.length > 0) {
         const discountSavings = discountedProducts.reduce((sum, offer) => {
           const productPrice = offer.product_data?.price || 100;
@@ -1413,6 +1508,7 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
+      // Combined section if only one type
       if (sectionsHtml === '') {
         sectionsHtml = \`
           <div class="salla-bundle-section">
@@ -1433,12 +1529,14 @@ router.get("/modal.js", (req, res) => {
       const productName = offer.product_data?.name || offer.product_name;
       const productImage = offer.product_data?.image || 'https://via.placeholder.com/400x400/f0f0f0/666?text=' + encodeURIComponent(productName);
       
+      // Check if product is completely unavailable
       const isUnavailable = offer.product_data ? this.isProductCompletelyUnavailable(offer.product_data) : false;
 
       let badgeText = 'هدية متضمنة';
       let statusText = 'مجاناً';
       let priceDisplay = \`<div class="salla-gift-value" style="text-decoration: line-through; color: var(--text-2);">\${formatPrice(productPrice)}</div>\`;
 
+      // Override styling and messaging for unavailable products
       if (isUnavailable) {
         badgeText = 'غير متوفر';
         statusText = 'نفد المخزون';
@@ -1465,6 +1563,7 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
+      // Apply disabled styling for unavailable products
       const cardClass = isUnavailable ? 'salla-gift-card salla-gift-unavailable' : 'salla-gift-card';
       const overlayElement = isUnavailable ? \`
         <div class="salla-gift-overlay">
@@ -1496,16 +1595,20 @@ router.get("/modal.js", (req, res) => {
     selectBundle(bundleId) {
       this.selectedBundle = bundleId;
 
+      // Trigger satisfying feedback for bundle selection
       this.triggerFeedback('click');
 
+      // Stop payment slider animation before re-rendering
       if (this.paymentSliderAnimationFrame) {
         cancelAnimationFrame(this.paymentSliderAnimationFrame);
         this.paymentSliderAnimationFrame = null;
       }
 
+      // Store payment methods HTML before re-render to prevent reload
       const paymentSlider = document.getElementById('salla-payment-slider');
       const paymentMethodsHTML = paymentSlider ? paymentSlider.parentElement.outerHTML : null;
 
+      // Detect mobile and render accordingly
       const isMobile = window.innerWidth <= 640;
       if (isMobile) {
         this.renderContentMobile();
@@ -1513,6 +1616,7 @@ router.get("/modal.js", (req, res) => {
         this.renderContent();
       }
 
+      // Restore payment methods HTML if it existed (prevents image reload)
       if (paymentMethodsHTML) {
         const newPaymentSection = document.querySelector('.salla-payment-methods');
         if (newPaymentSection && newPaymentSection.outerHTML !== paymentMethodsHTML) {
@@ -1520,10 +1624,12 @@ router.get("/modal.js", (req, res) => {
           tempDiv.innerHTML = paymentMethodsHTML;
           newPaymentSection.replaceWith(tempDiv.firstChild);
 
+          // Restart auto-scroll after restoration
           setTimeout(() => this.startPaymentSliderAutoScroll(), 100);
         }
       }
 
+      // 🔥 NEW: Automatically expand the selected bundle's details
       setTimeout(() => {
         const itemsList = document.querySelector(\`#bundle-items-\${bundleId}\`);
         if (itemsList && !itemsList.classList.contains('expanded')) {
@@ -1531,6 +1637,7 @@ router.get("/modal.js", (req, res) => {
         }
       }, 50);
 
+      // Auto-advance on mobile if step 1 complete
       if (isMobile && this.currentStep === 1) {
         setTimeout(() => {
           if (this.canProceedToNextStep()) {
@@ -1540,7 +1647,9 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Check if user is logged in
     isUserLoggedIn() {
+      // Check if Salla is available and customer is logged in
       if (window.salla && window.salla.config && window.salla.config.get) {
         const isGuest = window.salla.config.get('user.guest');
         return !isGuest; // User is logged in if not a guest
@@ -1548,48 +1657,58 @@ router.get("/modal.js", (req, res) => {
       return false;
     }
 
+    // Trigger Salla login modal
     showLoginModal() {
       if (window.salla && window.salla.event) {
+        // Trigger Salla's login event
         window.salla.event.emit('login::open');
       } else {
+        // Fallback: redirect to login page
         window.location.href = '/login';
       }
     }
 
     async handleCheckout() {
       try {
+        // Check if summary is collapsed on desktop - expand it first
         const isMobile = window.innerWidth <= 640;
         if (!isMobile) {
           const summaryDetails = document.querySelector('.salla-summary-details');
           if (summaryDetails && !summaryDetails.classList.contains('expanded')) {
             this.showSallaToast('يرجى مراجعة الملخص قبل إتمام الطلب', 'info');
             this.toggleSummary();
-            return;
+            return; // Stop checkout, user needs to review and click again
           }
         }
 
+        // Validate Salla SDK is available
         if (!window.salla) {
           alert('عذراً، حدث خطأ في النظام. يرجى المحاولة مرة أخرى.');
           return;
         }
 
+        // Check if user is logged in
         if (!this.isUserLoggedIn()) {
           this.showSallaToast('يجب تسجيل الدخول أولاً لإتمام الطلب', 'warning');
           this.showLoginModal();
           return;
         }
 
+        // Get selected bundle data
         const selectedBundleData = this.getSelectedBundleData();
         if (!selectedBundleData) {
           alert('يرجى اختيار باقة أولاً');
           return;
         }
+        // Validate required variants are selected
         const bundleConfig = this.bundleData.data || this.bundleData;
         const targetProductData = bundleConfig.target_product_data;
 
+        // Check for products that are completely unavailable (all variants out of stock)
         const unavailableProducts = this.getUnavailableProducts(bundleConfig, selectedBundleData.tier);
         if (unavailableProducts.length > 0) {
           
+          // Create detailed error message based on product types
           const targetProducts = unavailableProducts.filter(p => p.type === 'target');
           const offerProducts = unavailableProducts.filter(p => p.type === 'offer');
           
@@ -1608,47 +1727,59 @@ router.get("/modal.js", (req, res) => {
           }
           
           this.showSallaToast(errorMessage, 'error');
-          return false; 
+          return false; // Block checkout
         }
 
         
+        // Force a complete re-validation - selectedBundleData IS the tier object
         const missingVariants = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
 
         if (missingVariants.length > 0) {
 
+          // Create detailed error message listing missing variants
           const missingDetails = missingVariants.map(mv => \`\${mv.productName}: \${mv.optionName}\`).join('، ');
           const errorMessage = \`يجب اختيار الخيارات التالية أولاً: \${missingDetails}\`;
 
+          // Show error toast
           this.showSallaToast(errorMessage, 'error');
 
+          // Highlight all missing variants with persistent red outline
           this.highlightMissingVariants(missingVariants);
 
+          // Scroll to and flash the first missing variant
           const firstMissing = missingVariants[0];
           this.scrollToVariantInputAggressively(firstMissing.selectorProductId || firstMissing.productId, firstMissing.optionId);
           this.flashMissingVariant(firstMissing.selectorProductId || firstMissing.productId, firstMissing.optionId);
 
-          return false;
+          // ABSOLUTELY NO CART NAVIGATION OR API CALLS
+          return false; // Block everything
         }
 
 
+        // Track analytics before checkout
         this.trackBundleSelection(selectedBundleData);
 
+        // Show loading state
         this.showSallaToast('جارٍ إضافة المنتجات إلى السلة...', 'info');
 
         try {
           const addedProducts = []; 
           
+          // Add target products (main product) - these are the products user is buying
           const targetQuantity = selectedBundleData.buy_quantity || 1;
 
           const targetOptions = bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants ?
             this.getSelectedVariantOptions(this.productId) : {};
 
 
+          // Double-check target product availability before adding
           if (bundleConfig.target_product_data && this.isProductCompletelyUnavailable(bundleConfig.target_product_data)) {
             throw new Error(\`Target product \${bundleConfig.target_product_data.name} is completely out of stock\`);
           }
 
+          // Add target product(s) to cart
           for (let i = 0; i < targetQuantity; i++) {
+            // If multiple quantities, get options for each specific quantity selector
             let targetOptionsForThisQuantity;
             if (targetQuantity > 1 && bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants) {
               const productIdWithIndex = \`\${this.productId}-qty\${i+1}\`;
@@ -1672,6 +1803,7 @@ router.get("/modal.js", (req, res) => {
           }
           
 
+          // Track successful and failed offer additions
           const successfulOffers = [];
           const failedOffers = [];
 
@@ -1680,6 +1812,7 @@ router.get("/modal.js", (req, res) => {
 
             for (const offer of selectedBundleData.offers) {
 
+              // Check if product is completely unavailable
               const isUnavailable = offer.product_data && this.isProductCompletelyUnavailable(offer.product_data);
 
               if (isUnavailable) {
@@ -1696,6 +1829,7 @@ router.get("/modal.js", (req, res) => {
                   this.getSelectedOfferVariantOptions(offer.product_id) : {};
 
 
+                // Add ALL offer products to cart (including FREE ones)
                 const addToCartParams = {
                   id: offer.product_id,
                   quantity: offer.quantity || 1,
@@ -1724,8 +1858,10 @@ router.get("/modal.js", (req, res) => {
             }
 
           } else {
+            //console.log(\`[Salla Bundle] No offers found in selected tier\`);
           }
 
+          // Show comprehensive success message based on results
           const totalAdded = addedProducts.length; 
           let successMessage = '';
           
@@ -1750,14 +1886,15 @@ router.get("/modal.js", (req, res) => {
               this.highlightMissingVariants(missingVariants);
               const firstMissing = missingVariants[0];
               this.scrollToVariantInput(firstMissing.selectorProductId || firstMissing.productId, firstMissing.optionId);
-              return; 
+              return; // BLOCK - NO CART NAVIGATION
             }
           }
 
           this.showSallaToast('حدث خطأ في إضافة بعض المنتجات', 'error');
-          return;
+          return; // BLOCK - Don't navigate to cart on error
         }
 
+        // FINAL CHECK before navigation
         const finalVariantCheck = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
         if (finalVariantCheck.length > 0) {
           this.showSallaToast('لا يمكن المتابعة بدون اختيار جميع الخيارات', 'error');
@@ -1782,6 +1919,7 @@ router.get("/modal.js", (req, res) => {
       const bundleConfig = this.bundleData.data || this.bundleData;
       const bundles = bundleConfig.bundles || [];
 
+      // Find selected tier
       const tierNumber = this.selectedBundle ? parseInt(this.selectedBundle.replace('tier-', '')) : 1;
       const selectedTier = bundles.find(tier => tier.tier === tierNumber);
 
@@ -1799,11 +1937,13 @@ router.get("/modal.js", (req, res) => {
 
       if (!this.selectedBundle) return null;
 
+      // Find the selected tier
       const tierNumber = parseInt(this.selectedBundle.replace('tier-', ''));
       const selectedTier = bundles.find(tier => tier.tier === tierNumber);
 
       if (!selectedTier) return null;
 
+      // Calculate the same way as in renderContentMobile
       const buyQuantity = selectedTier.buy_quantity || 1;
       const subtotal = buyQuantity * baseProductPrice;
 
@@ -1873,6 +2013,7 @@ router.get("/modal.js", (req, res) => {
     getSelectedOfferVariantOptions(productId) {
       const options = {};
 
+      // Check if this is the same product as target (needs offer-specific selectors)
       const isSameAsTarget = productId === this.productId;
       const selectorProductId = isSameAsTarget ? \`\${productId}-offer\` : productId;
 
@@ -1913,8 +2054,10 @@ router.get("/modal.js", (req, res) => {
       }
 
 
+      // Find the first missing required option
       for (const option of productData.options) {
         
+        // Check if all variants are truly out of stock (using proper stock logic)
         const availableValues = option.values ? option.values.filter(value => {
 
           if (value.is_out_of_stock === true) {
@@ -1925,22 +2068,28 @@ router.get("/modal.js", (req, res) => {
             return false;
           }
           
+          // If variant has quantity info
           if (value.hasOwnProperty('quantity')) {
+            // If stock tracking is enabled and quantity is 0, it's out of stock
             if (productData.track_quantity || productData.enable_stock || productData.inventory_tracking) {
               return value.quantity > 0;
             }
+            // If stock tracking is disabled, any quantity (including 0) means available
             return true;
           }
           
+          // Default to available if no clear stock indicators suggest otherwise
           return true;
         }) : [];
         
         const allOutOfStock = option.values && option.values.length > 0 && availableValues.length === 0;
 
+        // Skip validation for options that are completely out of stock
         if (allOutOfStock) {
           continue;
         }
 
+        // ALWAYS consider variant options as required - this is key for Salla products
         const isRequired = option.required ||
                           option.purpose === 'variants' ||
                           (option.values && option.values.length > 0);
@@ -1994,7 +2143,7 @@ router.get("/modal.js", (req, res) => {
 
           if (input.tagName === 'SELECT') {
             try {
-              input.showPicker(); 
+              input.showPicker(); // Modern browsers
             } catch (e) {
               console.log('[Scroll] Could not open dropdown (browser limitation)');
             }
@@ -2006,18 +2155,21 @@ router.get("/modal.js", (req, res) => {
     flashMissingVariant(productId, optionId) {
       const input = document.querySelector(\`#variant-\${productId}-\${optionId}\`);
       if (input) {
+        // Add flashing animation
         const originalBorder = input.style.border;
         const originalOutline = input.style.outline;
         
         let flashCount = 0;
-        const maxFlashes = 6;
+        const maxFlashes = 6; // 3 cycles of on/off
         
         const flashInterval = setInterval(() => {
           if (flashCount % 2 === 0) {
+            // Flash on
             input.style.border = '3px solid #ef4444';
             input.style.outline = '2px solid rgba(239, 68, 68, 0.5)';
             input.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.8)';
           } else {
+            // Flash off
             input.style.border = '1px solid #ef4444';
             input.style.outline = 'none';
             input.style.boxShadow = 'none';
@@ -2027,6 +2179,7 @@ router.get("/modal.js", (req, res) => {
           
           if (flashCount >= maxFlashes) {
             clearInterval(flashInterval);
+            // Keep the error styling but stop flashing
             input.style.border = '2px solid #ef4444';
             input.style.outline = '2px solid rgba(239, 68, 68, 0.3)';
             input.style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.4)';
@@ -2050,7 +2203,7 @@ router.get("/modal.js", (req, res) => {
             if (missingOption) {
               missing.push({
                 productId: bundleConfig.target_product_id,
-                selectorProductId: productIdWithIndex,
+                selectorProductId: productIdWithIndex, // The actual selector ID in DOM
                 optionId: missingOption.id,
                 optionName: missingOption.name,
                 productName: bundleConfig.target_product_data.name + \` (رقم \${i})\`,
@@ -2059,13 +2212,14 @@ router.get("/modal.js", (req, res) => {
             }
           }
         } else {
+          // Single quantity - check normally
           const targetOptions = this.getSelectedVariantOptions(bundleConfig.target_product_id);
 
           const missingOption = this.findMissingRequiredVariant(bundleConfig.target_product_data, targetOptions);
           if (missingOption) {
             missing.push({
               productId: bundleConfig.target_product_id,
-              selectorProductId: bundleConfig.target_product_id,
+              selectorProductId: bundleConfig.target_product_id, // Target uses original product ID
               optionId: missingOption.id,
               optionName: missingOption.name,
               productName: bundleConfig.target_product_data.name,
@@ -2091,24 +2245,28 @@ router.get("/modal.js", (req, res) => {
               
               missing.push({
                 productId: offer.product_id,
-                selectorProductId: selectorProductId, 
+                selectorProductId: selectorProductId, // The actual selector ID in DOM
                 optionId: missingOption.id,
                 optionName: missingOption.name,
                 productName: offer.product_data.name,
                 isOffer: true
               });
             } else {
+              //nth
               }
           } else {
+            //nth
           }
         }
       } else {
+          //nth
       }
 
       return missing;
     }
 
     highlightMissingVariants(missingVariants) {
+      // Clear any existing highlights
       document.querySelectorAll('.salla-variant-select').forEach(select => {
         if (!select.classList.contains('all-out-of-stock')) {
           select.style.outline = '';
@@ -2117,12 +2275,14 @@ router.get("/modal.js", (req, res) => {
         }
       });
 
+      // Highlight missing variants with visible red outline - but only if they can be selected
       missingVariants.forEach(missing => {
         const selectorId = missing.selectorProductId || missing.productId;
         const input = document.querySelector(\`#variant-\${selectorId}-\${missing.optionId}\`);
         if (input && !input.hasAttribute('data-all-out-of-stock') && !input.disabled) {
           input.classList.add('variant-error');
 
+          // Remove highlight when user selects an option
           input.addEventListener('change', function onVariantChange() {
             if (input.value) {
               input.classList.remove('variant-error');
@@ -2136,6 +2296,7 @@ router.get("/modal.js", (req, res) => {
     getUnavailableProducts(bundleConfig, selectedTier) {
       const unavailable = [];
 
+      // Check target product
       if (bundleConfig.target_product_data && this.isProductCompletelyUnavailable(bundleConfig.target_product_data)) {
         unavailable.push({
           id: bundleConfig.target_product_id,
@@ -2144,6 +2305,7 @@ router.get("/modal.js", (req, res) => {
         });
       }
 
+      // Check offer products
       if (selectedTier && selectedTier.offers) {
         for (const offer of selectedTier.offers) {
           if (offer.product_data && this.isProductCompletelyUnavailable(offer.product_data)) {
@@ -2162,6 +2324,7 @@ router.get("/modal.js", (req, res) => {
     getAlternativeShoppingOptions(bundleConfig, selectedTier) {
       const alternatives = [];
       
+      // Option 1: Buy just the target product
       if (bundleConfig.target_product_data && !this.isProductCompletelyUnavailable(bundleConfig.target_product_data)) {
         alternatives.push({
           type: 'target_only',
@@ -2171,6 +2334,7 @@ router.get("/modal.js", (req, res) => {
         });
       }
       
+      // Option 2: Find available bundles
       const availableBundles = bundleConfig.bundles.filter(tier => {
         const unavailable = this.getUnavailableProducts(bundleConfig, tier);
         return unavailable.length === 0;
@@ -2186,6 +2350,7 @@ router.get("/modal.js", (req, res) => {
         });
       }
       
+      // Option 3: Partial bundle (target + available offers only)
       if (selectedTier && selectedTier.offers) {
         const availableOffers = selectedTier.offers.filter(offer => 
           !offer.product_data || !this.isProductCompletelyUnavailable(offer.product_data)
@@ -2206,48 +2371,63 @@ router.get("/modal.js", (req, res) => {
     }
 
     isProductCompletelyUnavailable(productData) {
+      // Check if product is explicitly marked as unavailable
       if (productData.is_available === false || productData.status === 'out_of_stock') {
         return true;
       }
 
+      // If product has no variants, check inventory properly
       if (!productData.has_variants || !productData.options || productData.options.length === 0) {
+        // For simple products: only consider out of stock if inventory tracking is enabled AND quantity is 0
         if (productData.track_quantity || productData.enable_stock || productData.inventory_tracking) {
+          // Stock tracking is enabled, so 0 quantity means out of stock
           return productData.quantity === 0;
         }
+        // Stock tracking is disabled, so 0 quantity means unlimited stock
         return false;
       }
 
+      // For products with variants, check if ALL variants are truly out of stock
       for (const option of productData.options) {
         if (option.values && option.values.length > 0) {
+          // Check if any variant value is available (considering proper stock logic)
           const hasAvailableVariant = option.values.some(value => {
+            // If explicitly marked as out of stock
             if (value.is_out_of_stock === true) {
               return false;
             }
             
+            // If explicitly marked as available
             if (value.is_available === false) {
               return false;
             }
             
+            // If variant has quantity info
             if (value.hasOwnProperty('quantity')) {
+              // If stock tracking is enabled and quantity is 0, it's out of stock
               if (productData.track_quantity || productData.enable_stock || productData.inventory_tracking) {
                 return value.quantity > 0;
               }
+              // If stock tracking is disabled, any quantity (including 0) means available
               return true;
             }
             
+            // Default to available if no clear stock indicators suggest otherwise
             return true;
           });
           
           if (hasAvailableVariant) {
-            return false; 
+            return false; // Product has at least one available variant
           }
         }
       }
 
+      // All variants are out of stock
       return true;
     }
 
     showSallaToast(message, type = 'info') {
+      // Use our custom toast that looks great and works reliably
       this.showCustomToast(message, type);
     }
 
@@ -2284,6 +2464,7 @@ router.get("/modal.js", (req, res) => {
       toast.innerHTML = \`<span style="font-size: 16px;">\${icon}</span><span>\${message}</span>\`;
       document.body.appendChild(toast);
 
+      // Auto remove after 4 seconds
       setTimeout(() => {
         toast.style.animation = 'slideOutToast 0.3s ease-out';
         setTimeout(() => {
@@ -2293,6 +2474,7 @@ router.get("/modal.js", (req, res) => {
         }, 300);
       }, 4000);
 
+      // Add CSS animations if not already added
       if (!document.getElementById('toast-animations')) {
         const style = document.createElement('style');
         style.id = 'toast-animations';
@@ -2328,31 +2510,41 @@ router.get("/modal.js", (req, res) => {
       }
 
       const selectorsHtml = productData.options.map((option, optionIndex) => {
+        // Use the option name exactly as configured in Salla
         const optionLabel = option.name || \`الخيار \${optionIndex + 1}\`;
 
+        // Mark variant options as required (they usually are for cart operations)
         const isRequired = option.required || option.purpose === 'variants' || (option.values && option.values.length > 0);
 
+        // Check if all variants are truly out of stock (using proper stock logic)
         const availableValues = option.values ? option.values.filter(value => {
+          // If explicitly marked as out of stock
           if (value.is_out_of_stock === true) {
             return false;
           }
           
+          // If explicitly marked as unavailable
           if (value.is_available === false) {
             return false;
           }
           
+          // If variant has quantity info
           if (value.hasOwnProperty('quantity')) {
+            // If stock tracking is enabled and quantity is 0, it's out of stock
             if (productData.track_quantity || productData.enable_stock || productData.inventory_tracking) {
               return value.quantity > 0;
             }
+            // If stock tracking is disabled, any quantity (including 0) means available
             return true;
           }
           
+          // Default to available if no clear stock indicators suggest otherwise
           return true;
         }) : [];
         
         const allOutOfStock = option.values && option.values.length > 0 && availableValues.length === 0;
         
+        // Create unique selectors for offer products when same as target
         const isSameAsTarget = isOffer && productId === this.productId;
         const selectorProductId = isSameAsTarget ? \`\${productId}-offer\` : productId;
         const labelSuffix = isSameAsTarget ? ' (للهدية)' : '';
@@ -2376,14 +2568,17 @@ router.get("/modal.js", (req, res) => {
             >
               <option value="">\${allOutOfStock ? 'غير متوفر حالياً' : \`اختر \${optionLabel}\`}</option>
               \${option.values ? option.values.map(value => {
+                // Determine if this specific value is out of stock
                 let isValueOutOfStock = false;
                 
                 if (value.is_out_of_stock === true || value.is_available === false) {
                   isValueOutOfStock = true;
                 } else if (value.hasOwnProperty('quantity')) {
+                  // If stock tracking is enabled and quantity is 0, it's out of stock
                   if (productData.track_quantity || productData.enable_stock || productData.inventory_tracking) {
                     isValueOutOfStock = value.quantity === 0;
                   }
+                  // If stock tracking is disabled, 0 quantity means unlimited stock
                 }
                 
                 return \`<option value="\${value.id}" \${isValueOutOfStock ? 'disabled' : ''}>\${value.name}\${isValueOutOfStock ? ' (نفد المخزون)' : ''}</option>\`;
@@ -2405,10 +2600,12 @@ router.get("/modal.js", (req, res) => {
         return '';
       }
 
+      // If buying only 1, render compact inline selectors
       if (buyQuantity === 1) {
         return this.renderCompactVariantSelectors(productData, this.productId, false);
       }
 
+      // Show variants directly - clean, minimal, line by line
       const quantitySelectorsHtml = Array.from({ length: buyQuantity }, (_, index) => {
         const quantityNum = index + 1;
         const productIdWithIndex = \`\${this.productId}-qty\${quantityNum}\`;
@@ -2494,6 +2691,7 @@ router.get("/modal.js", (req, res) => {
     }
 
     trackBundleSelection(bundleData) {
+      // Google Analytics 4
       if (typeof gtag === 'function') {
         gtag('event', 'select_promotion', {
           creative_name: this.bundleData.name || 'Bundle Offer',
@@ -2503,16 +2701,18 @@ router.get("/modal.js", (req, res) => {
         });
       }
 
+      // Facebook Pixel
       if (typeof fbq === 'function') {
         fbq('track', 'AddToCart', {
           content_name: this.bundleData.name || 'Bundle Offer',
           content_category: 'Bundle',
           content_ids: [this.productId],
           currency: 'SAR',
-          value: bundleData.buy_quantity * 174 
+          value: bundleData.buy_quantity * 174 // Base price calculation
         });
       }
 
+      // Snapchat Pixel
       if (typeof snaptr === 'function') {
         snaptr('track', 'ADD_CART', {
           'currency': 'SAR',
@@ -2522,6 +2722,7 @@ router.get("/modal.js", (req, res) => {
 
     }
 
+    // ===== MOBILE STEPPER NAVIGATION METHODS =====
     
     goNext() {
       if (!this.canProceedToNextStep()) {
@@ -2533,9 +2734,12 @@ router.get("/modal.js", (req, res) => {
         this.currentStep++;
         this.updateStepUI();
         this.scrollToTop();
+        // Trigger click feedback for navigation
         this.triggerFeedback('click');
       } else if (this.currentStep === this.totalSteps) {
+        // Final step: trigger checkout
         this.handleCheckout();
+        // Trigger success feedback for checkout
         this.triggerFeedback('success');
       }
     }
@@ -2545,6 +2749,7 @@ router.get("/modal.js", (req, res) => {
         this.currentStep--;
         this.updateStepUI();
         this.scrollToTop();
+        // Trigger click feedback for navigation
         this.triggerFeedback('click');
       }
     }
@@ -2557,50 +2762,55 @@ router.get("/modal.js", (req, res) => {
         return false;
       }
       
+      // Get current step type
       const currentStepType = this.stepTypes ? this.stepTypes[this.currentStep - 1] : null;
       
       if (!currentStepType) {
+        // Fallback: if no step types defined yet, allow first step
         return this.currentStep === 1 && this.selectedBundle !== null;
       }
       
+      // Validate based on step type (not hardcoded step number)
       switch (currentStepType) {
-        case 'bundles': 
+        case 'bundles': // Bundle selection
           return this.selectedBundle !== null;
           
-        case 'target_variants': 
+        case 'target_variants': // Target product variants
           if (!bundleConfig.target_product_data || !bundleConfig.target_product_data.has_variants) {
-            return true;
+            return true; // No variants, auto-pass
           }
           const targetMissing = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData)
             .filter(m => !m.isOffer);
           return targetMissing.length === 0;
           
-        case 'free_gifts':
+        case 'free_gifts': // Free gifts variants
           if (!selectedBundleData || !selectedBundleData.tier || !selectedBundleData.tier.offers) {
             return true;
           }
           const freeGifts = selectedBundleData.tier.offers.filter(o => o.discount_type === 'free');
           if (freeGifts.length === 0) {
-            return true; 
+            return true; // No free gifts, auto-pass
           }
 
+          // Check if free gifts have variants
           const freeGiftsWithVariants = freeGifts.filter(g =>
             g.product_data && g.product_data.has_variants
           );
 
           if (freeGiftsWithVariants.length === 0) {
-            return true;
+            return true; // No variants in free gifts, auto-pass
           }
 
+          // Get all missing variants and filter only for free gifts
           const freeGiftMissing = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData)
             .filter(m => m.isOffer && freeGifts.some(o => o.product_id === m.productId));
 
           return freeGiftMissing.length === 0;
           
-        case 'discounted':
-          return true; 
+        case 'discounted': // Discounted products (optional)
+          return true; // Always allow skip
           
-        case 'review': 
+        case 'review': // Review
           return this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData).length === 0;
           
         default:
@@ -2636,10 +2846,13 @@ router.get("/modal.js", (req, res) => {
     }
 
     updateStepUI() {
+      // Update progress bar
       this.updateProgressUI();
 
+      // Show/hide step containers based on data-step attribute, not DOM index
       const allSteps = document.querySelectorAll('.salla-step-container');
       allSteps.forEach((step, index) => {
+        // Use index + 1 to match step number (steps are 1-indexed)
         if (index + 1 === this.currentStep) {
           step.classList.add('active');
         } else {
@@ -2647,12 +2860,15 @@ router.get("/modal.js", (req, res) => {
         }
       });
       
+      // Re-initialize variant listeners for the current step
       setTimeout(() => {
         this.initializeVariantListeners();
       }, 50);
       
+      // Update navigation buttons
       this.updateNavigationButtons();
       
+      // Re-render footer to show/hide reviews based on current step
       const summary = document.querySelector('.salla-sticky-summary');
       const selectedBundleData = this.getSelectedBundleDisplayData();
       const bundleConfig = this.bundleData.data || this.bundleData;
@@ -2660,12 +2876,14 @@ router.get("/modal.js", (req, res) => {
         this.renderMobileFooter(summary, selectedBundleData, bundleConfig);
       }
 
+      // Start modern reviews auto-scroll if on final step
       if (this.currentStep === this.totalSteps) {
         setTimeout(() => {
           this.startModernReviewsAutoScroll();
         }, 500);
       }
 
+      // Animate free shipping progress bar when step appears
       setTimeout(() => {
         this.animateFreeShippingProgress();
       }, 100);
@@ -2685,6 +2903,7 @@ router.get("/modal.js", (req, res) => {
         if (stepNumber < this.currentStep) {
           if (!wasCompleted) {
             hasProgressChange = true;
+            // Add animation for newly completed steps
             step.style.transform = 'scale(1.2)';
             setTimeout(() => {
               step.style.transform = 'scale(1)';
@@ -2694,6 +2913,7 @@ router.get("/modal.js", (req, res) => {
         } else if (stepNumber === this.currentStep) {
           if (!wasActive) {
             hasProgressChange = true;
+            // Add pulse animation for active step
             step.style.animation = 'pulse 0.6s ease-in-out';
             setTimeout(() => {
               step.style.animation = '';
@@ -2703,12 +2923,15 @@ router.get("/modal.js", (req, res) => {
         }
       });
 
+      // Trigger feedback if progress changed
       if (hasProgressChange) {
         this.triggerFeedback('progress');
       }
 
+      // Update step counter animation
       this.updateStepCounter();
 
+      // Re-animate free shipping progress when progress changes
       if (hasProgressChange) {
         setTimeout(() => {
           this.refreshFreeShippingAnimation();
@@ -2716,11 +2939,13 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Enhanced step counter with animation
     updateStepCounter() {
       const stepCounter = document.querySelector('.salla-step-counter');
       if (stepCounter) {
         const progress = (this.currentStep / this.totalSteps) * 100;
 
+        // Animate the counter
         stepCounter.style.transform = 'scale(1.1)';
         stepCounter.style.transition = 'transform 0.3s ease';
 
@@ -2728,6 +2953,7 @@ router.get("/modal.js", (req, res) => {
           stepCounter.style.transform = 'scale(1)';
         }, 300);
 
+        // Update counter text with animation
         const counterText = stepCounter.querySelector('.counter-text');
         if (counterText) {
           counterText.style.opacity = '0';
@@ -2739,14 +2965,18 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Animate free shipping progress bars when they appear
     animateFreeShippingProgress() {
       const freeShippingBanners = document.querySelectorAll('.salla-free-shipping-banner');
 
       freeShippingBanners.forEach(banner => {
+        // Only animate if not already animated
         if (banner.hasProgressAnimated) return;
 
+        // Add banner slide-in animation
         banner.style.animation = 'bannerSlideIn 0.6s ease-out';
 
+        // Find progress bars within the banner
         const progressBars = banner.querySelectorAll('[style*="width:"]');
 
         progressBars.forEach(progressBar => {
@@ -2754,11 +2984,14 @@ router.get("/modal.js", (req, res) => {
           if (widthMatch) {
             const targetWidth = widthMatch[1];
 
+            // Set CSS variable for animation
             progressBar.style.setProperty('--target-width', targetWidth + '%');
 
+            // Start with 0 width and animate to target
             progressBar.style.width = '0%';
             progressBar.style.animation = 'progressSlideIn 1.2s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards';
 
+            // Trigger feedback based on progress
             const progress = parseFloat(targetWidth);
             setTimeout(() => {
               if (progress >= 100) {
@@ -2770,6 +3003,7 @@ router.get("/modal.js", (req, res) => {
           }
         });
 
+        // Animate percentage badges
         const percentageBadges = banner.querySelectorAll('span');
         percentageBadges.forEach(badge => {
           if (badge.textContent.includes('%')) {
@@ -2777,22 +3011,27 @@ router.get("/modal.js", (req, res) => {
           }
         });
 
+        // Mark as animated
         banner.hasProgressAnimated = true;
       });
     }
 
+    // Refresh free shipping animation when content changes
     refreshFreeShippingAnimation() {
       const freeShippingBanners = document.querySelectorAll('.salla-free-shipping-banner');
 
       freeShippingBanners.forEach(banner => {
+        // Reset animation flag
         banner.hasProgressAnimated = false;
 
+        // Find progress bars and add subtle animation
         const progressBars = banner.querySelectorAll('[style*="width:"]');
         progressBars.forEach(progressBar => {
           const widthMatch = progressBar.style.width.match(/(\d+(?:\.\d+)?)%/);
           if (widthMatch) {
             const targetWidth = widthMatch[1];
 
+            // Add pulse animation to show progress change
             progressBar.style.animation = 'pulse 0.8s ease-in-out';
             setTimeout(() => {
               progressBar.style.animation = progressBar.style.animation.includes('progressBarGlow') ?
@@ -2801,6 +3040,7 @@ router.get("/modal.js", (req, res) => {
           }
         });
 
+        // Re-trigger animation after a brief delay
         setTimeout(() => {
           this.animateFreeShippingProgress();
         }, 100);
@@ -2821,6 +3061,7 @@ router.get("/modal.js", (req, res) => {
         nextBtn.disabled = !canProceed;
         
         if (this.currentStep === this.totalSteps) {
+          // Get custom checkout button text from settings
           const bundleConfig = this.bundleData.data || this.bundleData;
           const checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب';
           nextBtn.textContent = checkoutButtonText;
@@ -2849,6 +3090,7 @@ router.get("/modal.js", (req, res) => {
       if (itemsList) {
         const isExpanded = itemsList.classList.toggle('expanded');
 
+        // Update button text
         if (toggleBtn) {
           toggleBtn.textContent = isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل';
         }
@@ -2869,46 +3111,59 @@ router.get("/modal.js", (req, res) => {
       const selects = document.querySelectorAll('.salla-variant-compact-select, .salla-variant-select');
       
       selects.forEach(select => {
+        // Skip if already selected or disabled
         if (select.value || select.disabled) return;
         
+        // Count available options (excluding placeholder)
         const availableOptions = Array.from(select.options).filter(opt => 
           opt.value && !opt.disabled
         );
         
+        // Auto-select if only one option available
         if (availableOptions.length === 1) {
           select.value = availableOptions[0].value;
           select.dispatchEvent(new Event('change'));
         }
       });
       
+      // Update navigation buttons after auto-selection
       setTimeout(() => this.updateNavigationButtons(), 50);
     }
     
     initializeVariantListeners() {
+      // Add change listeners to all variant selects to update navigation state
       const selects = document.querySelectorAll('.salla-variant-compact-select, .salla-variant-select');
       
       selects.forEach(select => {
+        // Remove old listener if exists (prevent duplicates)
         if (select._variantChangeHandler) {
           select.removeEventListener('change', select._variantChangeHandler);
         }
         
+        // Create and store the handler
         select._variantChangeHandler = () => {
+          // Update navigation buttons when variants change
           setTimeout(() => this.updateNavigationButtons(), 50);
         };
         
+        // Add the listener
         select.addEventListener('change', select._variantChangeHandler);
       });
     }
 
+    // ===== END MOBILE STEPPER METHODS =====
 
+    // ===== NEW FEATURE COMPONENTS =====
 
+    // Helper method to check if feature should show in current step
     shouldShowInStep(featureName, currentStepType) {
       const bundleConfig = this.bundleData?.data || this.bundleData;
       const settings = bundleConfig?.settings || {};
       
+      // If currentStepType is 'all' (non-stepper view), always show
       if (currentStepType === 'all') return true;
       
-      let showInStep = 'bundles'; 
+      let showInStep = 'bundles'; // default
       
       if (featureName === 'timer' && settings.timer) {
         showInStep = settings.timer.show_in_step || 'bundles';
@@ -2918,11 +3173,14 @@ router.get("/modal.js", (req, res) => {
         showInStep = settings.free_shipping.show_in_step || 'review';
       }
       
+      // Setting is 'all' means show in all steps
       if (showInStep === 'all') return true;
       
+      // Check if current step matches the configured step
       return showInStep === currentStepType;
     }
 
+    // Render Timer Component (Conditionally based on step)
     renderTimer(currentStepType = 'bundles') {
       if (!this.timerSettings || !this.timerSettings.enabled) return '';
       if (!this.shouldShowInStep('timer', currentStepType)) return '';
@@ -2937,6 +3195,7 @@ router.get("/modal.js", (req, res) => {
       \`;
     }
 
+    // Start Timer Countdown
     startTimer() {
       if (!this.timerEndTime) return;
       
@@ -2947,6 +3206,7 @@ router.get("/modal.js", (req, res) => {
       }, 1000);
     }
 
+    // Update Timer Display
     updateTimerDisplay() {
       const display = document.getElementById('salla-timer-display');
       if (!display) return;
@@ -2956,6 +3216,7 @@ router.get("/modal.js", (req, res) => {
       
       if (remaining === 0) {
         if (this.timerSettings.auto_restart) {
+          // Restart timer
           const duration = this.timerSettings.duration || 21600;
           this.timerEndTime = Date.now() + (duration * 1000);
         } else {
@@ -2972,6 +3233,7 @@ router.get("/modal.js", (req, res) => {
       display.textContent = \`\${String(hours).padStart(2, '0')}:\${String(minutes).padStart(2, '0')}:\${String(seconds).padStart(2, '0')}\`;
     }
 
+    // Helper to get current bundle total price
     calculateCurrentTotal() {
       if (!this.selectedBundleData || !this.selectedBundleData.price) {
         return 0;
@@ -2979,19 +3241,25 @@ router.get("/modal.js", (req, res) => {
       return this.selectedBundleData.price;
     }
 
+    // Helper method to get contrasting color for progress bar
     getContrastColor(bgColor, defaultColor) {
+      // If background is light, use dark progress color
+      // If background is dark, use light progress color
       const rgb = this.hexToRgb(bgColor);
       if (!rgb) return defaultColor;
 
       const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
 
       if (brightness > 128) {
+        // Light background - use darker progress color
         return this.getDarkerColor(bgColor, 0.6);
       } else {
+        // Dark background - use lighter progress color or default
         return defaultColor === '#ffffff' ? '#ffffff' : this.getLighterColor(bgColor, 0.3);
       }
     }
 
+    // Helper method to darken a color
     getDarkerColor(color, factor) {
       const rgb = this.hexToRgb(color);
       if (!rgb) return color;
@@ -3003,6 +3271,7 @@ router.get("/modal.js", (req, res) => {
       return 'rgb(' + r + ', ' + g + ', ' + b + ')';
     }
 
+    // Helper method to lighten a color
     getLighterColor(color, factor) {
       const rgb = this.hexToRgb(color);
       if (!rgb) return color;
@@ -3014,11 +3283,14 @@ router.get("/modal.js", (req, res) => {
       return 'rgb(' + r + ', ' + g + ', ' + b + ')';
     }
 
+    // Helper method to convert hex to RGB
     hexToRgb(hex) {
       if (!hex) return null;
 
+      // Remove # if present
       hex = hex.replace('#', '');
 
+      // Handle shorthand hex
       if (hex.length === 3) {
         hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
       }
@@ -3031,15 +3303,18 @@ router.get("/modal.js", (req, res) => {
       } : null;
     }
 
+    // Render Free Shipping Banner with dynamic settings (Conditionally based on step)
     renderFreeShippingBanner(currentTotal = 0, currentStepType = 'review') {
       const bundleConfig = this.bundleData.data || this.bundleData;
       const settings = bundleConfig.settings || {};
       const freeShipping = settings.free_shipping || {};
 
+      // Check if free shipping is enabled and mode
       if (!freeShipping.enabled || freeShipping.mode === 'hidden') {
         return '';
       }
       
+      // Check if should show in current step
       if (!this.shouldShowInStep('free_shipping', currentStepType)) {
         return '';
       }
@@ -3048,6 +3323,7 @@ router.get("/modal.js", (req, res) => {
       const showProgress = freeShipping.mode === 'min_price' && minPrice > 0;
       const isEligible = currentTotal >= minPrice;
 
+      // Settings with defaults
       const bgColor = freeShipping.bg_color || '#10b981';
       const textColor = freeShipping.text_color || '#ffffff';
       const truckIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
@@ -3056,22 +3332,28 @@ router.get("/modal.js", (req, res) => {
       const text = freeShipping.text || 'شحن مجاني لهذه الباقة';
       const progressText = freeShipping.progress_text || 'أضف {amount} ريال للحصول على شحن مجاني';
 
+      // Enhanced progress colors with better contrast
       const progressColor = this.getContrastColor(bgColor, freeShipping.progress_color || '#ffffff');
       const progressBgColor = this.getDarkerColor(bgColor, 0.2); // Darker background for contrast
       const borderRadius = freeShipping.border_radius || 12;
 
+      // Enhanced progress calculation with animation
       const animateProgress = (percentage) => {
+        // Add haptic feedback at milestones
         if (percentage >= 25 && percentage < 26) this.triggerFeedback('progress');
         if (percentage >= 50 && percentage < 51) this.triggerFeedback('progress');
         if (percentage >= 75 && percentage < 76) this.triggerFeedback('progress');
         if (percentage >= 100) this.triggerFeedback('complete');
       };
 
+      // If mode is 'always' or eligible, show success message with ALWAYS a progress bar at 100%
       if (freeShipping.mode === 'always' || isEligible) {
+        // Trigger success feedback when eligible
         if (isEligible && minPrice > 0) {
           setTimeout(() => this.triggerFeedback('success'), 100);
         }
 
+        // For 'always' mode, show 100% progress bar to indicate completion
         const percentage = 100;
         const progressText = isEligible ? '🎉 مبروك! لقد حصلت على الشحن المجاني!' : '🚀 شحن مجاني متاح دائماً لهذه الباقة!';
 
@@ -3208,17 +3490,20 @@ router.get("/modal.js", (req, res) => {
         \`;
       }
 
+      // Show enhanced progress bar if not eligible yet
       if (showProgress && !isEligible) {
         const remaining = minPrice - currentTotal;
         const percentage = Math.min(100, (currentTotal / minPrice) * 100);
         const formattedRemaining = remaining.toFixed(2);
         const message = progressText.replace('{amount}', formattedRemaining);
 
+        // Determine progress level for different visual treatments
         let progressLevel = 'low';
         if (percentage >= 75) progressLevel = 'high';
         else if (percentage >= 50) progressLevel = 'medium';
         else if (percentage >= 25) progressLevel = 'low-medium';
 
+        // Trigger animation
         animateProgress(percentage);
 
         return \`
@@ -3339,9 +3624,11 @@ router.get("/modal.js", (req, res) => {
       return '';
     }
 
+    // Render Reviews Carousel (Modern Boxy Style)
     renderReviewsCarousel() {
       if (!this.reviews || this.reviews.length === 0) return '';
       
+      // Calculate average rating
       const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
       const avgRating = (totalRating / this.reviews.length).toFixed(1);
       
@@ -3393,10 +3680,12 @@ router.get("/modal.js", (req, res) => {
       \`;
     }
 
+    // Render Reviews Carousel (Conditionally based on step)
     renderReviews(currentStepType = 'bundles') {
       if (!this.reviews || this.reviews.length === 0) return '';
       if (!this.shouldShowInStep('reviews', currentStepType)) return '';
       
+      // Calculate average rating
       const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
       const avgRating = (totalRating / this.reviews.length).toFixed(1);
       
@@ -3436,20 +3725,24 @@ router.get("/modal.js", (req, res) => {
       \`;
     }
 
+    // Start Reviews Auto-Scroll
     startReviewsAutoScroll() {
       if (!this.reviews || this.reviews.length <= 1) return;
 
       const track = document.getElementById('salla-reviews-track');
       if (!track) return;
 
+      // Clear existing interval
       if (this.reviewsInterval) {
         clearInterval(this.reviewsInterval);
       }
 
+      // State management
       let userIsInteracting = false;
       let interactionTimeout;
       let scrollSyncTimeout;
 
+      // Sync dots with scroll position
       const syncDotsWithScroll = () => {
         const dots = document.querySelectorAll('.salla-review-dot');
         if (!dots.length) return;
@@ -3458,6 +3751,7 @@ router.get("/modal.js", (req, res) => {
         const cardWidth = track.scrollWidth / this.reviews.length;
         const scrollIndex = Math.round(scrollLeft / cardWidth);
 
+        // For RTL, reverse the index
         const currentIndex = this.reviews.length - 1 - scrollIndex;
 
         dots.forEach((dot, i) => {
@@ -3467,54 +3761,68 @@ router.get("/modal.js", (req, res) => {
         this.currentReviewIndex = currentIndex;
       };
 
+      // Listen to scroll events to update dots
       track.addEventListener('scroll', () => {
         clearTimeout(scrollSyncTimeout);
         scrollSyncTimeout = setTimeout(syncDotsWithScroll, 100);
       }, { passive: true });
 
+      // Detect user interaction
       const pauseAutoScroll = () => {
         userIsInteracting = true;
         clearTimeout(interactionTimeout);
 
+        // Resume 3 seconds after last interaction
         interactionTimeout = setTimeout(() => {
           userIsInteracting = false;
         }, 3000);
       };
 
+      // Add interaction listeners
       track.addEventListener('touchstart', pauseAutoScroll, { passive: true, once: false });
       track.addEventListener('mousedown', pauseAutoScroll, { passive: true, once: false });
       track.addEventListener('wheel', pauseAutoScroll, { passive: true, once: false });
 
+      // Auto-scroll function
       const autoScroll = () => {
         if (!userIsInteracting && track && document.body.contains(track)) {
           this.scrollToNextReview();
         }
       };
 
+      // Start interval - scroll every 4 seconds
       this.reviewsInterval = setInterval(autoScroll, 4000);
     }
 
+    // Scroll to Next Review
     scrollToNextReview() {
+      // For RTL, we need to go backwards (decrement index)
       this.currentReviewIndex = (this.currentReviewIndex - 1 + this.reviews.length) % this.reviews.length;
       this.scrollToReview(this.currentReviewIndex);
     }
 
+    // Scroll to Specific Review
     scrollToReview(index) {
       const track = document.getElementById('salla-reviews-track');
       const dots = document.querySelectorAll('.salla-review-dot');
 
       if (!track || !dots.length || !this.reviews) return;
 
+      // Calculate card width dynamically based on scroll width
       const totalScrollWidth = track.scrollWidth;
       const cardWidth = totalScrollWidth / this.reviews.length;
 
+      // For RTL layout, calculate from the right side
+      // In RTL, index 0 is at the rightmost position
       const scrollPosition = (this.reviews.length - 1 - index) * cardWidth;
 
+      // Scroll to the calculated position
       track.scrollTo({
         left: scrollPosition,
         behavior: 'smooth'
       });
 
+      // Update dots
       dots.forEach((dot, i) => {
         dot.classList.toggle('active', i === index);
       });
@@ -3522,6 +3830,7 @@ router.get("/modal.js", (req, res) => {
       this.currentReviewIndex = index;
     }
 
+    // Scroll Modern Reviews by Step (for navigation buttons)
     scrollReviewBy(step) {
       if (!this.reviews || this.reviews.length === 0) return;
 
@@ -3530,18 +3839,23 @@ router.get("/modal.js", (req, res) => {
 
       if (!track) return;
 
+      // Calculate current index based on scroll position
       const scrollLeft = track.scrollLeft;
       const cardWidth = track.scrollWidth / this.reviews.length;
       let scrollIndex = Math.round(scrollLeft / cardWidth);
 
+      // For RTL, reverse the scroll index to get the actual review index
       let currentIndex = this.reviews.length - 1 - scrollIndex;
 
-      let nextIndex = currentIndex - step;
+      // Calculate next index with wrapping (step is already negative for "next" in RTL)
+      let nextIndex = currentIndex - step; // Reverse step for RTL
       if (nextIndex < 0) nextIndex = this.reviews.length - 1;
       if (nextIndex >= this.reviews.length) nextIndex = 0;
 
+      // Convert back to scroll index for RTL
       const nextScrollIndex = this.reviews.length - 1 - nextIndex;
 
+      // Scroll to the review
       const child = track.children[nextScrollIndex];
       if (child) {
         const containerWidth = track.clientWidth;
@@ -3554,6 +3868,7 @@ router.get("/modal.js", (req, res) => {
           behavior: 'smooth'
         });
 
+        // Update dots
         dots.forEach((dot, i) => {
           const dotIndex = parseInt(dot.getAttribute('data-dot-index'));
           if (dotIndex === nextIndex) {
@@ -3567,20 +3882,24 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Start Modern Reviews Auto-Scroll (for final step)
     startModernReviewsAutoScroll() {
       if (!this.reviews || this.reviews.length <= 1) return;
 
       const track = document.getElementById('salla-reviews-track-modern');
       if (!track) return;
 
+      // Clear any existing interval
       if (this.modernReviewsInterval) {
         clearInterval(this.modernReviewsInterval);
       }
 
+      // State management
       let userIsInteracting = false;
       let interactionTimeout;
       let scrollSyncTimeout;
 
+      // Sync dots with scroll position
       const syncDotsWithScroll = () => {
         const dots = document.querySelectorAll('[data-dot-index]');
         if (!dots.length) return;
@@ -3589,6 +3908,7 @@ router.get("/modal.js", (req, res) => {
         const cardWidth = track.scrollWidth / this.reviews.length;
         const scrollIndex = Math.round(scrollLeft / cardWidth);
 
+        // For RTL, reverse the index
         const currentIndex = this.reviews.length - 1 - scrollIndex;
 
         dots.forEach((dot, i) => {
@@ -3603,33 +3923,40 @@ router.get("/modal.js", (req, res) => {
         });
       };
 
+      // Listen to scroll events to update dots
       track.addEventListener('scroll', () => {
         clearTimeout(scrollSyncTimeout);
         scrollSyncTimeout = setTimeout(syncDotsWithScroll, 100);
       }, { passive: true });
 
+      // Detect user interaction
       const pauseAutoScroll = () => {
         userIsInteracting = true;
         clearTimeout(interactionTimeout);
 
+        // Resume 3 seconds after last interaction
         interactionTimeout = setTimeout(() => {
           userIsInteracting = false;
         }, 3000);
       };
 
+      // Add interaction listeners
       track.addEventListener('touchstart', pauseAutoScroll, { passive: true, once: false });
       track.addEventListener('mousedown', pauseAutoScroll, { passive: true, once: false });
       track.addEventListener('wheel', pauseAutoScroll, { passive: true, once: false });
 
+      // Auto-scroll function
       const autoScroll = () => {
         if (!userIsInteracting && track && document.body.contains(track)) {
           this.scrollReviewBy(1);
         }
       };
 
+      // Start interval - scroll every 4 seconds
       this.modernReviewsInterval = setInterval(autoScroll, 4000);
     }
 
+    // Render Discount Code Section
     renderDiscountCode() {
       return \`
         <div class="salla-discount-section">
@@ -3661,6 +3988,7 @@ router.get("/modal.js", (req, res) => {
       \`;
     }
 
+    // Toggle Discount Section
     toggleDiscountSection() {
       const body = document.getElementById('salla-discount-body');
       const toggle = document.getElementById('salla-discount-toggle');
@@ -3671,6 +3999,7 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Toggle Desktop Summary
     toggleSummary() {
       const toggle = document.querySelector('.salla-summary-toggle');
       const details = document.querySelector('.salla-summary-details');
@@ -3681,12 +4010,14 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    // Apply Discount Code
     async applyDiscountCode() {
       const input = document.getElementById('salla-discount-input');
       const messageEl = document.getElementById('salla-discount-message');
       
       if (!input || !messageEl) return;
       
+      // Check if user is logged in
       if (!this.isUserLoggedIn()) {
         messageEl.innerHTML = '<div class="salla-discount-message error">يجب تسجيل الدخول لتطبيق كود الخصم</div>';
         setTimeout(() => {
@@ -3722,6 +4053,7 @@ router.get("/modal.js", (req, res) => {
           this.discountCode = code;
           messageEl.innerHTML = \`<div class="salla-discount-message success">\${result.data.message}</div>\`;
           
+          // Update summary to reflect discount
           setTimeout(() => this.updateSummaryWithDiscount(), 300);
         } else {
           messageEl.innerHTML = \`<div class="salla-discount-message error">\${result.message || 'كود الخصم غير صالح'}</div>\`;
@@ -3733,11 +4065,13 @@ router.get("/modal.js", (req, res) => {
     }
 
     updateSummaryWithDiscount() {
+      // This will recalculate the summary including the discount
     }
 
     renderPaymentMethods() {
       if (!this.paymentMethods || this.paymentMethods.length === 0) return '';
 
+      // Icon map - ONLY these payment methods will be shown
       const iconMap = {
         'cod': 'cod.svg',
         'apple_pay': 'apple.svg',
@@ -3753,10 +4087,12 @@ router.get("/modal.js", (req, res) => {
         'mada': 'mada.svg'
       };
 
+      // Filter to only show payment methods that have icons in the map
       const validMethods = this.paymentMethods.filter(method =>
         method && method.slug && iconMap.hasOwnProperty(method.slug)
       );
 
+      // If no valid methods, don't render anything
       if (validMethods.length === 0) return '';
 
       const baseUrl = this.apiUrl.replace('/api/v1', '');
@@ -3771,6 +4107,7 @@ router.get("/modal.js", (req, res) => {
         \`;
       }).join('');
 
+      // Triple duplicate for smoother infinite scroll effect
       const duplicatedBadges = paymentBadges + paymentBadges + paymentBadges;
 
       return \`
@@ -3783,6 +4120,7 @@ router.get("/modal.js", (req, res) => {
     }
 
     getPaymentIconSVG(slug) {
+      // This method is now deprecated but kept for backward compatibility
       if (!slug) return '';
 
       const baseUrl = this.apiUrl.replace('/api/v1', '');
@@ -3831,24 +4169,28 @@ router.get("/modal.js", (req, res) => {
       const oneSetWidth = slider.scrollWidth / 3;
 
       let lastTime = performance.now();
-      const scrollSpeed = 15;
+      const scrollSpeed = 15; // pixels per second
       let isPaused = false;
       let interactionTimeout;
 
+      // Pause on interaction
       const pauseScroll = () => {
         isPaused = true;
         clearTimeout(interactionTimeout);
 
+        // Resume after 2 seconds
         interactionTimeout = setTimeout(() => {
           isPaused = false;
-          lastTime = performance.now(); 
+          lastTime = performance.now(); // Reset to prevent jump
         }, 2000);
       };
 
+      // Add event listeners
       slider.addEventListener('touchstart', pauseScroll, { passive: true, once: false });
       slider.addEventListener('mousedown', pauseScroll, { passive: true, once: false });
       slider.addEventListener('wheel', pauseScroll, { passive: true, once: false });
 
+      // Pause on hover
       slider.addEventListener('mouseenter', () => { isPaused = true; });
       slider.addEventListener('mouseleave', () => {
         isPaused = false;
@@ -3868,8 +4210,10 @@ router.get("/modal.js", (req, res) => {
           const deltaTime = (currentTime - lastTime) / 1000;
           lastTime = currentTime;
 
+          // Scroll smoothly
           slider.scrollLeft += scrollSpeed * deltaTime;
 
+          // Infinite loop: reset when reaching end of first set
           if (slider.scrollLeft >= oneSetWidth) {
             slider.scrollLeft = slider.scrollLeft - oneSetWidth;
           }
@@ -3883,6 +4227,7 @@ router.get("/modal.js", (req, res) => {
       this.paymentSliderAnimationFrame = requestAnimationFrame(animate);
     }
 
+    // ===== END NEW FEATURE COMPONENTS =====
 
     show() {
       if (this.modalElement) {
