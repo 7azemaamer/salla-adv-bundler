@@ -399,10 +399,6 @@ class SnippetController {
           if (data.data) {
             if (data.data.settings) {
               this.settings = data.data.settings;
-              console.log('[Bundle] Settings loaded from API:', this.settings);
-              console.log('[Bundle] Custom hide selectors:', this.settings.custom_hide_selectors);
-            } else {
-              console.warn('[Bundle] No settings found in API response');
             }
             
             this.bundleData = data.data;
@@ -832,18 +828,11 @@ class SnippetController {
     }
 
     hideCustomSelectors() {
-      console.log('[Salla Bundle] hideCustomSelectors() called');
-      console.log('[Salla Bundle] Settings:', this.settings);
-      
       const customSelectors = this.settings.custom_hide_selectors || [];
-      console.log('[Salla Bundle] Custom selectors from settings:', customSelectors);
       
       if (!customSelectors || customSelectors.length === 0) {
-        console.log('[Salla Bundle] No custom selectors to hide');
         return;
       }
-
-      console.log(\`[Salla Bundle] Will hide \${customSelectors.length} custom selector(s):\`, customSelectors);
 
       // Function to remove elements matching custom selectors
       const removeCustomElements = () => {
@@ -851,15 +840,12 @@ class SnippetController {
           try {
             const elements = document.querySelectorAll(selector);
             if (elements.length > 0) {
-              console.log(\`[Salla Bundle] Removing \${elements.length} element(s) matching: \${selector}\`);
               elements.forEach(element => {
                 element.remove(); // Physically remove from DOM
               });
-            } else {
-              console.log(\`[Salla Bundle] No elements found for selector: \${selector}\`);
             }
           } catch (e) {
-            console.warn(\`[Salla Bundle] Invalid CSS selector: \${selector}\`, e);
+            // Ignore invalid selectors silently
           }
         });
       };

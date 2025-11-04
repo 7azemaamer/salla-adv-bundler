@@ -9,6 +9,9 @@ export const fetchPaymentMethods = async (accessToken) => {
           Authorization: `Bearer ${accessToken}`,
           Accept: "application/json",
         },
+        params: {
+          status: "enabled", // Only fetch enabled payment methods
+        },
       }
     );
 
@@ -129,7 +132,6 @@ export const getPaymentMethodBadge = (method) => {
     </div>
   `;
 };
-
 
 export const formatPaymentMethodsHTML = (methods) => {
   if (!methods || methods.length === 0) {

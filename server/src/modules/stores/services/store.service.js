@@ -10,7 +10,6 @@ class StoreService {
   async saveStore({ store_id, payload }) {
     const { access_token, refresh_token, expires, token_type, scope } = payload;
 
-    // Fetch store info from Salla API to get name and other details
     let storeInfo = null;
     try {
       const response = await axios.get(
@@ -38,13 +37,11 @@ class StoreService {
       );
     }
 
-    // Set default bundle settings for new stores
     const defaultBundleSettings = {
-      max_bundles_per_store: 3, // Basic plan default
+      max_bundles_per_store: 3, 
       analytics_enabled: true,
     };
 
-    // Check if store was previously soft-deleted
     const existingStore = await Store.findOne({ store_id });
 
     const updateData = {
@@ -53,7 +50,7 @@ class StoreService {
       domain: storeInfo?.domain,
       avatar: storeInfo?.avatar,
       description: storeInfo?.description,
-      merchant_email: storeInfo?.email, // Save merchant email from Salla
+      merchant_email: storeInfo?.email,
       plan: storeInfo?.plan || "basic",
       access_token,
       refresh_token,
@@ -61,8 +58,8 @@ class StoreService {
       token_type,
       bundles_enabled: true,
       status: "active",
-      is_deleted: false, // Reactivate if was deleted
-      deleted_at: null, // Clear deletion date
+      is_deleted: false, 
+      deleted_at: null, 
     };
 
     if (
@@ -73,20 +70,17 @@ class StoreService {
       updateData.setup_token = crypto.randomBytes(32).toString("hex");
     }
 
-    // Calculate token expiration date if expires value is valid
     if (expires && !isNaN(expires) && expires > 0) {
       updateData.access_token_expires_at = new Date(
         Date.now() + expires * 1000
       );
     } else if (expires) {
-      // If expires is provided but invalid, log warning and set a default (1 hour)
       console.warn(
         `[Store Service] Invalid expires value: ${expires}, using default 1 hour`
       );
       updateData.access_token_expires_at = new Date(Date.now() + 3600 * 1000);
     }
 
-    // If it's a new install (not a reinstall), set installed_at and bundle_settings
     if (!existingStore) {
       updateData.installed_at = new Date();
       updateData.bundle_settings = defaultBundleSettings;
@@ -97,7 +91,6 @@ class StoreService {
       new: true,
     });
 
-    // Fetch and cache payment methods on installation/reactivation
     if (access_token) {
       try {
         const paymentMethodsResult = await fetchPaymentMethods(access_token);
@@ -112,7 +105,6 @@ class StoreService {
           `[Store Service] Failed to fetch payment methods for store ${store_id}:`,
           error.message
         );
-        // Don't fail the installation if payment methods fetch fails
       }
     }
   }
@@ -127,8 +119,8 @@ class StoreService {
         status: "uninstalled",
         is_deleted: true,
         deleted_at: new Date(),
-        bundles_enabled: false, // Disable bundles
-        access_token: null, // Clear tokens for security
+        bundles_enabled: false,
+        access_token: null,
         refresh_token: null,
       },
       { new: true }

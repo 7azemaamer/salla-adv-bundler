@@ -312,6 +312,11 @@ const settingsSchema = new mongoose.Schema(
         message: "Each selector must be a non-empty string",
       },
     },
+    // Payment methods display settings
+    show_payment_methods: {
+      type: Boolean,
+      default: true, // Show payment methods bar by default
+    },
     // Future settings can be added here
     // e.g., custom_colors, etc.
   },

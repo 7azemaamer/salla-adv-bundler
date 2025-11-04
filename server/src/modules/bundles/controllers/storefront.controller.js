@@ -80,6 +80,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         sticky_button: settings.sticky_button,
         free_shipping: settings.free_shipping,
         timer: settings.timer,
+        show_payment_methods: settings.show_payment_methods !== false, // Default to true
       },
     },
   });
@@ -238,6 +239,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       return dateB - dateA; // Descending order (newest first)
     });
 
+    // If we have any reviews (custom or cached), return them
     if (allReviews.length > 0) {
       console.log(
         `[Reviews]: Returning ${allReviews.length} reviews (${formattedCustomReviews.length} custom, ${cachedReviews.length} cached) - sorted by newest`
@@ -253,8 +255,11 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       });
     }
 
+    // If no product_id and no custom reviews, return empty
     if (!product_id) {
-      console.log("[Reviews]: No product_id provided, returning empty reviews");
+      console.log(
+        "[Reviews]: No product_id provided and no custom reviews available"
+      );
       return res.status(200).json({
         success: true,
         data: [],
