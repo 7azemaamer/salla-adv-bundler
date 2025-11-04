@@ -854,17 +854,29 @@ router.get("/modal.js", (req, res) => {
       if (bundleSavings > 0) {
         summaryDetailsHtml += \`
           <div class="salla-summary-row">
-            <span class="salla-summary-label">مبلغ الخصم</span>
+            <span class="salla-summary-label">خصم الباقة</span>
             <span class="salla-summary-value" style="color: #16a34a;">-\${formatPrice(bundleSavings)}</span>
+          </div>
+        \`;
+      }
+
+      // خصم الكوبون - Green color if applied
+      if (this.discountCode && this.appliedDiscount) {
+        const couponAmount = this.appliedDiscount.discount_amount || 0;
+        summaryDetailsHtml += \`
+          <div class="salla-summary-row">
+            <span class="salla-summary-label">كود الخصم (\${this.discountCode})</span>
+            <span class="salla-summary-value" style="color: #16a34a;">-\${formatPrice(couponAmount)}</span>
           </div>
         \`;
       }
       
       // إجمالي الطلب - Black color with border
+      const finalTotal = this.appliedDiscount ? totalPrice - (this.appliedDiscount.discount_amount || 0) : totalPrice;
       summaryDetailsHtml += \`
         <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
           <span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>
-          <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
+          <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(finalTotal)}</span>
         </div>
       \`;
 
@@ -873,7 +885,7 @@ router.get("/modal.js", (req, res) => {
       let summaryHtml = \`
         <button class="salla-summary-toggle" onclick="if(window.sallaBundleModal) window.sallaBundleModal.toggleSummary();">
           <span class="salla-summary-toggle-icon">▼</span>
-          <span class="salla-summary-total">\${formatPrice(totalPrice)}</span>
+          <span class="salla-summary-total">\${formatPrice(finalTotal)}</span>
         </button>
         <div class="salla-summary-details">
           \${summaryDetailsHtml}
@@ -881,7 +893,7 @@ router.get("/modal.js", (req, res) => {
         <button class="salla-checkout-button"
                 style="background-color: \${bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff'};"
                 onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
-          <span>\${(bundleConfig.checkout_button_text || 'إتمام الطلب — {total_price}').replace('{total_price}', formatPrice(totalPrice))}</span>
+          <span>\${(bundleConfig.checkout_button_text || 'إتمام الطلب — {total_price}').replace('{total_price}', formatPrice(finalTotal))}</span>
         </button>
         \${this.renderPaymentMethods()}
       \`;
@@ -1344,6 +1356,10 @@ router.get("/modal.js", (req, res) => {
       const totalPrice = currentSelectedBundleData ? currentSelectedBundleData.price : 0;
       const originalTotal = currentSelectedBundleData ? (currentSelectedBundleData.price + (currentSelectedBundleData.savings || 0)) : 0;
       const hasSavings = currentSelectedBundleData && currentSelectedBundleData.savings > 0;
+      
+      // Apply coupon discount if exists
+      const couponDiscount = (this.discountCode && this.appliedDiscount) ? (this.appliedDiscount.discount_amount || 0) : 0;
+      const finalTotal = totalPrice - couponDiscount;
 
       summary.innerHTML = \`
         <div class="salla-footer-compact">
@@ -1354,7 +1370,12 @@ router.get("/modal.js", (req, res) => {
                 \${formatPrice(originalTotal)}
               </div>
             \` : ''}
-            <div class="salla-footer-price">\${formatPrice(totalPrice)}</div>
+            \${couponDiscount > 0 ? \`
+              <div style="font-size: 10px; color: #16a34a; margin-bottom: 2px;">
+                كود الخصم (\${this.discountCode}): -\${formatPrice(couponDiscount)}
+              </div>
+            \` : ''}
+            <div class="salla-footer-price">\${formatPrice(finalTotal)}</div>
           </div>
         </div>
         <div class="salla-step-navigation">
@@ -3405,11 +3426,7 @@ router.get("/modal.js", (req, res) => {
               </button>
             </div>
           </div>
-          <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;" id="salla-reviews-dots-modern">
-            \${this.reviews.map((_, index) => \`
-              <span style="height: 6px; border-radius: 3px; transition: all 0.3s; \${index === 0 ? 'width: 24px; background: var(--text-1);' : 'width: 8px; background: var(--border);'}" data-dot-index="\${index}"></span>
-            \`).join('')}
-          </div>
+
         </div>
         <style>
           .salla-reviews-track-modern::-webkit-scrollbar {
@@ -3451,12 +3468,6 @@ router.get("/modal.js", (req, res) => {
                 </div>
               \`).join('')}
             </div>
-          </div>
-          <div class="salla-reviews-dots" id="salla-reviews-dots">
-            \${this.reviews.map((_, index) => \`
-              <div class="salla-review-dot \${index === 0 ? 'active' : ''}" 
-                   onclick="window.sallaBundleModal.scrollToReview(\${index})"></div>
-            \`).join('')}
           </div>
         </div>
       \`;
@@ -3816,6 +3827,22 @@ router.get("/modal.js", (req, res) => {
           console.log('[Coupon] Applied successfully:', couponResponse);
           
           this.discountCode = code;
+          
+          // Store discount info from Salla response
+          if (couponResponse && couponResponse.data) {
+            this.appliedDiscount = {
+              code: code,
+              discount_type: couponResponse.data.discount_type || 'fixed',
+              discount_amount: couponResponse.data.discount_amount || couponResponse.data.amount || 0
+            };
+          } else {
+            // Fallback: assume fixed discount (will be updated from webhook)
+            this.appliedDiscount = {
+              code: code,
+              discount_type: 'fixed',
+              discount_amount: 0 // Will be updated from webhook
+            };
+          }
           
           messageEl.innerHTML = \`<div class="salla-discount-message success">تم تطبيق الكود بنجاح! جاري التوجه للدفع...</div>\`;
           
