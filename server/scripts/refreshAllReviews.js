@@ -18,13 +18,16 @@ async function refreshAllReviews() {
     console.log("=".repeat(80));
 
     // Connect to MongoDB
-    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/salla-bundles";
+    const mongoUri =
+      process.env.MONGO_URI || "mongodb://localhost:27017/salla-bundles";
     await mongoose.connect(mongoUri);
     console.log("✅ Connected to MongoDB");
 
     // Get all cached products
     const cachedProducts = await ProductCache.find({});
-    console.log(`📦 Found ${cachedProducts.length} cached products to refresh\n`);
+    console.log(
+      `📦 Found ${cachedProducts.length} cached products to refresh\n`
+    );
 
     if (cachedProducts.length === 0) {
       console.log("ℹ️  No cached products found. Nothing to refresh.");
@@ -42,13 +45,17 @@ async function refreshAllReviews() {
       const progress = `[${index + 1}/${cachedProducts.length}]`;
 
       try {
-        console.log(`${progress} Processing product ${product_id} (store: ${store_id})`);
+        console.log(
+          `${progress} Processing product ${product_id} (store: ${store_id})`
+        );
 
         // Get access token for this store
         const accessToken = await getValidAccessToken(store_id);
 
         if (!accessToken) {
-          console.warn(`  ⚠️  No access token for store ${store_id} - Skipping`);
+          console.warn(
+            `  ⚠️  No access token for store ${store_id} - Skipping`
+          );
           skippedCount++;
           continue;
         }
@@ -73,7 +80,8 @@ async function refreshAllReviews() {
           rating: review.rating || 5,
           content: review.comment || review.content || "",
           customerName: review.author?.name || review.customer?.name || "عميل",
-          customerAvatar: review.author?.avatar || review.customer?.avatar || null,
+          customerAvatar:
+            review.author?.avatar || review.customer?.avatar || null,
           customerCity: review.customer?.city || null,
           createdAt: review.created_at || new Date().toISOString(),
           timeAgo: calculateTimeAgo(review.created_at),

@@ -9,6 +9,7 @@ Collection of utility scripts for managing the Salla Bundle application.
 Manually refreshes cached product reviews for all products in the database by fetching fresh data from Salla API.
 
 **Usage:**
+
 ```bash
 npm run refresh-reviews
 ```
@@ -20,6 +21,7 @@ node scripts/refreshAllReviews.js
 ```
 
 **What it does:**
+
 - Connects to MongoDB
 - Fetches all cached products from `ProductCache` collection
 - For each product:
@@ -30,12 +32,14 @@ node scripts/refreshAllReviews.js
 - Shows detailed progress and summary
 
 **When to use:**
+
 - After major Salla API changes
 - To force refresh all reviews immediately
 - For maintenance or debugging purposes
 - Complement to the weekly cron job
 
 **Output Example:**
+
 ```
 ================================================================================
 🔄 Starting Manual Review Refresh...
@@ -68,6 +72,7 @@ node scripts/refreshAllReviews.js
 Fetches payment method icons and data for all stores.
 
 **Usage:**
+
 ```bash
 npm run fetch-payments
 ```
@@ -77,12 +82,14 @@ npm run fetch-payments
 ## Automatic Workers vs Manual Scripts
 
 ### Automatic Workers (Cron Jobs)
+
 - **Token Refresh**: Every 5 minutes
 - **Review Refresh**: Weekly on Sunday at 2:00 AM
 - **Cache Cleanup**: Daily
 - **Bundle Cleanup**: Daily
 
 ### Manual Scripts
+
 - Use when you need immediate action
 - Useful for debugging
 - Run on-demand for specific tasks
@@ -92,6 +99,7 @@ npm run fetch-payments
 ## Environment Variables Required
 
 Make sure `.env` file contains:
+
 ```env
 MONGO_URI=mongodb://localhost:27017/salla-bundles
 ```
