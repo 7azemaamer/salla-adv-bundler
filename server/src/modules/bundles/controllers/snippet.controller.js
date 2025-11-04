@@ -296,7 +296,7 @@ class SnippetController {
           setTimeout(() => this.start(), 2000);
         }
       } finally {
-        this.isStarting = false;  // 🔥 Always reset flag when done
+        this.isStarting = false;  
       }
     }
 
@@ -836,86 +836,56 @@ class SnippetController {
         return;
       }
 
-      // Create CSS to hide custom selectors
-      const style = document.createElement('style');
-      style.id = 'salla-bundle-hide-custom-selectors';
-      
-      // Build CSS rules for each custom selector
-      const cssRules = customSelectors.map(selector => {
-        // Validate selector syntax (basic check)
-        try {
-          // Test if selector is valid - just check syntax, not existence
-          // Use a dummy element to test selector validity
-          const testDiv = document.createElement('div');
-          testDiv.querySelector(selector);
-          
-          return \`\${selector} {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-          }\`;
-        } catch (e) {
-          // If selector has valid CSS syntax but querySelector fails, still try to use it
-          // This handles cases like :has() or other advanced selectors
-          try {
-            // Check if it at least looks like a valid selector (starts with . # [ or is an element)
-            if (selector.match(/^[.#[\w-]/)) {
-              return \`\${selector} {
-                display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
-              }\`;
-            }
-          } catch (e2) {
-            console.warn(\`[Salla Bundle] Invalid CSS selector: \${selector}\`);
-          }
-          return '';
-        }
-      }).filter(rule => rule !== '').join('\\n');
-
-      style.textContent = cssRules;
-
-      // Check if style already exists
-      const existingStyle = document.getElementById('salla-bundle-hide-custom-selectors');
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-
-      if (cssRules) {
-        document.head.appendChild(style);
-      }
-
-      // Also hide via JS (backup method)
-      const hideCustomElements = () => {
+      // Function to remove elements matching custom selectors
+      const removeCustomElements = () => {
         customSelectors.forEach(selector => {
           try {
             const elements = document.querySelectorAll(selector);
-            elements.forEach(element => {
-              element.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;';
-            });
+            if (elements.length > 0) {
+              console.log(\`[Salla Bundle] Removing \${elements.length} element(s) matching: \${selector}\`);
+              elements.forEach(element => {
+                element.remove(); // Physically remove from DOM
+              });
+            }
           } catch (e) {
-            // Invalid selector, skip
+            console.warn(\`[Salla Bundle] Invalid CSS selector: \${selector}\`, e);
           }
         });
       };
 
-      // Hide existing elements immediately
-      hideCustomElements();
+      // Remove existing elements immediately
+      removeCustomElements();
 
-      // Keep checking every 500ms for dynamically loaded elements
-      setInterval(hideCustomElements, 500);
+      // Observe for new elements being added to DOM and remove them
+      const observer = new MutationObserver((mutations) => {
+        // Check if any added nodes match our selectors
+        let shouldRemove = false;
+        
+        mutations.forEach(mutation => {
+          if (mutation.addedNodes.length > 0) {
+            mutation.addedNodes.forEach(node => {
+              // Only check element nodes
+              if (node.nodeType === 1) {
+                shouldRemove = true;
+              }
+            });
+          }
+        });
 
-      // Observe for new elements being added to DOM
-      const observer = new MutationObserver(() => {
-        hideCustomElements();
+        // If new elements were added, check and remove matching ones
+        if (shouldRemove) {
+          removeCustomElements();
+        }
       });
 
+      // Start observing the document body for changes
       observer.observe(document.body, {
         childList: true,
         subtree: true
       });
+
+      // Also check periodically for dynamically loaded content (fallback)
+      setInterval(removeCustomElements, 1000);
     }
 
     injectStickyButton() {

@@ -158,10 +158,25 @@ export const trackBundleInteraction = asyncWrapper(async (req, res) => {
  * Uses cached reviews + custom reviews to reduce API calls
  * =============================================== */
 export const getStoreReviews = asyncWrapper(async (req, res) => {
-  const { store_id } = req.params;
+  let { store_id } = req.params;
   const { limit = 10, product_id } = req.query;
 
   try {
+    // If store_id is a domain (contains dots), look up the actual store_id
+    if (store_id && store_id.includes(".")) {
+      const storeDoc = await storeService.getStoreByDomain(store_id);
+      if (storeDoc) {
+        store_id = storeDoc.store_id;
+      } else {
+        console.error(`[Reviews]: Store not found for domain: ${store_id}`);
+        return res.status(200).json({
+          success: true,
+          data: [],
+          message: "Store not found",
+        });
+      }
+    }
+
     // Get store settings (includes custom_reviews)
     const settings = await settingsService.getSettings(store_id);
 
@@ -170,23 +185,28 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
 
     // If product_id provided, try to get cached reviews for this product
     if (product_id) {
-      const accessToken = await getValidAccessToken(store_id);
+      try {
+        const accessToken = await getValidAccessToken(store_id);
 
-      if (accessToken) {
-        const cacheResult = await getCachedReviews(
-          store_id,
-          product_id,
-          accessToken
-        );
-        if (cacheResult.success) {
-          cachedReviews = cacheResult.data;
-          fromCache = cacheResult.fromCache;
-          console.log(
-            `[Reviews]: ${
-              fromCache ? "Using cached" : "Fetched fresh"
-            } reviews for product ${product_id}`
+        if (accessToken) {
+          const cacheResult = await getCachedReviews(
+            store_id,
+            product_id,
+            accessToken
           );
+          if (cacheResult.success) {
+            cachedReviews = cacheResult.data;
+            fromCache = cacheResult.fromCache;
+            console.log(
+              `[Reviews]: ${
+                fromCache ? "Using cached" : "Fetched fresh"
+              } reviews for product ${product_id}`
+            );
+          }
         }
+      } catch (tokenError) {
+        console.error("[Reviews]: Token error:", tokenError.message);
+        // Continue without cached reviews
       }
     }
 
@@ -211,9 +231,24 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     // Merge cached reviews + custom reviews
     let allReviews = [...cachedReviews, ...formattedCustomReviews];
 
-    // If no reviews at all, fallback to dummy reviews
-    if (allReviews.length === 0) {
-      console.log("[Reviews]: No cached or custom reviews, using fallback");
+    // If we have custom reviews, use them - don't fallback
+    if (allReviews.length > 0) {
+      console.log(
+        `[Reviews]: Returning ${allReviews.length} reviews (${formattedCustomReviews.length} custom, ${cachedReviews.length} cached)`
+      );
+      const limitedReviews = allReviews.slice(0, parseInt(limit));
+
+      return res.status(200).json({
+        success: true,
+        data: limitedReviews,
+        total: limitedReviews.length,
+        fromCache,
+        hasCustomReviews: formattedCustomReviews.length > 0,
+      });
+    }
+
+    console.log("[Reviews]: No cached or custom reviews, attempting API fetch");
+    try {
       const accessToken = await getValidAccessToken(store_id);
 
       if (accessToken) {
@@ -224,9 +259,10 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         });
         allReviews = reviewsResult.data.map(formatReview);
       }
+    } catch (apiError) {
+      console.error("[Reviews]: API fetch failed:", apiError.message);
     }
 
-    // Limit results
     const limitedReviews = allReviews.slice(0, parseInt(limit));
 
     res.status(200).json({
@@ -266,7 +302,7 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
       });
     }
 
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; 
     const isCacheFresh =
       store.payment_methods_updated_at &&
       Date.now() - new Date(store.payment_methods_updated_at).getTime() <
@@ -296,7 +332,6 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
 
     const methodsResult = await fetchPaymentMethods(accessToken);
 
-    // Update cache in store
     store.payment_methods = methodsResult.data;
     store.payment_methods_updated_at = new Date();
     await store.save();
@@ -315,7 +350,6 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
   } catch (error) {
     console.error("Error fetching payment methods:", error.message);
 
-    // Fallback to cached data if available
     let store = await storeService.getStoreByDomain(store_id);
     if (!store) {
       store = await storeService.getStoreByStoreId(store_id);
