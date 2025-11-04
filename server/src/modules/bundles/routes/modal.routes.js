@@ -507,7 +507,9 @@ router.get("/modal.js", (req, res) => {
     async fetchReviews() {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
-        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\`, {
+        const productId = this.productId || '';
+        const productParam = productId ? \`&product_id=\${productId}\` : '';
+        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\${productParam}\`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         

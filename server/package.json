@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "fetch-payments": "node scripts/fetchAllPayments.js"
+    "fetch-payments": "node scripts/fetchAllPayments.js",
+    "refresh-reviews": "node scripts/refreshAllReviews.js"
   },
   "type": "module",
   "keywords": [],
