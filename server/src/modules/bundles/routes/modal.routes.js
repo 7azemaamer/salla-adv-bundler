@@ -1776,9 +1776,15 @@ router.get("/modal.js", (req, res) => {
 
         // Items added successfully - hide modal and sticky button (so Salla auth modal shows on top if needed)
         const modal = document.getElementById('salla-product-modal');
-        const stickyButton = document.querySelector('.salla-sticky-cta-button');
-        if (modal) modal.style.display = 'none';
-        if (stickyButton) stickyButton.style.display = 'none';
+        const stickyButton = document.querySelector('.salla-bundle-sticky-button');
+        if (modal) {
+          modal.style.display = 'none';
+          modal.style.zIndex = '-1';
+        }
+        if (stickyButton) {
+          stickyButton.style.display = 'none';
+          stickyButton.style.zIndex = '-1';
+        }
 
         // Submit cart and go to checkout directly
         try {
@@ -3802,12 +3808,6 @@ router.get("/modal.js", (req, res) => {
           }
         }
         
-        // Items added successfully - hide modal and sticky button (so Salla auth modal shows on top if needed)
-        const modal = document.getElementById('salla-product-modal');
-        const stickyButton = document.querySelector('.salla-sticky-cta-button');
-        if (modal) modal.style.display = 'none';
-        if (stickyButton) stickyButton.style.display = 'none';
-
         // Now apply the coupon to the cart
         messageEl.innerHTML = '<div class="salla-discount-message">جاري تطبيق كود الخصم...</div>';
         
@@ -3821,6 +3821,18 @@ router.get("/modal.js", (req, res) => {
           
           // Track the bundle selection
           this.trackBundleSelection(selectedBundleData);
+
+          // Hide modal and sticky button before submitting (so Salla auth modal shows on top if needed)
+          const modal = document.getElementById('salla-product-modal');
+          const stickyButton = document.querySelector('.salla-bundle-sticky-button');
+          if (modal) {
+            modal.style.display = 'none';
+            modal.style.zIndex = '-1';
+          }
+          if (stickyButton) {
+            stickyButton.style.display = 'none';
+            stickyButton.style.zIndex = '-1';
+          }
 
           // Submit cart and go to checkout (instead of cart page)
           setTimeout(async () => {
