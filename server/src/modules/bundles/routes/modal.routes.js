@@ -800,7 +800,7 @@ router.get("/modal.js", (req, res) => {
         \${targetProductData && targetProductData.has_variants ? \`
           <div class="salla-bundle-section">
             <div class="salla-product-header">
-              <img src="\${targetProductData.image || 'https://via.placeholder.com/56'}" alt="\${targetProductData.name}" class="salla-product-image" />
+              <img src="\${targetProductData.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png'}" alt="\${targetProductData.name}" class="salla-product-image" />
               <div class="salla-product-info">
                 <h3 class="salla-product-name">\${targetProductData.name}</h3>
                 <div class="salla-product-meta">
@@ -1124,7 +1124,7 @@ router.get("/modal.js", (req, res) => {
           <div class="salla-bundle-section">
             <h3>المنتج الأساسي</h3>
             <div class="salla-product-header">
-              <img src="\${targetProductData.image || 'https://via.placeholder.com/56'}" alt="\${targetProductData.name}" class="salla-product-image" />
+              <img src="\${targetProductData.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png'}" alt="\${targetProductData.name}" class="salla-product-image" />
               <div class="salla-product-info">
                 <h3 class="salla-product-name">\${targetProductData.name}</h3>
                 <div class="salla-product-meta">
@@ -1175,7 +1175,7 @@ router.get("/modal.js", (req, res) => {
     renderMobileFreeGiftCard(offer) {
       const productData = offer.product_data;
       const productName = productData?.name || offer.product_name;
-      const productImage = productData?.image || 'https://via.placeholder.com/64';
+      const productImage = productData?.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png';
       const productPrice = productData?.price || 100;
       const isUnavailable = productData ? this.isProductCompletelyUnavailable(productData) : false;
 
@@ -1244,7 +1244,7 @@ router.get("/modal.js", (req, res) => {
     renderMobileDiscountedCard(offer) {
       const productData = offer.product_data;
       const productName = productData?.name || offer.product_name;
-      const productImage = productData?.image || 'https://via.placeholder.com/160x120';
+      const productImage = productData?.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png';
       const originalPrice = productData?.price || 100;
       
       let discountedPrice = originalPrice;
@@ -1440,7 +1440,7 @@ router.get("/modal.js", (req, res) => {
     renderOfferCard(offer, type) {
       const productPrice = offer.product_data?.price || 100;
       const productName = offer.product_data?.name || offer.product_name;
-      const productImage = offer.product_data?.image || 'https://via.placeholder.com/400x400/f0f0f0/666?text=' + encodeURIComponent(productName);
+      const productImage = offer.product_data?.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png';
       
       const isUnavailable = offer.product_data ? this.isProductCompletelyUnavailable(offer.product_data) : false;
 
@@ -3420,10 +3420,10 @@ router.get("/modal.js", (req, res) => {
               \${this.reviews.map(review => \`
                 <div class="salla-review-card">
                   <div class="salla-review-header">
-                    <img src="\${review.customerAvatar || 'https://via.placeholder.com/40'}" 
+                    <img src="\${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
                          alt="\${review.customerName}" 
                          class="salla-review-avatar"
-                         onerror="this.src='https://via.placeholder.com/40'" />
+                         onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />
                     <div class="salla-review-customer">
                       <div class="salla-review-name">\${review.customerName}</div>
                       <div class="salla-review-rating">\${'⭐'.repeat(review.rating)}</div>
