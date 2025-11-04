@@ -264,9 +264,11 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       // Check cache first
       const cacheKey = `store_${store_id}_reviews`;
       const cached = storeReviewsCache.get(cacheKey);
-      
-      if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-        console.log(`[Reviews]: Returning ${cached.data.length} store-level reviews from cache`);
+
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log(
+          `[Reviews]: Returning ${cached.data.length} store-level reviews from cache`
+        );
         return res.status(200).json({
           success: true,
           data: cached.data.slice(0, parseInt(limit)),
@@ -298,7 +300,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
             // Cache the results
             storeReviewsCache.set(cacheKey, {
               data: formattedStoreReviews,
-              timestamp: Date.now()
+              timestamp: Date.now(),
             });
 
             console.log(
