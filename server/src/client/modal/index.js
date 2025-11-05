@@ -1,21 +1,6 @@
-import { Router } from "express";
+import { feedbackSystem } from './modules/feedbackSystem.js';
 
-const router = Router();
-
-router.get("/modal.js", (req, res) => {
-  res.set({
-    "Content-Type": "application/javascript",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    Pragma: "no-cache",
-    Expires: "0",
-    "Access-Control-Allow-Origin": "*",
-  });
-
-  const modalScript = `
-(function() {
-  'use strict';
-
-  const loadModalCSS = () => {
+const loadModalCSS = () => {
     return new Promise((resolve, reject) => {
       const cssId = 'salla-bundle-modal-styles';
       const existing = document.getElementById(cssId);
@@ -42,10 +27,10 @@ router.get("/modal.js", (req, res) => {
 
   loadModalCSS().catch(err => console.error('Modal CSS error:', err));
 
-  const riyalSvgIcon = \`<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display: inline-block; vertical-align: middle; margin: 0 2px;">
+  const riyalSvgIcon = `<svg width="12" height="14" viewBox="0 0 1124.14 1256.39" fill="currentColor" style="display: inline-block; vertical-align: middle; margin: 0 2px;">
     <path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/>
     <path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/>
-  </svg>\`;
+  </svg>`;
 
   function formatPrice(price) {
     const numPrice = parseFloat(price) || 0;
@@ -67,144 +52,6 @@ router.get("/modal.js", (req, res) => {
     static isPreloading = false;
     static preloadPromise = null;
 
-    static feedbackSystem = {
-      audioContext: null,
-      sounds: {
-        click: null,
-        progress: null,
-        complete: null,
-        success: null
-      },
-      initAudio() {
-        if (this.audioContext) return;
-
-        try {
-          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          this.createSounds();
-        } catch (e) {
-          console.log('Audio not supported:', e);
-        }
-      },
-
-      createSounds() {
-        this.sounds.click = () => this.playTone(800, 0.05, 'sine', 0.1);
-
-        this.sounds.progress = () => {
-          this.playTone(600, 0.1, 'square', 0.05);
-          setTimeout(() => this.playTone(800, 0.1, 'square', 0.05), 50);
-        };
-
-        this.sounds.complete = () => {
-          this.playTone(523, 0.15, 'sine', 0.2); 
-          setTimeout(() => this.playTone(659, 0.15, 'sine', 0.2), 100); // E5
-          setTimeout(() => this.playTone(784, 0.2, 'sine', 0.3), 200); // G5
-        };
-        this.sounds.success = () => {
-          this.playTone(523, 0.1, 'triangle', 0.15); 
-          setTimeout(() => this.playTone(659, 0.1, 'triangle', 0.15), 75); // E5
-          setTimeout(() => this.playTone(784, 0.1, 'triangle', 0.15), 150); // G5
-          setTimeout(() => this.playTone(1047, 0.2, 'triangle', 0.25), 225); // C6
-        };
-      },
-
-      playTone(frequency, duration, type = 'sine', volume = 0.1) {
-        if (!this.audioContext) return;
-
-        const oscillator = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-
-        oscillator.type = type;
-        oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-
-        gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-
-        oscillator.start(this.audioContext.currentTime);
-        oscillator.stop(this.audioContext.currentTime + duration);
-      },
-      triggerHaptic(type = 'light') {
-        // iOS Haptic Engine API (iOS 10+)
-        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic) {
-          try {
-            const hapticTypes = {
-              light: 'impact-light',
-              medium: 'impact-medium',
-              heavy: 'impact-heavy',
-              success: 'notification-success',
-              progress: 'selection',
-              click: 'selection',
-              complete: 'notification-success'
-            };
-            window.webkit.messageHandlers.haptic.postMessage(hapticTypes[type] || 'impact-light');
-          } catch (e) {
-            console.log('iOS haptic not available:', e);
-          }
-        }
-        
-        // Try Haptic API for newer iOS devices
-        if (window.navigator && typeof window.navigator.vibrate === 'function') {
-          const patterns = {
-            light: [10],
-            medium: [50],
-            heavy: [100],
-            success: [50, 50, 50, 50, 100],
-            progress: [20],
-            click: [10],
-            complete: [100, 50, 100]
-          };
-
-          try {
-            window.navigator.vibrate(patterns[type] || patterns.light);
-          } catch (e) {
-            console.log('Vibration not supported:', e);
-          }
-        }
-        
-        // Try AudioContext for subtle haptic simulation on iOS Safari
-        if (!window.navigator.vibrate && window.AudioContext) {
-          try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 10;
-            gainNode.gain.setValueAtTime(0.00001, audioContext.currentTime);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.01);
-          } catch (e) {
-            // Silent fail for haptic simulation
-          }
-        }
-      },
-      triggerFeedback(type) {
-        // Audio removed - keeping haptic feedback only
-        const actions = {
-          click: () => {
-            this.triggerHaptic('click');
-          },
-          progress: () => {
-            this.triggerHaptic('progress');
-          },
-          complete: () => {
-            this.triggerHaptic('complete');
-          },
-          success: () => {
-            this.triggerHaptic('success');
-          }
-        };
-
-        actions[type]?.();
-      }
-    };
-    static preloadPromise = null;
-
     constructor(productId, contextData = {}) {
       this.productId = productId;
       this.contextData = contextData;
@@ -221,11 +68,11 @@ router.get("/modal.js", (req, res) => {
       this.currentStep = 1;
       this.totalSteps = 5;
       this.stepLabels = [
-        'اختر الباقة',
-        'الخيارات',
-        'إختر هداياك',
-        'المنتجات المخفضة',
-        'الفاتورة'
+        'Ø§Ø®ØªØ± Ø§Ù„Ø¨Ø§Ù‚Ø©',
+        'Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª',
+        'Ø¥Ø®ØªØ± Ù‡Ø¯Ø§ÙŠØ§Ùƒ',
+        'Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª Ø§Ù„Ù…Ø®ÙØ¶Ø©',
+        'Ø§Ù„ÙØ§ØªÙˆØ±Ø©'
       ];
 
       this.initializeFeatureState();
@@ -234,7 +81,7 @@ router.get("/modal.js", (req, res) => {
     initializeFeedbackOnFirstInteraction() {
       const initFeedback = (e) => {
         if (!this.feedbackInitialized) {
-          SallaBundleModal.feedbackSystem.initAudio();
+          feedbackSystem.initAudio();
           this.feedbackInitialized = true;
           document.removeEventListener('click', initFeedback);
           document.removeEventListener('touchstart', initFeedback);
@@ -249,68 +96,9 @@ router.get("/modal.js", (req, res) => {
 
     triggerFeedback(type) {
       try {
-        SallaBundleModal.feedbackSystem.triggerFeedback(type);
+        feedbackSystem.triggerFeedback(type);
       } catch (e) {
         console.log('Feedback system error:', e);
-      }
-    }
-
-    triggerHaptic(type = 'light') {
-      // iOS Haptic Engine API (iOS 10+)
-      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic) {
-        try {
-          const hapticTypes = {
-            light: 'impact-light',
-            medium: 'impact-medium',
-            heavy: 'impact-heavy',
-            success: 'notification-success',
-            progress: 'selection',
-            click: 'selection',
-            complete: 'notification-success'
-          };
-          window.webkit.messageHandlers.haptic.postMessage(hapticTypes[type] || 'impact-light');
-        } catch (e) {
-          console.log('iOS haptic not available:', e);
-        }
-      }
-      
-      // Try Haptic API for newer iOS devices
-      if (window.navigator && typeof window.navigator.vibrate === 'function') {
-        const patterns = {
-          light: [10],
-          medium: [50],
-          heavy: [100],
-          success: [50, 50, 50, 50, 100],
-          progress: [20],
-          click: [10],
-          complete: [100, 50, 100]
-        };
-
-        try {
-          window.navigator.vibrate(patterns[type] || patterns.light);
-        } catch (e) {
-          console.log('Vibration not supported:', e);
-        }
-      }
-      
-      // Try AudioContext for subtle haptic simulation on iOS Safari
-      if (!window.navigator.vibrate && window.AudioContext) {
-        try {
-          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.value = 10;
-          gainNode.gain.setValueAtTime(0.00001, audioContext.currentTime);
-          
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.01);
-        } catch (e) {
-          // Silent fail for haptic simulation
-        }
       }
     }
 
@@ -395,15 +183,15 @@ router.get("/modal.js", (req, res) => {
           const storeIdentifier = storeId || storeDomain;
 
           const [timerResult, reviewsResult, paymentResult] = await Promise.allSettled([
-            fetch(\`\${apiUrl}/timer-settings/\${storeIdentifier}\`, {
+            fetch(`${apiUrl}/timer-settings/${storeIdentifier}`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
             }).then(r => r.ok ? r.json() : null),
 
-            fetch(\`\${apiUrl}/storefront/stores/\${storeIdentifier}/reviews?limit=10\`, {
+            fetch(`${apiUrl}/storefront/stores/${storeIdentifier}/reviews?limit=10`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
             }).then(r => r.ok ? r.json() : null),
 
-            fetch(\`\${apiUrl}/storefront/stores/\${storeIdentifier}/payment-methods\`, {
+            fetch(`${apiUrl}/storefront/stores/${storeIdentifier}/payment-methods`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
             }).then(r => r.ok ? r.json() : null)
           ]);
@@ -449,7 +237,7 @@ router.get("/modal.js", (req, res) => {
           params.append('customer_id', customerId);
         }
 
-        const response = await fetch(\`\${apiUrl}/storefront/bundles/\${productId}?\${params}\`, {
+        const response = await fetch(`${apiUrl}/storefront/bundles/${productId}?${params}`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -502,8 +290,8 @@ router.get("/modal.js", (req, res) => {
 
 
         
-        if (window.__SALLA_BUNDLE_CACHE__ && window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`]) {
-          this.bundleData = window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`];
+        if (window.__SALLA_BUNDLE_CACHE__ && window.__SALLA_BUNDLE_CACHE__[`product_${this.productId}`]) {
+          this.bundleData = window.__SALLA_BUNDLE_CACHE__[`product_${this.productId}`];
           SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
         } else if (SallaBundleModal.dataCache.bundleData[this.productId]) {
           this.bundleData = SallaBundleModal.dataCache.bundleData[this.productId];
@@ -520,7 +308,7 @@ router.get("/modal.js", (req, res) => {
             params.append('customer_id', this.contextData.customerId);
           }
 
-          const response = await fetch(\`\${this.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`, {
+          const response = await fetch(`${this.apiUrl}/storefront/bundles/${this.productId}?${params}`, {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
@@ -534,7 +322,7 @@ router.get("/modal.js", (req, res) => {
           const responseText = await response.text();
 
           if (!response.ok) {
-            throw new Error(\`Bundle API error: \${response.status} - \${responseText}\`);
+            throw new Error(`Bundle API error: ${response.status} - ${responseText}`);
           }
 
           try {
@@ -550,7 +338,7 @@ router.get("/modal.js", (req, res) => {
           } catch (jsonError) {
             console.error('[Salla Bundle Modal] JSON parse error:', jsonError);
             console.error('[Salla Bundle Modal] Response text:', responseText);
-            throw new Error(\`Invalid JSON response: \${jsonError.message}\`);
+            throw new Error(`Invalid JSON response: ${jsonError.message}`);
           }
         }
 
@@ -572,7 +360,7 @@ router.get("/modal.js", (req, res) => {
               bg_color: bundleConfig.settings.timer.bg_color || '#FFFFFF',
               border_color: bundleConfig.settings.timer.border_color || '#E5E8EC',
               border_radius: bundleConfig.settings.timer.border_radius || 12,
-              label: bundleConfig.settings.timer.label || 'عرض محدود ينتهي خلال',
+              label: bundleConfig.settings.timer.label || 'Ø¹Ø±Ø¶ Ù…Ø­Ø¯ÙˆØ¯ ÙŠÙ†ØªÙ‡ÙŠ Ø®Ù„Ø§Ù„',
               label_color: bundleConfig.settings.timer.label_color || '#60646C',
               font_size: bundleConfig.settings.timer.font_size || 14,
             }
@@ -602,7 +390,7 @@ router.get("/modal.js", (req, res) => {
     async fetchTimerSettings() {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
-        const response = await fetch(\`\${this.apiUrl}/timer-settings/\${storeId}\`, {
+        const response = await fetch(`${this.apiUrl}/timer-settings/${storeId}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         
@@ -624,8 +412,8 @@ router.get("/modal.js", (req, res) => {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
         const productId = this.productId || '';
-        const productParam = productId ? \`&product_id=\${productId}\` : '';
-        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\${productParam}\`, {
+        const productParam = productId ? `&product_id=${productId}` : '';
+        const response = await fetch(`${this.apiUrl}/storefront/stores/${storeId}/reviews?limit=10${productParam}`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         
@@ -639,10 +427,6 @@ router.get("/modal.js", (req, res) => {
     }
 
     hideSwalToasts() {
-      // Remove Swal body classes
-      document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-      document.documentElement.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-      
       // Hide SweetAlert2 toasts
       if (window.Swal && typeof window.Swal.close === 'function') {
         window.Swal.close();
@@ -655,7 +439,6 @@ router.get("/modal.js", (req, res) => {
           container.style.display = 'none';
           container.style.opacity = '0';
           container.style.visibility = 'hidden';
-          container.remove(); // Completely remove from DOM
         }
       });
       
@@ -676,11 +459,6 @@ router.get("/modal.js", (req, res) => {
         // Override Swal.fire to prevent toasts while modal is open
         window.Swal.fire = (...args) => {
           console.log('[Bundle Modal] Blocked Swal toast while modal is open');
-          // Remove body classes immediately if Swal tries to add them
-          setTimeout(() => {
-            document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-            document.documentElement.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-          }, 0);
           return Promise.resolve({ isConfirmed: false, isDismissed: true });
         };
       }
@@ -695,11 +473,6 @@ router.get("/modal.js", (req, res) => {
         
         const blockNotify = () => {
           console.log('[Bundle Modal] Blocked Salla notification while modal is open');
-          // Remove body classes immediately
-          setTimeout(() => {
-            document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-            document.documentElement.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-          }, 0);
         };
         
         if (window.salla.notify.success) window.salla.notify.success = blockNotify;
@@ -707,40 +480,9 @@ router.get("/modal.js", (req, res) => {
         if (window.salla.notify.warning) window.salla.notify.warning = blockNotify;
         if (window.salla.notify.info) window.salla.notify.info = blockNotify;
       }
-      
-      // Monitor body classes and remove Swal classes continuously
-      if (!this.swalClassObserver) {
-        this.swalClassObserver = new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-              if (document.body.classList.contains('swal2-shown') || 
-                  document.body.classList.contains('swal2-toast-shown')) {
-                document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-                document.documentElement.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-              }
-            }
-          });
-        });
-        
-        this.swalClassObserver.observe(document.body, {
-          attributes: true,
-          attributeFilter: ['class']
-        });
-        
-        this.swalClassObserver.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['class']
-        });
-      }
     }
     
     restoreSwalToasts() {
-      // Disconnect class observer
-      if (this.swalClassObserver) {
-        this.swalClassObserver.disconnect();
-        this.swalClassObserver = null;
-      }
-      
       // Restore original Swal.fire method
       if (this.originalSwalFire && window.Swal) {
         window.Swal.fire = this.originalSwalFire;
@@ -760,7 +502,7 @@ router.get("/modal.js", (req, res) => {
     async fetchPaymentMethods() {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
-        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/payment-methods\`, {
+        const response = await fetch(`${this.apiUrl}/storefront/stores/${storeId}/payment-methods`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
         
@@ -783,36 +525,36 @@ router.get("/modal.js", (req, res) => {
       this.modalElement.className = 'salla-bundle-modal';
 
       const bundleConfig = this.bundleData.data || this.bundleData;
-      const modalTitle = bundleConfig.modal_title || bundleConfig.name || 'اختر باقتك';
+      const modalTitle = bundleConfig.modal_title || bundleConfig.name || 'Ø§Ø®ØªØ± Ø¨Ø§Ù‚ØªÙƒ';
       
       const isMobile = window.innerWidth <= 640;
 
-      const timerStyles = this.timerSettings && this.timerSettings.enabled ? \`
-        --timer-text-color: \${this.timerSettings.style.text_color};
-        --timer-bg-color: \${this.timerSettings.style.bg_color};
-        --timer-border-color: \${this.timerSettings.style.border_color};
-        --timer-border-radius: \${this.timerSettings.style.border_radius}px;
-        --timer-label-color: \${this.timerSettings.style.label_color};
-        --timer-font-size: \${this.timerSettings.style.font_size}px;
-      \` : '';
+      const timerStyles = this.timerSettings && this.timerSettings.enabled ? `
+        --timer-text-color: ${this.timerSettings.style.text_color};
+        --timer-bg-color: ${this.timerSettings.style.bg_color};
+        --timer-border-color: ${this.timerSettings.style.border_color};
+        --timer-border-radius: ${this.timerSettings.style.border_radius}px;
+        --timer-label-color: ${this.timerSettings.style.label_color};
+        --timer-font-size: ${this.timerSettings.style.font_size}px;
+      ` : '';
 
-      this.modalElement.innerHTML = \`
-        <div class="salla-bundle-panel" style="\${timerStyles}">
+      this.modalElement.innerHTML = `
+        <div class="salla-bundle-panel" style="${timerStyles}">
           <div class="salla-bundle-header">
             <div class="salla-bundle-header-row">
-              <h2 class="salla-bundle-title">\${modalTitle}</h2>
+              <h2 class="salla-bundle-title">${modalTitle}</h2>
               <div style="display: flex; align-items: center; gap: 12px;">
-                \${!isMobile ? this.renderTimer('all') : ''}
+                ${!isMobile ? this.renderTimer('all') : ''}
                 <button class="salla-bundle-close">&times;</button>
               </div>
             </div>
-            \${isMobile ? \`
+            ${isMobile ? `
               <div class="salla-mobile-progress">
-                \${Array.from({length: this.totalSteps}, (_, i) =>
-                  \`<div class="salla-progress-step"></div>\`
+                ${Array.from({length: this.totalSteps}, (_, i) =>
+                  `<div class="salla-progress-step"></div>`
                 ).join('')}
               </div>
-            \` : ''}
+            ` : ''}
           </div>
           <div class="salla-bundle-body">
             <!-- Content will be rendered here -->
@@ -821,7 +563,7 @@ router.get("/modal.js", (req, res) => {
             <!-- Summary will be rendered here -->
           </div>
         </div>
-      \`;
+      `;
 
       document.body.appendChild(this.modalElement);
 
@@ -856,13 +598,13 @@ router.get("/modal.js", (req, res) => {
       const bundles = bundleConfig.bundles || [];
 
       if (bundles.length === 0) {
-        body.innerHTML = \`
+        body.innerHTML = `
           <div class="salla-bundle-section">
             <div style="text-align: center; color: var(--text-2); padding: 20px;">
-              لا توجد عروض متاحة حالياً.
+              Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ø±ÙˆØ¶ Ù…ØªØ§Ø­Ø© Ø­Ø§Ù„ÙŠØ§Ù‹.
             </div>
           </div>
-        \`;
+        `;
         return;
       }
 
@@ -908,20 +650,20 @@ router.get("/modal.js", (req, res) => {
         }
 
         const items = [
-          \`\${buyQuantity} × \${targetProductData?.name || 'منتج'}\${targetProductUnavailable ? ' (غير متوفر)' : ''}\`,
+          `${buyQuantity} Ã— ${targetProductData?.name || 'Ù…Ù†ØªØ¬'}${targetProductUnavailable ? ' (ØºÙŠØ± Ù…ØªÙˆÙØ±)' : ''}`,
           ...(tier.offers || []).map(offer => {
             const productName = offer.product_data?.name || offer.product_name;
             const isUnavailable = offer.product_data ? this.isProductCompletelyUnavailable(offer.product_data) : false;
-            const unavailableText = isUnavailable ? ' (غير متوفر)' : '';
+            const unavailableText = isUnavailable ? ' (ØºÙŠØ± Ù…ØªÙˆÙØ±)' : '';
             
             if (offer.discount_type === 'free') {
-              return \`\${productName} — مجاناً\${unavailableText}\`;
+              return `${productName} â€” Ù…Ø¬Ø§Ù†Ø§Ù‹${unavailableText}`;
             } else if (offer.discount_type === 'percentage') {
-              return \`\${productName} — خصم \${offer.discount_amount}%\${unavailableText}\`;
+              return `${productName} â€” Ø®ØµÙ… ${offer.discount_amount}%${unavailableText}`;
             } else if (offer.discount_type === 'fixed_amount') {
-              return \`\${productName} — خصم \${offer.discount_amount} \${riyalSvgIcon}\${unavailableText}\`;
+              return `${productName} â€” Ø®ØµÙ… ${offer.discount_amount} ${riyalSvgIcon}${unavailableText}`;
             }
-            return \`\${productName} — خصم\${unavailableText}\`;
+            return `${productName} â€” Ø®ØµÙ…${unavailableText}`;
           })
         ];
 
@@ -929,15 +671,15 @@ router.get("/modal.js", (req, res) => {
 
 
         return {
-          id: \`tier-\${tier.tier}\`,
-          name: tier.tier_title || \`العرض \${tier.tier}\`,
+          id: `tier-${tier.tier}`,
+          name: tier.tier_title || `Ø§Ù„Ø¹Ø±Ø¶ ${tier.tier}`,
           price: totalCustomerPays, // What customer actually pays
           originalPrice: subtotal, // Just the target product price
           offersCost: offersCost, // What customer pays for offers
           jugCount: buyQuantity,
           value: subtotal + giftValue + offersCost, // Total value of everything
           badge: hasUnavailableProducts || targetProductUnavailable ?
-            'منتجات غير متوفرة' :
+            'Ù…Ù†ØªØ¬Ø§Øª ØºÙŠØ± Ù…ØªÙˆÙØ±Ø©' :
             (tier.tier_highlight_text || ''),
           items: items,
           tier: tier,
@@ -980,86 +722,86 @@ router.get("/modal.js", (req, res) => {
 
       const modalSubtitle = bundleConfig.modal_subtitle || bundleConfig.modalSubtitle || bundleConfig.subtitle || '';
 
-      let html = \`
+      let html = `
         <!-- Bundles Section -->
         <div class="salla-bundle-section">
-          <h3>\${bundleConfig.section_title || bundleConfig.sectionTitle || 'باقاتنا'}</h3>
-          \${modalSubtitle ? \`<div class="subtitle">\${modalSubtitle}</div>\` : ''}
-          \${hasAnyUnavailableProducts ? \`
+          <h3>${bundleConfig.section_title || bundleConfig.sectionTitle || 'Ø¨Ø§Ù‚Ø§ØªÙ†Ø§'}</h3>
+          ${modalSubtitle ? `<div class="subtitle">${modalSubtitle}</div>` : ''}
+          ${hasAnyUnavailableProducts ? `
             <div style="background: #fef3cd; border: 1px solid #f6d55c; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #d97706;">
-              \${allBundlesUnavailable ?
-                'جميع الباقات تحتوي على منتجات غير متوفرة حالياً. يمكنك شراء المنتج الأساسي فقط.' :
-                'بعض الباقات تحتوي على منتجات غير متوفرة. ننصح باختيار الباقات المتوفرة بالكامل.'
+              ${allBundlesUnavailable ?
+                'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¨Ø§Ù‚Ø§Øª ØªØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ù…Ù†ØªØ¬Ø§Øª ØºÙŠØ± Ù…ØªÙˆÙØ±Ø© Ø­Ø§Ù„ÙŠØ§Ù‹. ÙŠÙ…ÙƒÙ†Ùƒ Ø´Ø±Ø§Ø¡ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙÙ‚Ø·.' :
+                'Ø¨Ø¹Ø¶ Ø§Ù„Ø¨Ø§Ù‚Ø§Øª ØªØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ù…Ù†ØªØ¬Ø§Øª ØºÙŠØ± Ù…ØªÙˆÙØ±Ø©. Ù†Ù†ØµØ­ Ø¨Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ø¨Ø§Ù‚Ø§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„.'
               }
             </div>
-          \` : ''}
-          \${bundleDisplayData.filter(b => !b.hasUnavailableProducts).length > 0 && hasAnyUnavailableProducts ? \`
+          ` : ''}
+          ${bundleDisplayData.filter(b => !b.hasUnavailableProducts).length > 0 && hasAnyUnavailableProducts ? `
             <div style="background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #065f46;">
-              الباقات المتوفرة بالكامل: 
-              \${bundleDisplayData.filter(b => !b.hasUnavailableProducts).map(b => b.name).join('، ')}
+              Ø§Ù„Ø¨Ø§Ù‚Ø§Øª Ø§Ù„Ù…ØªÙˆÙØ±Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„: 
+              ${bundleDisplayData.filter(b => !b.hasUnavailableProducts).map(b => b.name).join('ØŒ ')}
             </div>
-          \` : ''}
+          ` : ''}
           <div class="salla-bundle-grid">
-            \${bundleDisplayData.map(bundle => \`
-              <div class="salla-bundle-card \${this.selectedBundle === bundle.id ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
-                   style="background-color: \${bundle.bgColor}; border-color: \${this.selectedBundle === bundle.id ? bundle.textColor : bundle.bgColor}; cursor: pointer;"
-                   onclick="if(window.sallaBundleModal && !\${bundle.hasUnavailableProducts}) window.sallaBundleModal.selectBundle('\${bundle.id}');"
-                   \${bundle.hasUnavailableProducts ? 'title="تحتوي هذه الباقة على منتجات غير متوفرة"' : ''}>
+            ${bundleDisplayData.map(bundle => `
+              <div class="salla-bundle-card ${this.selectedBundle === bundle.id ? 'active' : ''} ${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
+                   style="background-color: ${bundle.bgColor}; border-color: ${this.selectedBundle === bundle.id ? bundle.textColor : bundle.bgColor}; cursor: pointer;"
+                   onclick="if(window.sallaBundleModal && !${bundle.hasUnavailableProducts}) window.sallaBundleModal.selectBundle('${bundle.id}');"
+                   ${bundle.hasUnavailableProducts ? 'title="ØªØ­ØªÙˆÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ø¨Ø§Ù‚Ø© Ø¹Ù„Ù‰ Ù…Ù†ØªØ¬Ø§Øª ØºÙŠØ± Ù…ØªÙˆÙØ±Ø©"' : ''}>
                 <div class="salla-bundle-card-header">
                   <div>
-                    <div class="salla-bundle-card-title" style="color: \${bundle.textColor};">\${bundle.name}</div>
-                    <div class="salla-bundle-card-value" style="color: \${bundle.textColor};">قيمة \${formatPrice(bundle.value)}</div>
-                    \${bundle.hasUnavailableProducts ? \`
+                    <div class="salla-bundle-card-title" style="color: ${bundle.textColor};">${bundle.name}</div>
+                    <div class="salla-bundle-card-value" style="color: ${bundle.textColor};">Ù‚ÙŠÙ…Ø© ${formatPrice(bundle.value)}</div>
+                    ${bundle.hasUnavailableProducts ? `
                       <div style="font-size: 11px; color: #ef4444; margin-top: 2px;">
-                        بعض المنتجات غير متوفرة
+                        Ø¨Ø¹Ø¶ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª ØºÙŠØ± Ù…ØªÙˆÙØ±Ø©
                       </div>
-                    \` : ''}
+                    ` : ''}
                   </div>
-                  \${bundle.badge ? \`
-                    <span class="salla-bundle-badge" style="background: \${bundle.hasUnavailableProducts ? '#fee2e2' : bundle.highlightBgColor}; color: \${bundle.hasUnavailableProducts ? '#dc2626' : bundle.highlightTextColor}; border-color: \${bundle.hasUnavailableProducts ? '#fecaca' : bundle.highlightBgColor};">\${bundle.badge}</span>
-                  \` : ''}
+                  ${bundle.badge ? `
+                    <span class="salla-bundle-badge" style="background: ${bundle.hasUnavailableProducts ? '#fee2e2' : bundle.highlightBgColor}; color: ${bundle.hasUnavailableProducts ? '#dc2626' : bundle.highlightTextColor}; border-color: ${bundle.hasUnavailableProducts ? '#fecaca' : bundle.highlightBgColor};">${bundle.badge}</span>
+                  ` : ''}
                 </div>
                 <ul class="salla-bundle-items">
-                  \${bundle.items.map(item => \`<li style="color: \${item.includes('(غير متوفر)') ? '#9ca3af' : bundle.textColor}; \${item.includes('(غير متوفر)') ? 'text-decoration: line-through;' : ''}">\${item}</li>\`).join('')}
+                  ${bundle.items.map(item => `<li style="color: ${item.includes('(ØºÙŠØ± Ù…ØªÙˆÙØ±)') ? '#9ca3af' : bundle.textColor}; ${item.includes('(ØºÙŠØ± Ù…ØªÙˆÙØ±)') ? 'text-decoration: line-through;' : ''}">${item}</li>`).join('')}
                 </ul>
                 <div class="salla-bundle-card-footer">
-                  <div class="salla-bundle-price" style="color: \${bundle.textColor};">\${formatPrice(bundle.price)}</div>
-                  <div class="salla-bundle-radio-desktop" style="border-color: \${bundle.textColor};">
-                    \${this.selectedBundle === bundle.id ? \`<div class="salla-bundle-radio-inner" style="background-color: \${bundle.textColor};"></div>\` : ''}
+                  <div class="salla-bundle-price" style="color: ${bundle.textColor};">${formatPrice(bundle.price)}</div>
+                  <div class="salla-bundle-radio-desktop" style="border-color: ${bundle.textColor};">
+                    ${this.selectedBundle === bundle.id ? `<div class="salla-bundle-radio-inner" style="background-color: ${bundle.textColor};"></div>` : ''}
                   </div>
                 </div>
               </div>
-            \`).join('')}
+            `).join('')}
           </div>
         </div>
 
         <!-- Target Product Variants Section -->
-        \${targetProductData && targetProductData.has_variants ? \`
+        ${targetProductData && targetProductData.has_variants ? `
           <div class="salla-bundle-section">
             <div class="salla-product-header">
-              <img src="\${targetProductData.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png'}" alt="\${targetProductData.name}" class="salla-product-image" />
+              <img src="${targetProductData.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png'}" alt="${targetProductData.name}" class="salla-product-image" />
               <div class="salla-product-info">
-                <h3 class="salla-product-name">\${targetProductData.name}</h3>
+                <h3 class="salla-product-name">${targetProductData.name}</h3>
                 <div class="salla-product-meta">
-                  <span>الكمية: \${selectedTier.buy_quantity}</span>
-                  <span>•</span>
-                  <span>\${formatPrice(targetProductData.price)}</span>
+                  <span>Ø§Ù„ÙƒÙ…ÙŠØ©: ${selectedTier.buy_quantity}</span>
+                  <span>â€¢</span>
+                  <span>${formatPrice(targetProductData.price)}</span>
                 </div>
               </div>
             </div>
-            \${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
+            ${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
           </div>
-        \` : ''}
+        ` : ''}
 
         <!-- Reviews Section (Show on both mobile and desktop) -->
-        \${this.renderReviews('all')}
+        ${this.renderReviews('all')}
 
         <!-- Offers Section -->
-        \${this.renderOffersSection(selectedTier, selectedBundleData)}
+        ${this.renderOffersSection(selectedTier, selectedBundleData)}
         
         <!-- Free Shipping Banner (Show on both mobile and desktop) -->
-        \${this.renderFreeShippingBanner(totalPrice, 'all')}
-      \`;
+        ${this.renderFreeShippingBanner(totalPrice, 'all')}
+      `;
 
       body.innerHTML = html;
 
@@ -1067,73 +809,73 @@ router.get("/modal.js", (req, res) => {
       const originalPriceBeforeDiscount = originalValue + bundleSavings;
       const productsPrice = totalPrice;
       
-      let summaryDetailsHtml = \`
-        <!-- السعر الأصلي - Red color -->
+      let summaryDetailsHtml = `
+        <!-- Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø£ØµÙ„ÙŠ - Red color -->
         <div class="salla-summary-row">
-          <span class="salla-summary-label">السعر الأصلي</span>
-          <span class="salla-summary-value" style="color: #dc2626; text-decoration: line-through;">\${formatPrice(originalPriceBeforeDiscount)}</span>
+          <span class="salla-summary-label">Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø£ØµÙ„ÙŠ</span>
+          <span class="salla-summary-value" style="color: #dc2626; text-decoration: line-through;">${formatPrice(originalPriceBeforeDiscount)}</span>
         </div>
         
-        <!-- سعر المنتجات - Black color -->
+        <!-- Ø³Ø¹Ø± Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª - Black color -->
         <div class="salla-summary-row">
-          <span class="salla-summary-label">السعر المخفض</span>
-          <span class="salla-summary-value">\${formatPrice(productsPrice)}</span>
+          <span class="salla-summary-label">Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù…Ø®ÙØ¶</span>
+          <span class="salla-summary-value">${formatPrice(productsPrice)}</span>
         </div>
         
-        <!-- تكلفة الشحن - Black color -->
+        <!-- ØªÙƒÙ„ÙØ© Ø§Ù„Ø´Ø­Ù† - Black color -->
         <div class="salla-summary-row">
-          <span class="salla-summary-label">تكلفة الشحن</span>
-          <span class="salla-summary-value">تُحسب في الخطوة القادمة</span>
+          <span class="salla-summary-label">ØªÙƒÙ„ÙØ© Ø§Ù„Ø´Ø­Ù†</span>
+          <span class="salla-summary-value">ØªÙØ­Ø³Ø¨ ÙÙŠ Ø§Ù„Ø®Ø·ÙˆØ© Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©</span>
         </div>
-      \`;
+      `;
 
-      // مبلغ الخصم - Green color (negative sign)
+      // Ù…Ø¨Ù„Øº Ø§Ù„Ø®ØµÙ… - Green color (negative sign)
       if (bundleSavings > 0) {
-        summaryDetailsHtml += \`
+        summaryDetailsHtml += `
           <div class="salla-summary-row">
-            <span class="salla-summary-label">خصم الباقة</span>
-            <span class="salla-summary-value" style="color: #16a34a;">-\${formatPrice(bundleSavings)}</span>
+            <span class="salla-summary-label">Ø®ØµÙ… Ø§Ù„Ø¨Ø§Ù‚Ø©</span>
+            <span class="salla-summary-value" style="color: #16a34a;">-${formatPrice(bundleSavings)}</span>
           </div>
-        \`;
+        `;
       }
 
-      // خصم الكوبون - Green color if applied
+      // Ø®ØµÙ… Ø§Ù„ÙƒÙˆØ¨ÙˆÙ† - Green color if applied
       if (this.discountCode && this.appliedDiscount) {
         const couponAmount = this.appliedDiscount.discount_amount || 0;
-        summaryDetailsHtml += \`
+        summaryDetailsHtml += `
           <div class="salla-summary-row">
-            <span class="salla-summary-label">كود الخصم (\${this.discountCode})</span>
-            <span class="salla-summary-value" style="color: #16a34a;">-\${formatPrice(couponAmount)}</span>
+            <span class="salla-summary-label">ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ… (${this.discountCode})</span>
+            <span class="salla-summary-value" style="color: #16a34a;">-${formatPrice(couponAmount)}</span>
           </div>
-        \`;
+        `;
       }
       
-      // إجمالي الطلب - Black color with border
+      // Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø·Ù„Ø¨ - Black color with border
       const finalTotal = this.appliedDiscount ? totalPrice - (this.appliedDiscount.discount_amount || 0) : totalPrice;
-      summaryDetailsHtml += \`
+      summaryDetailsHtml += `
         <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
-          <span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>
-          <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(finalTotal)}</span>
+          <span class="salla-summary-label" style="font-weight: 600;">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø·Ù„Ø¨</span>
+          <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">${formatPrice(finalTotal)}</span>
         </div>
-      \`;
+      `;
 
 
 
-      let summaryHtml = \`
+      let summaryHtml = `
         <button class="salla-summary-toggle" onclick="if(window.sallaBundleModal) window.sallaBundleModal.toggleSummary();">
-          <span class="salla-summary-toggle-icon">▼</span>
-          <span class="salla-summary-total">\${formatPrice(finalTotal)}</span>
+          <span class="salla-summary-toggle-icon">â–¼</span>
+          <span class="salla-summary-total">${formatPrice(finalTotal)}</span>
         </button>
         <div class="salla-summary-details">
-          \${summaryDetailsHtml}
+          ${summaryDetailsHtml}
         </div>
         <button class="salla-checkout-button"
-                style="background-color: \${bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff'};"
+                style="background-color: ${bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff'}; color: ${bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff'};"
                 onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
-          <span>\${(bundleConfig.checkout_button_text || 'إتمام الطلب — {total_price}').replace('{total_price}', formatPrice(finalTotal))}</span>
+          <span>${(bundleConfig.checkout_button_text || 'Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø·Ù„Ø¨ â€” {total_price}').replace('{total_price}', formatPrice(finalTotal))}</span>
         </button>
-        \${this.renderPaymentMethods()}
-      \`;
+        ${this.renderPaymentMethods()}
+      `;
 
       summary.innerHTML = summaryHtml;
     }
@@ -1147,7 +889,7 @@ router.get("/modal.js", (req, res) => {
       const bundles = bundleConfig.bundles || [];
       
       if (bundles.length === 0) {
-        body.innerHTML = \`<div class="salla-bundle-section">لا توجد عروض متاحة</div>\`;
+        body.innerHTML = `<div class="salla-bundle-section">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¹Ø±ÙˆØ¶ Ù…ØªØ§Ø­Ø©</div>`;
         return;
       }
       
@@ -1192,35 +934,35 @@ router.get("/modal.js", (req, res) => {
         }
 
         const items = [
-          \`\${buyQuantity} × \${targetProductData?.name || 'منتج'}\${targetProductUnavailable ? ' (غير متوفر)' : ''}\`,
+          `${buyQuantity} Ã— ${targetProductData?.name || 'Ù…Ù†ØªØ¬'}${targetProductUnavailable ? ' (ØºÙŠØ± Ù…ØªÙˆÙØ±)' : ''}`,
           ...(tier.offers || []).map(offer => {
             const productName = offer.product_data?.name || offer.product_name;
             const isUnavailable = offer.product_data ? this.isProductCompletelyUnavailable(offer.product_data) : false;
-            const unavailableText = isUnavailable ? ' (غير متوفر)' : '';
+            const unavailableText = isUnavailable ? ' (ØºÙŠØ± Ù…ØªÙˆÙØ±)' : '';
             
             if (offer.discount_type === 'free') {
-              return \`\${productName} — مجاناً\${unavailableText}\`;
+              return `${productName} â€” Ù…Ø¬Ø§Ù†Ø§Ù‹${unavailableText}`;
             } else if (offer.discount_type === 'percentage') {
-              return \`\${productName} — خصم \${offer.discount_amount}%\${unavailableText}\`;
+              return `${productName} â€” Ø®ØµÙ… ${offer.discount_amount}%${unavailableText}`;
             } else if (offer.discount_type === 'fixed_amount') {
-              return \`\${productName} — خصم \${offer.discount_amount} ر.س\${unavailableText}\`;
+              return `${productName} â€” Ø®ØµÙ… ${offer.discount_amount} Ø±.Ø³${unavailableText}`;
             }
-            return \`\${productName} — خصم\${unavailableText}\`;
+            return `${productName} â€” Ø®ØµÙ…${unavailableText}`;
           })
         ];
 
         const totalCustomerPays = subtotal + offersCost;
 
         return {
-          id: \`tier-\${tier.tier}\`,
-          name: tier.tier_title || \`العرض \${tier.tier}\`,
+          id: `tier-${tier.tier}`,
+          name: tier.tier_title || `Ø§Ù„Ø¹Ø±Ø¶ ${tier.tier}`,
           price: totalCustomerPays,
           originalPrice: subtotal,
           offersCost: offersCost,
           jugCount: buyQuantity,
           value: subtotal + giftValue + offersCost,
           badge: hasUnavailableProducts || targetProductUnavailable ?
-            'منتجات غير متوفرة' :
+            'Ù…Ù†ØªØ¬Ø§Øª ØºÙŠØ± Ù…ØªÙˆÙØ±Ø©' :
             (tier.tier_highlight_text || ''),
           items: items,
           tier: tier,
@@ -1257,7 +999,7 @@ router.get("/modal.js", (req, res) => {
       
       steps.push({
         number: stepNumber++,
-        label: 'اختر الباقة',
+        label: 'Ø§Ø®ØªØ± Ø§Ù„Ø¨Ø§Ù‚Ø©',
         html: this.renderStep1BundleSelection(bundleDisplayData, bundleConfig),
         type: 'bundles'
       });
@@ -1265,7 +1007,7 @@ router.get("/modal.js", (req, res) => {
       if (hasTargetVariants) {
         steps.push({
           number: stepNumber++,
-          label: 'الخيارات',
+          label: 'Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª',
           html: this.renderStep2TargetVariants(targetProductData, selectedTier),
           type: 'target_variants'
         });
@@ -1274,7 +1016,7 @@ router.get("/modal.js", (req, res) => {
       if (freeGifts.length > 0) {
         steps.push({
           number: stepNumber++,
-          label: 'إختر هداياك',
+          label: 'Ø¥Ø®ØªØ± Ù‡Ø¯Ø§ÙŠØ§Ùƒ',
           html: this.renderStep3FreeGifts(selectedTier, selectedBundleData),
           type: 'free_gifts'
         });
@@ -1283,7 +1025,7 @@ router.get("/modal.js", (req, res) => {
       if (discountedProducts.length > 0) {
         steps.push({
           number: stepNumber++,
-          label: 'منتجات مخفضة',
+          label: 'Ù…Ù†ØªØ¬Ø§Øª Ù…Ø®ÙØ¶Ø©',
           html: this.renderStep4DiscountedProducts(selectedTier, selectedBundleData),
           type: 'discounted'
         });
@@ -1291,7 +1033,7 @@ router.get("/modal.js", (req, res) => {
       
       steps.push({
         number: stepNumber++,
-        label: 'الفاتورة',
+        label: 'Ø§Ù„ÙØ§ØªÙˆØ±Ø©',
         html: this.renderStep5Review(selectedBundleData),
         type: 'review'
       });
@@ -1301,7 +1043,7 @@ router.get("/modal.js", (req, res) => {
       this.stepTypes = steps.map(s => s.type);
       
       let mobileContent = steps.map((step, index) => {
-        return step.html.replace(/data-step="\d+"/g, \`data-step="\${step.number}"\`);
+        return step.html.replace(/data-step="\d+"/g, `data-step="${step.number}"`);
       }).join('');
 
       body.innerHTML = mobileContent;
@@ -1319,106 +1061,106 @@ router.get("/modal.js", (req, res) => {
     renderStep1BundleSelection(bundleDisplayData, bundleConfig) {
       const modalSubtitle = bundleConfig.modal_subtitle || bundleConfig.modalSubtitle || bundleConfig.subtitle || '';
 
-      return \`
+      return `
         <div class="salla-step-container" data-step="1">
           <div class="salla-bundle-section">
-            <h3>\${bundleConfig.section_title || bundleConfig.sectionTitle || this.stepLabels[0]}</h3>
-            \${modalSubtitle ? \`<div class="subtitle">\${modalSubtitle}</div>\` : ''}
+            <h3>${bundleConfig.section_title || bundleConfig.sectionTitle || this.stepLabels[0]}</h3>
+            ${modalSubtitle ? `<div class="subtitle">${modalSubtitle}</div>` : ''}
             <div class="salla-bundle-grid">
-              \${bundleDisplayData.map((bundle, index) => {
+              ${bundleDisplayData.map((bundle, index) => {
                 const isSelected = this.selectedBundle === bundle.id;
-                const summaryText = bundle.items.slice(0, 2).join(' + ') + (bundle.items.length > 2 ? \` +\${bundle.items.length - 2}\` : '');
+                const summaryText = bundle.items.slice(0, 2).join(' + ') + (bundle.items.length > 2 ? ` +${bundle.items.length - 2}` : '');
 
-                return \`
-                  <div class="salla-bundle-card \${isSelected ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
-                       style="background-color: \${bundle.bgColor};"
-                       onclick="window.sallaBundleModal.selectBundle('\${bundle.id}')">
+                return `
+                  <div class="salla-bundle-card ${isSelected ? 'active' : ''} ${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
+                       style="background-color: ${bundle.bgColor};"
+                       onclick="window.sallaBundleModal.selectBundle('${bundle.id}')">
                     <div class="salla-bundle-radio"></div>
                     <div class="salla-bundle-card-compact">
-                      <div class="salla-bundle-card-title" style="color: \${bundle.textColor}; font-size: 15px; font-weight: 600; margin-bottom: 4px;">\${bundle.name}</div>
-                      <div class="salla-bundle-card-summary" style="font-size: 12px; color: var(--text-2); margin-bottom: 6px;">\${summaryText}</div>
+                      <div class="salla-bundle-card-title" style="color: ${bundle.textColor}; font-size: 15px; font-weight: 600; margin-bottom: 4px;">${bundle.name}</div>
+                      <div class="salla-bundle-card-summary" style="font-size: 12px; color: var(--text-2); margin-bottom: 6px;">${summaryText}</div>
                       <div class="salla-bundle-card-pricing">
-                        <span>\${formatPrice(bundle.price)}</span>
-                        \${bundle.savings > 0 ? \`<span class="salla-bundle-savings-badge">وفر \${formatPrice(bundle.savings)}</span>\` : ''}
+                        <span>${formatPrice(bundle.price)}</span>
+                        ${bundle.savings > 0 ? `<span class="salla-bundle-savings-badge">ÙˆÙØ± ${formatPrice(bundle.savings)}</span>` : ''}
                       </div>
-                      <ul class="salla-bundle-items \${isSelected ? 'expanded' : ''}" id="bundle-items-\${bundle.id}">
-                        \${bundle.items.map(item => \`<li>\${item}</li>\`).join('')}
+                      <ul class="salla-bundle-items ${isSelected ? 'expanded' : ''}" id="bundle-items-${bundle.id}">
+                        ${bundle.items.map(item => `<li>${item}</li>`).join('')}
                       </ul>
                     </div>
                   </div>
-                \`;
+                `;
               }).join('')}
             </div>
           </div>
-          \${this.renderReviews('bundles')}
-          \${this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'bundles')}
+          ${this.renderReviews('bundles')}
+          ${this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'bundles')}
         </div>
-      \`;
+      `;
     }
 
     renderStep2TargetVariants(targetProductData, selectedTier) {
       if (!targetProductData || !targetProductData.has_variants) {
-        return \`
+        return `
           <div class="salla-step-container" data-step="2">
             <div class="salla-bundle-section">
-              <h3>\${this.stepLabels[1]}</h3>
-              <div class="subtitle">لا توجد خيارات للمنتج الأساسي</div>
+              <h3>${this.stepLabels[1]}</h3>
+              <div class="subtitle">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø®ÙŠØ§Ø±Ø§Øª Ù„Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ</div>
             </div>
           </div>
-        \`;
+        `;
       }
       
-      return \`
+      return `
         <div class="salla-step-container" data-step="2">
           <div class="salla-bundle-section">
-            <h3>المنتج الأساسي</h3>
+            <h3>Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ</h3>
             <div class="salla-product-header">
-              <img src="\${targetProductData.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png'}" alt="\${targetProductData.name}" class="salla-product-image" />
+              <img src="${targetProductData.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png'}" alt="${targetProductData.name}" class="salla-product-image" />
               <div class="salla-product-info">
-                <h3 class="salla-product-name">\${targetProductData.name}</h3>
+                <h3 class="salla-product-name">${targetProductData.name}</h3>
                 <div class="salla-product-meta">
-                  <span>الكمية: \${selectedTier.buy_quantity}</span>
-                  <span>•</span>
-                  <span>\${formatPrice(targetProductData.price)}</span>
+                  <span>Ø§Ù„ÙƒÙ…ÙŠØ©: ${selectedTier.buy_quantity}</span>
+                  <span>â€¢</span>
+                  <span>${formatPrice(targetProductData.price)}</span>
                 </div>
               </div>
             </div>
-            \${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
+            ${this.renderTargetProductVariantSelectors(targetProductData, selectedTier.buy_quantity)}
             </div>
-            \${this.renderReviews('target_variants')}
+            ${this.renderReviews('target_variants')}
         </div>
-      \`;
+      `;
     }
 
     renderStep3FreeGifts(selectedTier, selectedBundleData) {
       const freeGifts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type === 'free') : [];
       
       if (freeGifts.length === 0) {
-        return \`
+        return `
           <div class="salla-step-container" data-step="3">
             <div class="salla-bundle-section">
-              <h3>\${this.stepLabels[2]}</h3>
-              <div class="subtitle">لا توجد هدايا في هذه الباقة</div>
+              <h3>${this.stepLabels[2]}</h3>
+              <div class="subtitle">Ù„Ø§ ØªÙˆØ¬Ø¯ Ù‡Ø¯Ø§ÙŠØ§ ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ø¨Ø§Ù‚Ø©</div>
             </div>
           </div>
-        \`;
+        `;
       }
       
       const totalSavings = freeGifts.reduce((sum, o) => sum + (o.product_data?.price || 100), 0);
       const isLastStep = this.currentStep === this.totalSteps;
       
-      return \`
+      return `
         <div class="salla-step-container" data-step="3">
           <div class="salla-bundle-section">
-            <h3>\${this.stepLabels[2]}</h3>
-            <div class="subtitle">توفر \${formatPrice(totalSavings)}</div>
+            <h3>${this.stepLabels[2]}</h3>
+            <div class="subtitle">ØªÙˆÙØ± ${formatPrice(totalSavings)}</div>
             <div class="salla-gifts-grid">
-              \${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
+              ${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
             </div>
           </div>
-          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'free_gifts') : ''}
+          ${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'free_gifts') : ''}
         </div>
-      \`;
+      `;
     }
 
     renderMobileFreeGiftCard(offer) {
@@ -1428,40 +1170,40 @@ router.get("/modal.js", (req, res) => {
       const productPrice = productData?.price || 100;
       const isUnavailable = productData ? this.isProductCompletelyUnavailable(productData) : false;
 
-      return \`
-        <div class="salla-gift-card \${isUnavailable ? 'salla-gift-unavailable' : ''}">
-          <div class="salla-gift-image" style="background-image: url('\${productImage}')">
-            \${isUnavailable ? \`
+      return `
+        <div class="salla-gift-card ${isUnavailable ? 'salla-gift-unavailable' : ''}">
+          <div class="salla-gift-image" style="background-image: url('${productImage}')">
+            ${isUnavailable ? `
               <div class="salla-gift-overlay">
-                <span style="font-size: 11px; color: white; font-weight: 600;">نفد المخزون</span>
+                <span style="font-size: 11px; color: white; font-weight: 600;">Ù†ÙØ¯ Ø§Ù„Ù…Ø®Ø²ÙˆÙ†</span>
               </div>
-            \` : ''}
+            ` : ''}
           </div>
           <div class="salla-gift-content">
             <div class="salla-gift-badges">
-              <span class="salla-gift-badge" style="\${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">هدية مجانية</span>
-              <span class="salla-gift-free" style="\${isUnavailable ? 'color: #dc2626;' : ''}">مجاناً</span>
+              <span class="salla-gift-badge" style="${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">Ù‡Ø¯ÙŠØ© Ù…Ø¬Ø§Ù†ÙŠØ©</span>
+              <span class="salla-gift-free" style="${isUnavailable ? 'color: #dc2626;' : ''}">Ù…Ø¬Ø§Ù†Ø§Ù‹</span>
             </div>
-            <div class="salla-gift-title" style="\${isUnavailable ? 'color: #9ca3af;' : ''}">\${productName}</div>
-            <div class="salla-gift-value">\${formatPrice(productPrice)}</div>
-            \${this.renderCompactVariantSelectors(offer.product_data, offer.product_id, true)}
+            <div class="salla-gift-title" style="${isUnavailable ? 'color: #9ca3af;' : ''}">${productName}</div>
+            <div class="salla-gift-value">${formatPrice(productPrice)}</div>
+            ${this.renderCompactVariantSelectors(offer.product_data, offer.product_id, true)}
           </div>
         </div>
-      \`;
+      `;
     }
 
     renderStep4DiscountedProducts(selectedTier, selectedBundleData) {
       const discountedProducts = selectedTier.offers ? selectedTier.offers.filter(o => o.discount_type !== 'free') : [];
 
       if (discountedProducts.length === 0) {
-        return \`
+        return `
           <div class="salla-step-container" data-step="4">
             <div class="salla-bundle-section">
-              <h3>منتجات مخفضة</h3>
-              <div class="subtitle">لا توجد منتجات مخفضة في هذه الباقة</div>
+              <h3>Ù…Ù†ØªØ¬Ø§Øª Ù…Ø®ÙØ¶Ø©</h3>
+              <div class="subtitle">Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ù†ØªØ¬Ø§Øª Ù…Ø®ÙØ¶Ø© ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ø¨Ø§Ù‚Ø©</div>
             </div>
           </div>
-        \`;
+        `;
       }
 
       const discountSavings = discountedProducts.reduce((sum, offer) => {
@@ -1476,18 +1218,18 @@ router.get("/modal.js", (req, res) => {
 
       const isLastStep = this.currentStep === this.totalSteps;
 
-      return \`
+      return `
         <div class="salla-step-container" data-step="4">
           <div class="salla-bundle-section">
-            <h3>منتجات مخفضة</h3>
-            <div class="subtitle">وفر \${formatPrice(discountSavings)} إضافية</div>
+            <h3>Ù…Ù†ØªØ¬Ø§Øª Ù…Ø®ÙØ¶Ø©</h3>
+            <div class="subtitle">ÙˆÙØ± ${formatPrice(discountSavings)} Ø¥Ø¶Ø§ÙÙŠØ©</div>
             <div class="salla-discounted-scroll">
-              \${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
+              ${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
             </div>
           </div>
-          \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'discounted') : ''}
+          ${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'discounted') : ''}
         </div>
-      \`;
+      `;
     }
 
     renderMobileDiscountedCard(offer) {
@@ -1503,17 +1245,17 @@ router.get("/modal.js", (req, res) => {
         discountedPrice = originalPrice - offer.discount_amount;
       }
       
-      return \`
+      return `
         <div class="salla-discounted-card">
-          <div class="salla-discounted-image" style="background-image: url('\${productImage}')"></div>
-          <div class="salla-discounted-title">\${productName}</div>
+          <div class="salla-discounted-image" style="background-image: url('${productImage}')"></div>
+          <div class="salla-discounted-title">${productName}</div>
           <div class="salla-discounted-pricing">
-            <span class="final">\${formatPrice(discountedPrice)}</span>
-            <span class="original">\${formatPrice(originalPrice)}</span>
+            <span class="final">${formatPrice(discountedPrice)}</span>
+            <span class="original">${formatPrice(originalPrice)}</span>
           </div>
-          \${this.renderCompactVariantSelectors(productData, offer.product_id, true)}
+          ${this.renderCompactVariantSelectors(productData, offer.product_id, true)}
         </div>
-      \`;
+      `;
     }
 
     renderStep5Review(selectedBundleData) {
@@ -1525,63 +1267,63 @@ router.get("/modal.js", (req, res) => {
       const bundleSavings = selectedBundleData.savings;
       const originalPriceBeforeDiscount = originalValue + bundleSavings;
 
-      return \`
+      return `
         <div class="salla-step-container" data-step="5">
           <div class="salla-bundle-section">
-            <h3>\${this.stepLabels[4]}</h3>
-            <div class="subtitle">تأكد من طلبك قبل الإتمام</div>
+            <h3>${this.stepLabels[4]}</h3>
+            <div class="subtitle">ØªØ£ÙƒØ¯ Ù…Ù† Ø·Ù„Ø¨Ùƒ Ù‚Ø¨Ù„ Ø§Ù„Ø¥ØªÙ…Ø§Ù…</div>
 
             <div class="salla-review-static">
-              <h3 style="font-size: 14px; margin-bottom: 10px;">تفاصيل الفاتورة</h3>
+              <h3 style="font-size: 14px; margin-bottom: 10px;">ØªÙØ§ØµÙŠÙ„ Ø§Ù„ÙØ§ØªÙˆØ±Ø©</h3>
               <div class="salla-review-content">
-                <!-- السعر الأصلي - Red color -->
+                <!-- Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø£ØµÙ„ÙŠ - Red color -->
                 <div class="salla-summary-row">
-                  <span class="salla-summary-label">السعر الأصلي</span>
-                  <span class="salla-summary-value" style="color: #dc2626;text-decoration: line-through;">\${formatPrice(originalPriceBeforeDiscount)}</span>
+                  <span class="salla-summary-label">Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø£ØµÙ„ÙŠ</span>
+                  <span class="salla-summary-value" style="color: #dc2626;text-decoration: line-through;">${formatPrice(originalPriceBeforeDiscount)}</span>
                 </div>
                 
-                <!-- سعر المنتجات - Black color -->
+                <!-- Ø³Ø¹Ø± Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª - Black color -->
                 <div class="salla-summary-row">
-                  <span class="salla-summary-label">السعر المخفض</span>
-                  <span class="salla-summary-value">\${formatPrice(productsPrice)}</span>
+                  <span class="salla-summary-label">Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ù…Ø®ÙØ¶</span>
+                  <span class="salla-summary-value">${formatPrice(productsPrice)}</span>
                 </div>
                 
-                <!-- تكلفة الشحن - Black color -->
+                <!-- ØªÙƒÙ„ÙØ© Ø§Ù„Ø´Ø­Ù† - Black color -->
                 <div class="salla-summary-row">
-                  <span class="salla-summary-label">تكلفة الشحن</span>
-                  <span class="salla-summary-value">تُحسب في الخطوة القادمة</span>
+                  <span class="salla-summary-label">ØªÙƒÙ„ÙØ© Ø§Ù„Ø´Ø­Ù†</span>
+                  <span class="salla-summary-value">ØªÙØ­Ø³Ø¨ ÙÙŠ Ø§Ù„Ø®Ø·ÙˆØ© Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©</span>
                 </div>
                 
-                <!-- مبلغ الخصم - Green color (negative sign) -->
-                \${bundleSavings > 0 ? \`
+                <!-- Ù…Ø¨Ù„Øº Ø§Ù„Ø®ØµÙ… - Green color (negative sign) -->
+                ${bundleSavings > 0 ? `
                   <div class="salla-summary-row">
-                    <span class="salla-summary-label">مبلغ الخصم</span>
-                    <span class="salla-summary-value" style="color: #16a34a;">-\${formatPrice(bundleSavings)}</span>
+                    <span class="salla-summary-label">Ù…Ø¨Ù„Øº Ø§Ù„Ø®ØµÙ…</span>
+                    <span class="salla-summary-value" style="color: #16a34a;">-${formatPrice(bundleSavings)}</span>
                   </div>
-                \` : ''}
+                ` : ''}
                 
-                <!-- إجمالي الطلب - Black color with border -->
+                <!-- Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø·Ù„Ø¨ - Black color with border -->
                 <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
-                  <span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>
-                  <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">\${formatPrice(totalPrice)}</span>
+                  <span class="salla-summary-label" style="font-weight: 600;">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø·Ù„Ø¨</span>
+                  <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">${formatPrice(totalPrice)}</span>
                 </div>
               </div>
               
-              <!-- كود الخصم - Discount Code Section -->
-              \${this.renderDiscountCode()}
+              <!-- ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ… - Discount Code Section -->
+              ${this.renderDiscountCode()}
               
               <!-- Timer at the end after discount code -->
-              \${this.renderTimer('review') ? \`
+              ${this.renderTimer('review') ? `
                 <div style="margin-top: 16px; display: flex; justify-content: center;">
-                  \${this.renderTimer('review')}
+                  ${this.renderTimer('review')}
                 </div>
-              \` : ''}
+              ` : ''}
             </div>
           </div>
-          \${this.renderReviews('review')}
-          \${this.renderFreeShippingBanner(totalPrice, 'review')}
+          ${this.renderReviews('review')}
+          ${this.renderFreeShippingBanner(totalPrice, 'review')}
         </div>
-      \`;
+      `;
     }
 
     renderMobileFooter(summary, selectedBundleData, bundleConfig) {
@@ -1598,45 +1340,45 @@ router.get("/modal.js", (req, res) => {
       const couponDiscount = (this.discountCode && this.appliedDiscount) ? (this.appliedDiscount.discount_amount || 0) : 0;
       const finalTotal = totalPrice - couponDiscount;
 
-      summary.innerHTML = \`
+      summary.innerHTML = `
         <div class="salla-footer-compact">
           <div>
-            <div class="salla-footer-total">المجموع</div>
-            \${hasSavings ? \`
+            <div class="salla-footer-total">Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹</div>
+            ${hasSavings ? `
               <div style="font-size: 11px; color: #ef4444; text-decoration: line-through; margin-bottom: 2px;">
-                \${formatPrice(originalTotal)}
+                ${formatPrice(originalTotal)}
               </div>
-            \` : ''}
-            \${couponDiscount > 0 ? \`
+            ` : ''}
+            ${couponDiscount > 0 ? `
               <div style="font-size: 10px; color: #16a34a; margin-bottom: 2px;">
-                كود الخصم (\${this.discountCode}): -\${formatPrice(couponDiscount)}
+                ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ… (${this.discountCode}): -${formatPrice(couponDiscount)}
               </div>
-            \` : ''}
-            <div class="salla-footer-price">\${formatPrice(finalTotal)}</div>
+            ` : ''}
+            <div class="salla-footer-price">${formatPrice(finalTotal)}</div>
           </div>
         </div>
         <div class="salla-step-navigation">
           <button id="salla-step-prev" class="salla-step-btn" onclick="window.sallaBundleModal.goPrev()">
-            السابق
+            Ø§Ù„Ø³Ø§Ø¨Ù‚
           </button>
           <button id="salla-step-next" class="salla-step-btn primary" onclick="window.sallaBundleModal.goNext()">
-            التالي
+            Ø§Ù„ØªØ§Ù„ÙŠ
           </button>
         </div>
-        \${this.renderPaymentMethods()}
-      \`;
+        ${this.renderPaymentMethods()}
+      `;
     }
 
 
     renderOffersSection(selectedTier, selectedBundleData) {
       if (!selectedTier || !selectedTier.offers || selectedTier.offers.length === 0) {
-        return \`
+        return `
           <div class="salla-bundle-section">
-            <h3>العروض المتضمنة</h3>
-            <div class="subtitle">اختر باقة لرؤية العروض المتضمنة</div>
-            <div style="color: var(--text-2); padding: 20px; text-align: center;">اختر باقة لرؤية العروض المتضمنة.</div>
+            <h3>Ø§Ù„Ø¹Ø±ÙˆØ¶ Ø§Ù„Ù…ØªØ¶Ù…Ù†Ø©</h3>
+            <div class="subtitle">Ø§Ø®ØªØ± Ø¨Ø§Ù‚Ø© Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ø¹Ø±ÙˆØ¶ Ø§Ù„Ù…ØªØ¶Ù…Ù†Ø©</div>
+            <div style="color: var(--text-2); padding: 20px; text-align: center;">Ø§Ø®ØªØ± Ø¨Ø§Ù‚Ø© Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ø¹Ø±ÙˆØ¶ Ø§Ù„Ù…ØªØ¶Ù…Ù†Ø©.</div>
           </div>
-        \`;
+        `;
       }
 
       const freeGifts = selectedTier.offers.filter(offer => offer.discount_type === 'free');
@@ -1647,15 +1389,15 @@ router.get("/modal.js", (req, res) => {
       let sectionsHtml = '';
 
       if (freeGifts.length > 0) {
-        sectionsHtml += \`
+        sectionsHtml += `
           <div class="salla-bundle-section">
-            <h3>هداياك المجانية</h3>
-            <div class="subtitle">توفر \${formatPrice(freeGifts.reduce((sum, offer) => sum + (offer.product_data?.price || 100), 0))}</div>
+            <h3>Ù‡Ø¯Ø§ÙŠØ§Ùƒ Ø§Ù„Ù…Ø¬Ø§Ù†ÙŠØ©</h3>
+            <div class="subtitle">ØªÙˆÙØ± ${formatPrice(freeGifts.reduce((sum, offer) => sum + (offer.product_data?.price || 100), 0))}</div>
             <div class="salla-gifts-grid">
-              \${freeGifts.map(offer => this.renderOfferCard(offer, 'gift')).join('')}
+              ${freeGifts.map(offer => this.renderOfferCard(offer, 'gift')).join('')}
             </div>
           </div>
-        \`;
+        `;
       }
 
       if (discountedProducts.length > 0) {
@@ -1669,27 +1411,27 @@ router.get("/modal.js", (req, res) => {
           return sum;
         }, 0);
 
-        sectionsHtml += \`
+        sectionsHtml += `
           <div class="salla-bundle-section">
-            <h3> منتجات مخفضة</h3>
-            <div class="subtitle">وفر \${formatPrice(discountSavings)} إضافية</div>
+            <h3> Ù…Ù†ØªØ¬Ø§Øª Ù…Ø®ÙØ¶Ø©</h3>
+            <div class="subtitle">ÙˆÙØ± ${formatPrice(discountSavings)} Ø¥Ø¶Ø§ÙÙŠØ©</div>
             <div class="salla-gifts-grid">
-              \${discountedProducts.map(offer => this.renderOfferCard(offer, 'discount')).join('')}
+              ${discountedProducts.map(offer => this.renderOfferCard(offer, 'discount')).join('')}
             </div>
           </div>
-        \`;
+        `;
       }
 
       if (sectionsHtml === '') {
-        sectionsHtml = \`
+        sectionsHtml = `
           <div class="salla-bundle-section">
-            <h3>العروض المتضمنة</h3>
-            <div class="subtitle">توفر \${formatPrice(totalSavings)}</div>
+            <h3>Ø§Ù„Ø¹Ø±ÙˆØ¶ Ø§Ù„Ù…ØªØ¶Ù…Ù†Ø©</h3>
+            <div class="subtitle">ØªÙˆÙØ± ${formatPrice(totalSavings)}</div>
             <div class="salla-gifts-grid">
-              \${selectedTier.offers.map(offer => this.renderOfferCard(offer, 'combined')).join('')}
+              ${selectedTier.offers.map(offer => this.renderOfferCard(offer, 'combined')).join('')}
             </div>
           </div>
-        \`;
+        `;
       }
 
       return sectionsHtml;
@@ -1702,62 +1444,62 @@ router.get("/modal.js", (req, res) => {
       
       const isUnavailable = offer.product_data ? this.isProductCompletelyUnavailable(offer.product_data) : false;
 
-      let badgeText = 'هدية متضمنة';
-      let statusText = 'مجاناً';
-      let priceDisplay = \`<div class="salla-gift-value" style="text-decoration: line-through; color: var(--text-2);">\${formatPrice(productPrice)}</div>\`;
+      let badgeText = 'Ù‡Ø¯ÙŠØ© Ù…ØªØ¶Ù…Ù†Ø©';
+      let statusText = 'Ù…Ø¬Ø§Ù†Ø§Ù‹';
+      let priceDisplay = `<div class="salla-gift-value" style="text-decoration: line-through; color: var(--text-2);">${formatPrice(productPrice)}</div>`;
 
       if (isUnavailable) {
-        badgeText = 'غير متوفر';
-        statusText = 'نفد المخزون';
-        priceDisplay = \`<div class="salla-gift-value" style="color: #ef4444; font-weight: 500;">غير متوفر حالياً</div>\`;
+        badgeText = 'ØºÙŠØ± Ù…ØªÙˆÙØ±';
+        statusText = 'Ù†ÙØ¯ Ø§Ù„Ù…Ø®Ø²ÙˆÙ†';
+        priceDisplay = `<div class="salla-gift-value" style="color: #ef4444; font-weight: 500;">ØºÙŠØ± Ù…ØªÙˆÙØ± Ø­Ø§Ù„ÙŠØ§Ù‹</div>`;
       } else if (offer.discount_type === 'percentage') {
-        badgeText = 'منتج مخفض';
-        statusText = \`خصم \${offer.discount_amount}%\`;
+        badgeText = 'Ù…Ù†ØªØ¬ Ù…Ø®ÙØ¶';
+        statusText = `Ø®ØµÙ… ${offer.discount_amount}%`;
         const discountedPrice = productPrice * (1 - offer.discount_amount / 100);
-        priceDisplay = \`
+        priceDisplay = `
           <div class="salla-gift-value">
-            <span style="text-decoration: line-through; color: var(--text-2); font-size: 12px;">\${formatPrice(productPrice)}</span>
-            <span style="font-weight: 600; color: var(--text-1);">\${formatPrice(discountedPrice)}</span>
+            <span style="text-decoration: line-through; color: var(--text-2); font-size: 12px;">${formatPrice(productPrice)}</span>
+            <span style="font-weight: 600; color: var(--text-1);">${formatPrice(discountedPrice)}</span>
           </div>
-        \`;
+        `;
       } else if (offer.discount_type === 'fixed_amount') {
-        badgeText = 'منتج مخفض';
-        statusText = \`خصم \${offer.discount_amount} \${riyalSvgIcon}\`;
+        badgeText = 'Ù…Ù†ØªØ¬ Ù…Ø®ÙØ¶';
+        statusText = `Ø®ØµÙ… ${offer.discount_amount} ${riyalSvgIcon}`;
         const discountedPrice = productPrice - offer.discount_amount;
-        priceDisplay = \`
+        priceDisplay = `
           <div class="salla-gift-value">
-            <span style="text-decoration: line-through; color: var(--text-2); font-size: 12px;">\${formatPrice(productPrice)}</span>
-            <span style="font-weight: 600; color: var(--text-1);">\${formatPrice(discountedPrice)}</span>
+            <span style="text-decoration: line-through; color: var(--text-2); font-size: 12px;">${formatPrice(productPrice)}</span>
+            <span style="font-weight: 600; color: var(--text-1);">${formatPrice(discountedPrice)}</span>
           </div>
-        \`;
+        `;
       }
 
       const cardClass = isUnavailable ? 'salla-gift-card salla-gift-unavailable' : 'salla-gift-card';
-      const overlayElement = isUnavailable ? \`
+      const overlayElement = isUnavailable ? `
         <div class="salla-gift-overlay">
           <div class="salla-gift-overlay-content">
-            <span style="font-size: 12px; color: white; font-weight: 600; margin-top: 4px;">نفد المخزون</span>
+            <span style="font-size: 12px; color: white; font-weight: 600; margin-top: 4px;">Ù†ÙØ¯ Ø§Ù„Ù…Ø®Ø²ÙˆÙ†</span>
           </div>
         </div>
-      \` : '';
+      ` : '';
 
-      return \`
-        <div class="\${cardClass}">
-          <div class="salla-gift-image" style="background-image: url('\${productImage}'); background-size: cover; background-position: center; min-height: 120px; position: relative;">
-            <!-- <img src="\${productImage}" alt="\${productName}" style="width: 100%; height: 120px; object-fit: cover; display: block; \${isUnavailable ? 'filter: grayscale(100%) opacity(0.5);' : ''}" /> -->
-            \${overlayElement}
+      return `
+        <div class="${cardClass}">
+          <div class="salla-gift-image" style="background-image: url('${productImage}'); background-size: cover; background-position: center; min-height: 120px; position: relative;">
+            <!-- <img src="${productImage}" alt="${productName}" style="width: 100%; height: 120px; object-fit: cover; display: block; ${isUnavailable ? 'filter: grayscale(100%) opacity(0.5);' : ''}" /> -->
+            ${overlayElement}
           </div>
           <div class="salla-gift-content">
             <div class="salla-gift-badges">
-              <span class="salla-gift-badge" style="\${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">\${badgeText}</span>
-              <span class="salla-gift-free" style="\${isUnavailable ? 'color: #dc2626;' : ''}">\${statusText}</span>
+              <span class="salla-gift-badge" style="${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">${badgeText}</span>
+              <span class="salla-gift-free" style="${isUnavailable ? 'color: #dc2626;' : ''}">${statusText}</span>
             </div>
-            <div class="salla-gift-title" style="\${isUnavailable ? 'color: #9ca3af;' : ''}">\${productName}</div>
-            \${priceDisplay}
-            \${this.renderCompactVariantSelectors(offer.product_data, offer.product_id, true)}
+            <div class="salla-gift-title" style="${isUnavailable ? 'color: #9ca3af;' : ''}">${productName}</div>
+            ${priceDisplay}
+            ${this.renderCompactVariantSelectors(offer.product_data, offer.product_id, true)}
           </div>
         </div>
-      \`;
+      `;
     }
 
     selectBundle(bundleId) {
@@ -1792,7 +1534,7 @@ router.get("/modal.js", (req, res) => {
       }
 
       setTimeout(() => {
-        const itemsList = document.querySelector(\`#bundle-items-\${bundleId}\`);
+        const itemsList = document.querySelector(`#bundle-items-${bundleId}`);
         if (itemsList && !itemsList.classList.contains('expanded')) {
           itemsList.classList.add('expanded');
         }
@@ -1829,26 +1571,26 @@ router.get("/modal.js", (req, res) => {
         if (!isMobile) {
           const summaryDetails = document.querySelector('.salla-summary-details');
           if (summaryDetails && !summaryDetails.classList.contains('expanded')) {
-            this.showSallaToast('يرجى مراجعة الملخص قبل إتمام الطلب', 'info');
+            this.showSallaToast('ÙŠØ±Ø¬Ù‰ Ù…Ø±Ø§Ø¬Ø¹Ø© Ø§Ù„Ù…Ù„Ø®Øµ Ù‚Ø¨Ù„ Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø·Ù„Ø¨', 'info');
             this.toggleSummary();
             return;
           }
         }
 
         if (!window.salla) {
-          alert('عذراً، حدث خطأ في النظام. يرجى المحاولة مرة أخرى.');
+          alert('Ø¹Ø°Ø±Ø§Ù‹ØŒ Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ù†Ø¸Ø§Ù…. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.');
           return;
         }
 
         if (!this.isUserLoggedIn()) {
-          this.showSallaToast('يجب تسجيل الدخول أولاً لإتمام الطلب', 'warning');
+          this.showSallaToast('ÙŠØ¬Ø¨ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø£ÙˆÙ„Ø§Ù‹ Ù„Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø·Ù„Ø¨', 'warning');
           this.showLoginModal();
           return;
         }
 
         const selectedBundleData = this.getSelectedBundleData();
         if (!selectedBundleData) {
-          alert('يرجى اختيار باقة أولاً');
+          alert('ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ø¨Ø§Ù‚Ø© Ø£ÙˆÙ„Ø§Ù‹');
           return;
         }
         const bundleConfig = this.bundleData.data || this.bundleData;
@@ -1862,15 +1604,15 @@ router.get("/modal.js", (req, res) => {
           
           let errorMessage = '';
           if (targetProducts.length > 0) {
-            errorMessage = \`عذراً، المنتج الأساسي "\${targetProducts[0].name}" غير متوفر حالياً. لا يمكن إتمام الطلب.\`;
+            errorMessage = `Ø¹Ø°Ø±Ø§Ù‹ØŒ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ "${targetProducts[0].name}" ØºÙŠØ± Ù…ØªÙˆÙØ± Ø­Ø§Ù„ÙŠØ§Ù‹. Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø·Ù„Ø¨.`;
           } else if (offerProducts.length > 0) {
-            const offerNames = offerProducts.map(p => p.name).join('، ');
-            errorMessage = \`عذراً، المنتجات التالية من العرض غير متوفرة حالياً: \${offerNames}.\`;
+            const offerNames = offerProducts.map(p => p.name).join('ØŒ ');
+            errorMessage = `Ø¹Ø°Ø±Ø§Ù‹ØŒ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª Ø§Ù„ØªØ§Ù„ÙŠØ© Ù…Ù† Ø§Ù„Ø¹Ø±Ø¶ ØºÙŠØ± Ù…ØªÙˆÙØ±Ø© Ø­Ø§Ù„ÙŠØ§Ù‹: ${offerNames}.`;
             
             if (offerProducts.length === 1) {
-              errorMessage += ' يمكنك اختيار باقة أخرى أو المتابعة دون هذا المنتج.';
+              errorMessage += ' ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ø®ØªÙŠØ§Ø± Ø¨Ø§Ù‚Ø© Ø£Ø®Ø±Ù‰ Ø£Ùˆ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ø¯ÙˆÙ† Ù‡Ø°Ø§ Ø§Ù„Ù…Ù†ØªØ¬.';
             } else {
-              errorMessage += ' يرجى اختيار باقة أخرى.';
+              errorMessage += ' ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ø¨Ø§Ù‚Ø© Ø£Ø®Ø±Ù‰.';
             }
           }
           
@@ -1883,8 +1625,8 @@ router.get("/modal.js", (req, res) => {
 
         if (missingVariants.length > 0) {
 
-          const missingDetails = missingVariants.map(mv => \`\${mv.productName}: \${mv.optionName}\`).join('، ');
-          const errorMessage = \`يجب اختيار الخيارات التالية أولاً: \${missingDetails}\`;
+          const missingDetails = missingVariants.map(mv => `${mv.productName}: ${mv.optionName}`).join('ØŒ ');
+          const errorMessage = `ÙŠØ¬Ø¨ Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„ØªØ§Ù„ÙŠØ© Ø£ÙˆÙ„Ø§Ù‹: ${missingDetails}`;
 
           this.showSallaToast(errorMessage, 'error');
 
@@ -1903,7 +1645,7 @@ router.get("/modal.js", (req, res) => {
         // Set flag to prevent cart clearing during checkout
         window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = true;
 
-          this.showLoadingIndicator('جاري إضافة المنتجات...');
+          this.showLoadingIndicator('Ø¬Ø§Ø±ÙŠ Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª...');
 
         try {
           const addedProducts = []; 
@@ -1915,13 +1657,13 @@ router.get("/modal.js", (req, res) => {
 
 
           if (bundleConfig.target_product_data && this.isProductCompletelyUnavailable(bundleConfig.target_product_data)) {
-            throw new Error(\`Target product \${bundleConfig.target_product_data.name} is completely out of stock\`);
+            throw new Error(`Target product ${bundleConfig.target_product_data.name} is completely out of stock`);
           }
 
           for (let i = 0; i < targetQuantity; i++) {
             let targetOptionsForThisQuantity;
             if (targetQuantity > 1 && bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants) {
-              const productIdWithIndex = \`\${this.productId}-qty\${i+1}\`;
+              const productIdWithIndex = `${this.productId}-qty${i+1}`;
               targetOptionsForThisQuantity = this.getSelectedVariantOptions(productIdWithIndex);
             } else {
               targetOptionsForThisQuantity = targetOptions;
@@ -2005,7 +1747,7 @@ router.get("/modal.js", (req, res) => {
           }
 
           // Update loading message
-          this.showLoadingIndicator('جاري التوجه للدفع...');
+          this.showLoadingIndicator('Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªÙˆØ¬Ù‡ Ù„Ù„Ø¯ÙØ¹...');
 
         } catch (error) {
           this.hideLoadingIndicator();
@@ -2013,7 +1755,7 @@ router.get("/modal.js", (req, res) => {
           if (error.message && (error.message.includes('options') || error.message.includes('variant') || error.message.includes('required'))) {
             const missingVariants = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
             if (missingVariants.length > 0) {
-              this.showSallaToast('يجب اختيار جميع الخيارات المطلوبة قبل المتابعة', 'error');
+              this.showSallaToast('ÙŠØ¬Ø¨ Ø§Ø®ØªÙŠØ§Ø± Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø© Ù‚Ø¨Ù„ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©', 'error');
               this.highlightMissingVariants(missingVariants);
               const firstMissing = missingVariants[0];
               this.scrollToVariantInput(firstMissing.selectorProductId || firstMissing.productId, firstMissing.optionId);
@@ -2021,14 +1763,14 @@ router.get("/modal.js", (req, res) => {
             }
           }
 
-          this.showSallaToast('حدث خطأ في إضافة بعض المنتجات', 'error');
+          this.showSallaToast('Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø¥Ø¶Ø§ÙØ© Ø¨Ø¹Ø¶ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª', 'error');
           return;
         }
 
         const finalVariantCheck = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
         if (finalVariantCheck.length > 0) {
           this.hideLoadingIndicator();
-          this.showSallaToast('لا يمكن المتابعة بدون اختيار جميع الخيارات', 'error');
+          this.showSallaToast('Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ø¨Ø¯ÙˆÙ† Ø§Ø®ØªÙŠØ§Ø± Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª', 'error');
           this.highlightMissingVariants(finalVariantCheck);
           return;
         }
@@ -2057,9 +1799,9 @@ router.get("/modal.js", (req, res) => {
           // Clear flag before redirect
           window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = false;
           const currentPath = window.location.pathname;
-          const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+          const pathMatch = currentPath.match(/^(\/[^/]+\/)/);
           const basePath = pathMatch ? pathMatch[1] : '/';
-          window.location.href = \`\${window.location.origin}\${basePath}checkout\`;
+          window.location.href = `${window.location.origin}${basePath}checkout`;
         }
 
       } catch (error) {
@@ -2067,7 +1809,7 @@ router.get("/modal.js", (req, res) => {
         this.hideLoadingIndicator();
         // Clear flag on error
         window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = false;
-        this.showSallaToast(\`حدث خطأ: \${error.message || 'يرجى المحاولة مرة أخرى'}\`, 'error');
+        this.showSallaToast(`Ø­Ø¯Ø« Ø®Ø·Ø£: ${error.message || 'ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰'}`, 'error');
         return; 
       }
     }
@@ -2136,7 +1878,7 @@ router.get("/modal.js", (req, res) => {
 
       return {
         id: 'tier-' + selectedTier.tier,
-        name: selectedTier.tier_title || 'العرض ' + selectedTier.tier,
+        name: selectedTier.tier_title || 'Ø§Ù„Ø¹Ø±Ø¶ ' + selectedTier.tier,
         price: totalCustomerPays,
         originalPrice: subtotal,
         offersCost: offersCost,
@@ -2147,7 +1889,7 @@ router.get("/modal.js", (req, res) => {
 
     getSelectedVariantOptions(productId) {
       const options = {};
-      const selectors = document.querySelectorAll(\`[data-variant-product="\${productId}"]\`);
+      const selectors = document.querySelectorAll(`[data-variant-product="${productId}"]`);
 
       
       const allSelectors = document.querySelectorAll('select[data-variant-product], select[data-option-id]');
@@ -2168,11 +1910,11 @@ router.get("/modal.js", (req, res) => {
       const options = {};
 
       const isSameAsTarget = productId === this.productId;
-      const selectorProductId = isSameAsTarget ? \`\${productId}-offer\` : productId;
+      const selectorProductId = isSameAsTarget ? `${productId}-offer` : productId;
 
     
 
-      const selectors = document.querySelectorAll(\`[data-variant-product="\${selectorProductId}"]\`);
+      const selectors = document.querySelectorAll(`[data-variant-product="${selectorProductId}"]`);
 
 
       selectors.forEach((selector, index) => {
@@ -2251,7 +1993,7 @@ router.get("/modal.js", (req, res) => {
     }
 
     scrollToVariantInput(productId, optionId) {
-      const input = document.querySelector(\`#variant-\${productId}-\${optionId}\`);
+      const input = document.querySelector(`#variant-${productId}-${optionId}`);
       if (input) {
         input.scrollIntoView({
           behavior: 'smooth',
@@ -2262,7 +2004,7 @@ router.get("/modal.js", (req, res) => {
     }
 
     scrollToVariantInputAggressively(productId, optionId) {
-      const inputId = \`#variant-\${productId}-\${optionId}\`;
+      const inputId = `#variant-${productId}-${optionId}`;
 
       const input = document.querySelector(inputId);
 
@@ -2298,7 +2040,7 @@ router.get("/modal.js", (req, res) => {
     }
 
     flashMissingVariant(productId, optionId) {
-      const input = document.querySelector(\`#variant-\${productId}-\${optionId}\`);
+      const input = document.querySelector(`#variant-${productId}-${optionId}`);
       if (input) {
         const originalBorder = input.style.border;
         const originalOutline = input.style.outline;
@@ -2337,7 +2079,7 @@ router.get("/modal.js", (req, res) => {
 
         if (selectedTier.buy_quantity > 1) {
           for (let i = 1; i <= selectedTier.buy_quantity; i++) {
-            const productIdWithIndex = \`\${bundleConfig.target_product_id}-qty\${i}\`;
+            const productIdWithIndex = `${bundleConfig.target_product_id}-qty${i}`;
             const targetOptions = this.getSelectedVariantOptions(productIdWithIndex);
 
             const missingOption = this.findMissingRequiredVariant(bundleConfig.target_product_data, targetOptions);
@@ -2347,7 +2089,7 @@ router.get("/modal.js", (req, res) => {
                 selectorProductId: productIdWithIndex,
                 optionId: missingOption.id,
                 optionName: missingOption.name,
-                productName: bundleConfig.target_product_data.name + \` (رقم \${i})\`,
+                productName: bundleConfig.target_product_data.name + ` (Ø±Ù‚Ù… ${i})`,
                 isOffer: false
               });
             }
@@ -2381,7 +2123,7 @@ router.get("/modal.js", (req, res) => {
             if (missingOption) {
               
               const isSameAsTarget = offer.product_id === this.productId;
-              const selectorProductId = isSameAsTarget ? \`\${offer.product_id}-offer\` : offer.product_id;
+              const selectorProductId = isSameAsTarget ? `${offer.product_id}-offer` : offer.product_id;
               
               missing.push({
                 productId: offer.product_id,
@@ -2413,7 +2155,7 @@ router.get("/modal.js", (req, res) => {
 
       missingVariants.forEach(missing => {
         const selectorId = missing.selectorProductId || missing.productId;
-        const input = document.querySelector(\`#variant-\${selectorId}-\${missing.optionId}\`);
+        const input = document.querySelector(`#variant-${selectorId}-${missing.optionId}`);
         if (input && !input.hasAttribute('data-all-out-of-stock') && !input.disabled) {
           input.classList.add('variant-error');
 
@@ -2459,8 +2201,8 @@ router.get("/modal.js", (req, res) => {
       if (bundleConfig.target_product_data && !this.isProductCompletelyUnavailable(bundleConfig.target_product_data)) {
         alternatives.push({
           type: 'target_only',
-          title: 'شراء المنتج الأساسي فقط',
-          description: \`يمكنك شراء \${bundleConfig.target_product_data.name} بدون العروض الإضافية\`,
+          title: 'Ø´Ø±Ø§Ø¡ Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙÙ‚Ø·',
+          description: `ÙŠÙ…ÙƒÙ†Ùƒ Ø´Ø±Ø§Ø¡ ${bundleConfig.target_product_data.name} Ø¨Ø¯ÙˆÙ† Ø§Ù„Ø¹Ø±ÙˆØ¶ Ø§Ù„Ø¥Ø¶Ø§ÙÙŠØ©`,
           action: 'proceed_target_only'
         });
       }
@@ -2473,8 +2215,8 @@ router.get("/modal.js", (req, res) => {
       if (availableBundles.length > 0) {
         alternatives.push({
           type: 'alternative_bundles',
-          title: 'باقات متوفرة بديلة',
-          description: \`لدينا \${availableBundles.length} باقة متوفرة بالكامل\`,
+          title: 'Ø¨Ø§Ù‚Ø§Øª Ù…ØªÙˆÙØ±Ø© Ø¨Ø¯ÙŠÙ„Ø©',
+          description: `Ù„Ø¯ÙŠÙ†Ø§ ${availableBundles.length} Ø¨Ø§Ù‚Ø© Ù…ØªÙˆÙØ±Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„`,
           bundles: availableBundles,
           action: 'select_alternative'
         });
@@ -2488,8 +2230,8 @@ router.get("/modal.js", (req, res) => {
         if (availableOffers.length > 0 && availableOffers.length < selectedTier.offers.length) {
           alternatives.push({
             type: 'partial_bundle',
-            title: 'عرض جزئي',
-            description: \`متوفر: المنتج الأساسي + \${availableOffers.length} من \${selectedTier.offers.length} منتجات العرض\`,
+            title: 'Ø¹Ø±Ø¶ Ø¬Ø²Ø¦ÙŠ',
+            description: `Ù…ØªÙˆÙØ±: Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ + ${availableOffers.length} Ù…Ù† ${selectedTier.offers.length} Ù…Ù†ØªØ¬Ø§Øª Ø§Ù„Ø¹Ø±Ø¶`,
             availableOffers: availableOffers,
             action: 'proceed_partial'
           });
@@ -2547,16 +2289,16 @@ router.get("/modal.js", (req, res) => {
 
     showCustomToast(message, type = 'info') {
       const toast = document.createElement('div');
-      toast.className = \`salla-custom-toast salla-toast-\${type}\`;
+      toast.className = `salla-custom-toast salla-toast-${type}`;
       const bgColor = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6';
-      const icon = type === 'error' ? '×' : type === 'success' ? '✓' : 'i';
+      const icon = type === 'error' ? 'Ã—' : type === 'success' ? 'âœ“' : 'i';
 
-      toast.style.cssText = \`
+      toast.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
         z-index: 1000000;
-        background: \${bgColor};
+        background: ${bgColor};
         color: white;
         padding: 16px 20px;
         border-radius: 12px;
@@ -2573,9 +2315,9 @@ router.get("/modal.js", (req, res) => {
         gap: 8px;
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255,255,255,0.1);
-      \`;
+      `;
 
-      toast.innerHTML = \`<span style="font-size: 16px;">\${icon}</span><span>\${message}</span>\`;
+      toast.innerHTML = `<span style="font-size: 16px;">${icon}</span><span>${message}</span>`;
       document.body.appendChild(toast);
 
       setTimeout(() => {
@@ -2590,7 +2332,7 @@ router.get("/modal.js", (req, res) => {
       if (!document.getElementById('toast-animations')) {
         const style = document.createElement('style');
         style.id = 'toast-animations';
-        style.textContent = \`
+        style.textContent = `
           @keyframes slideInToast {
             from {
               transform: translateX(100%);
@@ -2611,18 +2353,18 @@ router.get("/modal.js", (req, res) => {
               opacity: 0;
             }
           }
-        \`;
+        `;
         document.head.appendChild(style);
       }
     }
 
   
-    showLoadingIndicator(message = 'جاري المعالجة...') {
+    showLoadingIndicator(message = 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©...') {
       this.hideLoadingIndicator();
       
       const loader = document.createElement('div');
       loader.id = 'hazem-bundle-loader';
-      loader.innerHTML = \`
+      loader.innerHTML = `
         <style>
           #hazem-bundle-loader {
             position: fixed;
@@ -2679,8 +2421,8 @@ router.get("/modal.js", (req, res) => {
           }
         </style>
         <div class="salla-loader-spinner"></div>
-        <div class="salla-loader-text">\${message}</div>
-      \`;
+        <div class="salla-loader-text">${message}</div>
+      `;
       
       document.body.appendChild(loader);
       
@@ -2708,7 +2450,7 @@ router.get("/modal.js", (req, res) => {
       }
 
       const selectorsHtml = productData.options.map((option, optionIndex) => {
-        const optionLabel = option.name || \`الخيار \${optionIndex + 1}\`;
+        const optionLabel = option.name || `Ø§Ù„Ø®ÙŠØ§Ø± ${optionIndex + 1}`;
 
         const isRequired = option.required || option.purpose === 'variants' || (option.values && option.values.length > 0);
 
@@ -2734,28 +2476,28 @@ router.get("/modal.js", (req, res) => {
         const allOutOfStock = option.values && option.values.length > 0 && availableValues.length === 0;
         
         const isSameAsTarget = isOffer && productId === this.productId;
-        const selectorProductId = isSameAsTarget ? \`\${productId}-offer\` : productId;
-        const labelSuffix = isSameAsTarget ? ' (للهدية)' : '';
+        const selectorProductId = isSameAsTarget ? `${productId}-offer` : productId;
+        const labelSuffix = isSameAsTarget ? ' (Ù„Ù„Ù‡Ø¯ÙŠØ©)' : '';
 
-        return \`
+        return `
           <div class="salla-variant-group">
-            <label class="salla-variant-label \${isRequired && !allOutOfStock ? 'required' : ''}" for="variant-\${selectorProductId}-\${option.id}">
-              \${optionLabel}\${labelSuffix}
-              \${allOutOfStock ? '<span style="color: #ef4444; font-size: 12px;"> (جميع الخيارات نفدت)</span>' : ''}
+            <label class="salla-variant-label ${isRequired && !allOutOfStock ? 'required' : ''}" for="variant-${selectorProductId}-${option.id}">
+              ${optionLabel}${labelSuffix}
+              ${allOutOfStock ? '<span style="color: #ef4444; font-size: 12px;"> (Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª Ù†ÙØ¯Øª)</span>' : ''}
             </label>
             <select
-              id="variant-\${selectorProductId}-\${option.id}"
-              class="salla-variant-select \${allOutOfStock ? 'all-out-of-stock' : ''}"
-              data-variant-product="\${selectorProductId}"
-              data-option-id="\${option.id}"
-              data-all-out-of-stock="\${allOutOfStock}"
-              data-is-offer="\${isOffer}"
-              data-original-product-id="\${productId}"
-              \${isRequired && !allOutOfStock ? 'required' : ''}
-              \${allOutOfStock ? 'disabled' : ''}
+              id="variant-${selectorProductId}-${option.id}"
+              class="salla-variant-select ${allOutOfStock ? 'all-out-of-stock' : ''}"
+              data-variant-product="${selectorProductId}"
+              data-option-id="${option.id}"
+              data-all-out-of-stock="${allOutOfStock}"
+              data-is-offer="${isOffer}"
+              data-original-product-id="${productId}"
+              ${isRequired && !allOutOfStock ? 'required' : ''}
+              ${allOutOfStock ? 'disabled' : ''}
             >
-              <option value="">\${allOutOfStock ? 'غير متوفر حالياً' : \`اختر \${optionLabel}\`}</option>
-              \${option.values ? option.values.map(value => {
+              <option value="">${allOutOfStock ? 'ØºÙŠØ± Ù…ØªÙˆÙØ± Ø­Ø§Ù„ÙŠØ§Ù‹' : `Ø§Ø®ØªØ± ${optionLabel}`}</option>
+              ${option.values ? option.values.map(value => {
                 let isValueOutOfStock = false;
                 
                 if (value.is_out_of_stock === true || value.is_available === false) {
@@ -2766,18 +2508,18 @@ router.get("/modal.js", (req, res) => {
                   }
                 }
                 
-                return \`<option value="\${value.id}" \${isValueOutOfStock ? 'disabled' : ''}>\${value.name}\${isValueOutOfStock ? ' (نفد المخزون)' : ''}</option>\`;
+                return `<option value="${value.id}" ${isValueOutOfStock ? 'disabled' : ''}>${value.name}${isValueOutOfStock ? ' (Ù†ÙØ¯ Ø§Ù„Ù…Ø®Ø²ÙˆÙ†)' : ''}</option>`;
               }).join('') : ''}
             </select>
           </div>
-        \`;
+        `;
       }).join('');
 
-      return \`
+      return `
         <div class="salla-variant-section">
-          \${selectorsHtml}
+          ${selectorsHtml}
         </div>
-      \`;
+      `;
     }
 
     renderTargetProductVariantSelectors(productData, buyQuantity) {
@@ -2791,18 +2533,18 @@ router.get("/modal.js", (req, res) => {
 
       const quantitySelectorsHtml = Array.from({ length: buyQuantity }, (_, index) => {
         const quantityNum = index + 1;
-        const productIdWithIndex = \`\${this.productId}-qty\${quantityNum}\`;
+        const productIdWithIndex = `${this.productId}-qty${quantityNum}`;
 
-        return \`
+        return `
           <div class="salla-quantity-direct">
             <div class="salla-quantity-direct-header">
-              <span class="salla-quantity-badge">#\${quantityNum}</span>
+              <span class="salla-quantity-badge">#${quantityNum}</span>
             </div>
             <div class="salla-quantity-direct-variants">
-              \${this.renderCompactVariantSelectors(productData, productIdWithIndex, false)}
+              ${this.renderCompactVariantSelectors(productData, productIdWithIndex, false)}
             </div>
           </div>
-        \`;
+        `;
       }).join('');
 
       return quantitySelectorsHtml;
@@ -2816,10 +2558,10 @@ router.get("/modal.js", (req, res) => {
       }
 
       const isSameAsTarget = isOffer && productId === this.productId;
-      const selectorProductId = isSameAsTarget ? \`\${productId}-offer\` : productId;
+      const selectorProductId = isSameAsTarget ? `${productId}-offer` : productId;
 
       const selectorsHtml = productData.options.map((option, optionIndex) => {
-        const optionLabel = option.name || \`الخيار \${optionIndex + 1}\`;
+        const optionLabel = option.name || `Ø§Ù„Ø®ÙŠØ§Ø± ${optionIndex + 1}`;
         const isRequired = option.required || option.purpose === 'variants' || (option.values && option.values.length > 0);
 
         const availableValues = option.values ? option.values.filter(value => {
@@ -2835,24 +2577,24 @@ router.get("/modal.js", (req, res) => {
 
         const allOutOfStock = option.values && option.values.length > 0 && availableValues.length === 0;
 
-        return \`
+        return `
           <div class="salla-variant-compact-group">
-            <label class="salla-variant-compact-label \${isRequired && !allOutOfStock ? 'required' : ''}" for="variant-\${selectorProductId}-\${option.id}">
-              \${optionLabel}
+            <label class="salla-variant-compact-label ${isRequired && !allOutOfStock ? 'required' : ''}" for="variant-${selectorProductId}-${option.id}">
+              ${optionLabel}
             </label>
             <select
-              id="variant-\${selectorProductId}-\${option.id}"
-              class="salla-variant-compact-select \${allOutOfStock ? 'all-out-of-stock' : ''}"
-              data-variant-product="\${selectorProductId}"
-              data-option-id="\${option.id}"
-              data-all-out-of-stock="\${allOutOfStock}"
-              data-is-offer="\${isOffer}"
-              data-original-product-id="\${productId}"
-              \${isRequired && !allOutOfStock ? 'required' : ''}
-              \${allOutOfStock ? 'disabled' : ''}
+              id="variant-${selectorProductId}-${option.id}"
+              class="salla-variant-compact-select ${allOutOfStock ? 'all-out-of-stock' : ''}"
+              data-variant-product="${selectorProductId}"
+              data-option-id="${option.id}"
+              data-all-out-of-stock="${allOutOfStock}"
+              data-is-offer="${isOffer}"
+              data-original-product-id="${productId}"
+              ${isRequired && !allOutOfStock ? 'required' : ''}
+              ${allOutOfStock ? 'disabled' : ''}
             >
-              <option value="">\${allOutOfStock ? 'غير متوفر' : \`اختر \${optionLabel}\`}</option>
-              \${option.values ? option.values.map(value => {
+              <option value="">${allOutOfStock ? 'ØºÙŠØ± Ù…ØªÙˆÙØ±' : `Ø§Ø®ØªØ± ${optionLabel}`}</option>
+              ${option.values ? option.values.map(value => {
                 let isValueOutOfStock = false;
 
                 if (value.is_out_of_stock === true || value.is_available === false) {
@@ -2863,21 +2605,21 @@ router.get("/modal.js", (req, res) => {
                   }
                 }
 
-                return \`<option value="\${value.id}" \${isValueOutOfStock ? 'disabled' : ''}>\${value.name}\${isValueOutOfStock ? ' (نفد)' : ''}</option>\`;
+                return `<option value="${value.id}" ${isValueOutOfStock ? 'disabled' : ''}>${value.name}${isValueOutOfStock ? ' (Ù†ÙØ¯)' : ''}</option>`;
               }).join('') : ''}
             </select>
           </div>
-        \`;
+        `;
       }).join('');
 
-      return \`<div class="salla-variant-compact">\${selectorsHtml}</div>\`;
+      return `<div class="salla-variant-compact">${selectorsHtml}</div>`;
     }
 
     trackBundleSelection(bundleData) {
       if (typeof gtag === 'function') {
         gtag('event', 'select_promotion', {
           creative_name: this.bundleData.name || 'Bundle Offer',
-          creative_slot: \`tier-\${bundleData.tier}\`,
+          creative_slot: `tier-${bundleData.tier}`,
           promotion_id: this.bundleData.id,
           promotion_name: this.bundleData.name
         });
@@ -2995,15 +2737,15 @@ router.get("/modal.js", (req, res) => {
       
       switch (currentStepType) {
         case 'bundles':
-          this.showSallaToast('يرجى اختيار باقة أولاً', 'error');
+          this.showSallaToast('ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ø¨Ø§Ù‚Ø© Ø£ÙˆÙ„Ø§Ù‹', 'error');
           break;
           
         case 'target_variants':
         case 'free_gifts':
           const missing = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
           if (missing.length > 0) {
-            const missingDetails = missing.map(m => \`\${m.productName}: \${m.optionName}\`).join('، ');
-            this.showSallaToast(\`يجب اختيار: \${missingDetails}\`, 'error');
+            const missingDetails = missing.map(m => `${m.productName}: ${m.optionName}`).join('ØŒ ');
+            this.showSallaToast(`ÙŠØ¬Ø¨ Ø§Ø®ØªÙŠØ§Ø±: ${missingDetails}`, 'error');
             this.highlightMissingVariants(missing);
             const first = missing[0];
             this.scrollToVariantInputAggressively(first.selectorProductId || first.productId, first.optionId);
@@ -3011,7 +2753,7 @@ router.get("/modal.js", (req, res) => {
           break;
           
         default:
-          this.showSallaToast('يرجى إكمال الخطوة الحالية', 'error');
+          this.showSallaToast('ÙŠØ±Ø¬Ù‰ Ø¥ÙƒÙ…Ø§Ù„ Ø§Ù„Ø®Ø·ÙˆØ© Ø§Ù„Ø­Ø§Ù„ÙŠØ©', 'error');
       }
     }
 
@@ -3112,7 +2854,7 @@ router.get("/modal.js", (req, res) => {
         if (counterText) {
           counterText.style.opacity = '0';
           setTimeout(() => {
-            counterText.textContent = this.currentStep + ' من ' + this.totalSteps;
+            counterText.textContent = this.currentStep + ' Ù…Ù† ' + this.totalSteps;
             counterText.style.opacity = '1';
           }, 150);
         }
@@ -3207,11 +2949,11 @@ router.get("/modal.js", (req, res) => {
         
         if (isLastStep || isBeforeCheckout) {
           const bundleConfig = this.bundleData.data || this.bundleData;
-          const checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب';
+          const checkoutButtonText = bundleConfig.checkout_button_text || 'Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø·Ù„Ø¨';
           nextBtn.textContent = checkoutButtonText;
           nextBtn.classList.add('primary');
         } else {
-          nextBtn.textContent = 'التالي';
+          nextBtn.textContent = 'Ø§Ù„ØªØ§Ù„ÙŠ';
           nextBtn.classList.add('primary');
         }
       }
@@ -3228,14 +2970,14 @@ router.get("/modal.js", (req, res) => {
     }
 
     toggleBundleDetails(bundleId) {
-      const itemsList = document.querySelector(\`#bundle-items-\${bundleId}\`);
-      const toggleBtn = document.querySelector(\`#toggle-\${bundleId}\`);
+      const itemsList = document.querySelector(`#bundle-items-${bundleId}`);
+      const toggleBtn = document.querySelector(`#toggle-${bundleId}`);
 
       if (itemsList) {
         const isExpanded = itemsList.classList.toggle('expanded');
 
         if (toggleBtn) {
-          toggleBtn.textContent = isExpanded ? 'إخفاء التفاصيل' : 'عرض التفاصيل';
+          toggleBtn.textContent = isExpanded ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„ØªÙØ§ØµÙŠÙ„' : 'Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„';
         }
       }
     }
@@ -3314,12 +3056,12 @@ router.get("/modal.js", (req, res) => {
       
       const effectClass = this.timerSettings.effect !== 'none' ? this.timerSettings.effect : '';
       
-      return \`
+      return `
         <div class="salla-timer-container" id="salla-timer">
-          <div class="salla-timer-label">\${this.timerSettings.style.label}</div>
-          <div class="salla-timer-display \${effectClass}" id="salla-timer-display">00:00:00</div>
+          <div class="salla-timer-label">${this.timerSettings.style.label}</div>
+          <div class="salla-timer-display ${effectClass}" id="salla-timer-display">00:00:00</div>
         </div>
-      \`;
+      `;
     }
 
     startTimer() {
@@ -3354,7 +3096,7 @@ router.get("/modal.js", (req, res) => {
       const minutes = Math.floor((remaining % 3600000) / 60000);
       const seconds = Math.floor((remaining % 60000) / 1000);
       
-      display.textContent = \`\${String(hours).padStart(2, '0')}:\${String(minutes).padStart(2, '0')}:\${String(seconds).padStart(2, '0')}\`;
+      display.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
     calculateCurrentTotal() {
@@ -3438,8 +3180,8 @@ router.get("/modal.js", (req, res) => {
       const truckIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
       const checkIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
       const icon = freeShipping.icon || truckIcon;
-      const text = freeShipping.text || 'شحن مجاني لهذه الباقة';
-      const progressText = freeShipping.progress_text || 'أضف {amount} ريال للحصول على شحن مجاني';
+      const text = freeShipping.text || 'Ø´Ø­Ù† Ù…Ø¬Ø§Ù†ÙŠ Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø¨Ø§Ù‚Ø©';
+      const progressText = freeShipping.progress_text || 'Ø£Ø¶Ù {amount} Ø±ÙŠØ§Ù„ Ù„Ù„Ø­ØµÙˆÙ„ Ø¹Ù„Ù‰ Ø´Ø­Ù† Ù…Ø¬Ø§Ù†ÙŠ';
 
       const progressColor = this.getContrastColor(bgColor, freeShipping.progress_color || '#ffffff');
       const progressBgColor = this.getDarkerColor(bgColor, 0.2); // Darker background for contrast
@@ -3458,31 +3200,31 @@ router.get("/modal.js", (req, res) => {
         }
 
         const percentage = 100;
-        const progressText = isEligible ? '🎉 مبروك! لقد حصلت على الشحن المجاني!' : ' شحن مجاني متاح دائماً لهذه الباقة!';
+        const progressText = isEligible ? 'ðŸŽ‰ Ù…Ø¨Ø±ÙˆÙƒ! Ù„Ù‚Ø¯ Ø­ØµÙ„Øª Ø¹Ù„Ù‰ Ø§Ù„Ø´Ø­Ù† Ø§Ù„Ù…Ø¬Ø§Ù†ÙŠ!' : ' Ø´Ø­Ù† Ù…Ø¬Ø§Ù†ÙŠ Ù…ØªØ§Ø­ Ø¯Ø§Ø¦Ù…Ø§Ù‹ Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø¨Ø§Ù‚Ø©!';
 
-        return \`
+        return `
           <div class="salla-free-shipping-banner salla-free-shipping-success salla-progress-complete" style="
-            background: \${bgColor};
-            color: \${textColor};
+            background: ${bgColor};
+            color: ${textColor};
             flex-direction: column;
             gap: 12px;
             padding: 18px;
-            border-radius: \${borderRadius}px;
+            border-radius: ${borderRadius}px;
             position: relative;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             animation: successPulse 2s ease-in-out infinite;
           ">
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
-              <span style="display: flex; align-items: center; animation: checkmarkBounce 1s ease-in-out;">\${checkIcon}</span>
-              <span style="flex: 1; text-align: center; font-weight: 600; animation: fadeInSlide 0.6s ease-out;">\${text}</span>
+              <span style="display: flex; align-items: center; animation: checkmarkBounce 1s ease-in-out;">${checkIcon}</span>
+              <span style="flex: 1; text-align: center; font-weight: 600; animation: fadeInSlide 0.6s ease-out;">${text}</span>
             </div>
 
             <!-- ALWAYS show progress bar at 100% for visual consistency -->
             <div style="position: relative; width: 100%;">
               <div style="
                 width: 100%;
-                background: \${progressBgColor};
+                background: ${progressBgColor};
                 border-radius: 25px;
                 height: 14px;
                 overflow: hidden;
@@ -3509,7 +3251,7 @@ router.get("/modal.js", (req, res) => {
               <!-- Progress fill at 100% with special success gradient -->
               <div style="
                 width: 100%;
-                background: linear-gradient(90deg, \${progressColor}, rgba(255,255,255,0.6), \${progressColor});
+                background: linear-gradient(90deg, ${progressColor}, rgba(255,255,255,0.6), ${progressColor});
                 height: 100%;
                 transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
                 border-radius: 25px;
@@ -3576,7 +3318,7 @@ router.get("/modal.js", (req, res) => {
               font-weight: 600;
               animation: fadeInSlide 0.8s ease-out 0.2s both;
             ">
-              \${progressText}
+              ${progressText}
             </div>
 
             <!-- Overall shimmer overlay -->
@@ -3590,7 +3332,7 @@ router.get("/modal.js", (req, res) => {
               animation: shimmer 3s ease-in-out infinite;
             "></div>
           </div>
-        \`;
+        `;
       }
 
       if (showProgress && !isEligible) {
@@ -3606,22 +3348,22 @@ router.get("/modal.js", (req, res) => {
 
         animateProgress(percentage);
 
-        return \`
-          <div class="salla-free-shipping-banner salla-free-shipping-progress salla-progress-\${progressLevel}" style="
-            background: \${bgColor};
-            color: \${textColor};
+        return `
+          <div class="salla-free-shipping-banner salla-free-shipping-progress salla-progress-${progressLevel}" style="
+            background: ${bgColor};
+            color: ${textColor};
             flex-direction: column;
             gap: 12px;
             padding: 18px;
-            border-radius: \${borderRadius}px;
+            border-radius: ${borderRadius}px;
             position: relative;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             transition: all 0.3s ease;
           ">
             <div style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;">
-              <span style="display: flex; align-items: center; animation: truckBounce 2s ease-in-out infinite;">\${icon}</span>
-              <span style="flex: 1; text-align: center; font-weight: 500; animation: fadeInSlide 0.4s ease-out;">\${message}</span>
+              <span style="display: flex; align-items: center; animation: truckBounce 2s ease-in-out infinite;">${icon}</span>
+              <span style="flex: 1; text-align: center; font-weight: 500; animation: fadeInSlide 0.4s ease-out;">${message}</span>
               <span style="
                 background: rgba(255,255,255,0.2);
                 padding: 4px 8px;
@@ -3631,13 +3373,13 @@ router.get("/modal.js", (req, res) => {
                 min-width: 45px;
                 text-align: center;
                 animation: popIn 0.6s ease-out;
-              ">\${Math.round(percentage)}%</span>
+              ">${Math.round(percentage)}%</span>
             </div>
 
             <!-- Enhanced progress bar with segments -->
             <div style="
               width: 100%;
-              background: \${progressBgColor};
+              background: ${progressBgColor};
               border-radius: 25px;
               height: 14px;
               overflow: hidden;
@@ -3663,8 +3405,8 @@ router.get("/modal.js", (req, res) => {
 
               <!-- Progress fill with gradient -->
               <div style="
-                width: \${percentage}%;
-                background: linear-gradient(90deg, \${progressColor}, rgba(255,255,255,0.4));
+                width: ${percentage}%;
+                background: linear-gradient(90deg, ${progressColor}, rgba(255,255,255,0.4));
                 height: 100%;
                 transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
                 border-radius: 25px;
@@ -3708,13 +3450,13 @@ router.get("/modal.js", (req, res) => {
               font-weight: 500;
               animation: fadeInSlide 0.8s ease-out 0.2s both;
             ">
-              ' + (percentage < 25 ? (freeShipping.motivation_0_25 || ' ابدأ رحلتك نحو الشحن المجاني!') :
-                percentage < 50 ? (freeShipping.motivation_25_50 || ' أحسنت! واصل التقدم...') :
-                percentage < 75 ? (freeShipping.motivation_50_75 || 'رائع! اقتربت جداً من الهدف!') :
-                percentage < 100 ? (freeShipping.motivation_75_100 || ' ممتاز! خطوة أخيرة فقط!') : '') + '
+              ' + (percentage < 25 ? (freeShipping.motivation_0_25 || ' Ø§Ø¨Ø¯Ø£ Ø±Ø­Ù„ØªÙƒ Ù†Ø­Ùˆ Ø§Ù„Ø´Ø­Ù† Ø§Ù„Ù…Ø¬Ø§Ù†ÙŠ!') :
+                percentage < 50 ? (freeShipping.motivation_25_50 || ' Ø£Ø­Ø³Ù†Øª! ÙˆØ§ØµÙ„ Ø§Ù„ØªÙ‚Ø¯Ù…...') :
+                percentage < 75 ? (freeShipping.motivation_50_75 || 'Ø±Ø§Ø¦Ø¹! Ø§Ù‚ØªØ±Ø¨Øª Ø¬Ø¯Ø§Ù‹ Ù…Ù† Ø§Ù„Ù‡Ø¯Ù!') :
+                percentage < 100 ? (freeShipping.motivation_75_100 || ' Ù…Ù…ØªØ§Ø²! Ø®Ø·ÙˆØ© Ø£Ø®ÙŠØ±Ø© ÙÙ‚Ø·!') : '') + '
             </div>
           </div>
-        \`;
+        `;
       }
       
       return '';
@@ -3726,36 +3468,36 @@ router.get("/modal.js", (req, res) => {
       const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
       const avgRating = (totalRating / this.reviews.length).toFixed(1);
       
-      return \`
+      return `
         <div class="salla-reviews-modern" style="margin-top: 16px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-            <h3 style="font-size: 15px; font-weight: 600; margin: 0;">آراء العملاء</h3>
-            <div style="font-size: 13px; color: var(--text-2);">\${avgRating} ★ متوسط</div>
+            <h3 style="font-size: 15px; font-weight: 600; margin: 0;">Ø¢Ø±Ø§Ø¡ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡</h3>
+            <div style="font-size: 13px; color: var(--text-2);">${avgRating} â˜… Ù…ØªÙˆØ³Ø·</div>
           </div>
           <div style="position: relative;">
             <div class="salla-reviews-track-modern" id="salla-reviews-track-modern" style="display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
-              \${this.reviews.map((review, index) => \`
+              ${this.reviews.map((review, index) => `
                 <article style="min-width: 80%; max-width: 320px; flex-shrink: 0; scroll-snap-align: center; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-card); padding: 16px; box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 1px rgba(16,24,40,.04);">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <div style="font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 12px;">\${review.customerName}</div>
-                    <div style="font-size: 12px; color: var(--text-2); white-space: nowrap;">\${review.timeAgo}</div>
+                    <div style="font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 12px;">${review.customerName}</div>
+                    <div style="font-size: 12px; color: var(--text-2); white-space: nowrap;">${review.timeAgo}</div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px;">
-                    \${Array.from({ length: 5 }).map((_, i) => \`
-                      <svg width="14" height="14" viewBox="0 0 24 24" style="\${i < review.rating ? 'fill: var(--text-1);' : 'fill: none;'}">
+                    ${Array.from({ length: 5 }).map((_, i) => `
+                      <svg width="14" height="14" viewBox="0 0 24 24" style="${i < review.rating ? 'fill: var(--text-1);' : 'fill: none;'}">
                         <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" stroke="var(--text-1)" stroke-width="1" />
                       </svg>
-                    \`).join('')}
+                    `).join('')}
                   </div>
-                  <p style="font-size: 14px; color: var(--text-1); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">\${review.content}</p>
+                  <p style="font-size: 14px; color: var(--text-1); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">${review.content}</p>
                 </article>
-              \`).join('')}
+              `).join('')}
             </div>
             <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none;">
-              <button onclick="window.sallaBundleModal.scrollReviewBy(-1)" aria-label="السابق" style="pointer-events: auto; margin-left: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
+              <button onclick="window.sallaBundleModal.scrollReviewBy(-1)" aria-label="Ø§Ù„Ø³Ø§Ø¨Ù‚" style="pointer-events: auto; margin-left: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
                 <svg width="16" height="16" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
               </button>
-              <button onclick="window.sallaBundleModal.scrollReviewBy(1)" aria-label="التالي" style="pointer-events: auto; margin-right: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
+              <button onclick="window.sallaBundleModal.scrollReviewBy(1)" aria-label="Ø§Ù„ØªØ§Ù„ÙŠ" style="pointer-events: auto; margin-right: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
                 <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
               </button>
             </div>
@@ -3767,7 +3509,7 @@ router.get("/modal.js", (req, res) => {
             display: none;
           }
         </style>
-      \`;
+      `;
     }
 
     renderReviews(currentStepType = 'bundles') {
@@ -3777,34 +3519,34 @@ router.get("/modal.js", (req, res) => {
       const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
       const avgRating = (totalRating / this.reviews.length).toFixed(1);
       
-      return \`
+      return `
         <div class="salla-reviews-section">
           <div class="salla-reviews-header">
-            <span> آراء العملاء</span>
-            <span style="font-size: 13px; color: var(--text-2); font-weight: normal;">\${avgRating} ★ متوسط</span>
+            <span> Ø¢Ø±Ø§Ø¡ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡</span>
+            <span style="font-size: 13px; color: var(--text-2); font-weight: normal;">${avgRating} â˜… Ù…ØªÙˆØ³Ø·</span>
           </div>
           <div class="salla-reviews-carousel">
             <div class="salla-reviews-track" id="salla-reviews-track">
-              \${this.reviews.map(review => \`
+              ${this.reviews.map(review => `
                 <div class="salla-review-card">
                   <div class="salla-review-header">
-                    <img src="\${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
-                         alt="\${review.customerName}" 
+                    <img src="${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
+                         alt="${review.customerName}" 
                          class="salla-review-avatar"
                          onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />
                     <div class="salla-review-customer">
-                      <div class="salla-review-name">\${review.customerName}</div>
-                      <div class="salla-review-rating">\${''.repeat(review.rating)}</div>
+                      <div class="salla-review-name">${review.customerName}</div>
+                      <div class="salla-review-rating">${''.repeat(review.rating)}</div>
                     </div>
                   </div>
-                  <div class="salla-review-content">\${review.content}</div>
-                  <!-- <div class="salla-review-time">\${review.timeAgo}</div> -->
+                  <div class="salla-review-content">${review.content}</div>
+                  <!-- <div class="salla-review-time">${review.timeAgo}</div> -->
                 </div>
-              \`).join('')}
+              `).join('')}
             </div>
           </div>
         </div>
-      \`;
+      `;
     }
 
     startReviewsAutoScroll() {
@@ -4002,7 +3744,7 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderDiscountCode() {
-      return \`
+      return `
         <div class="salla-discount-section">
           <div class="salla-discount-header" onclick="window.sallaBundleModal.toggleDiscountSection()">
             <div class="salla-discount-title">
@@ -4010,30 +3752,30 @@ router.get("/modal.js", (req, res) => {
                 <path d="M9 2L7 6H3C2.45 6 2 6.45 2 7V9C3.1 9 4 9.9 4 11C4 12.1 3.1 13 2 13V15C2 15.55 2.45 16 3 16H7L9 20L15 22L17 18H21C21.55 18 22 17.55 22 17V15C20.9 15 20 14.1 20 13C20 11.9 20.9 11 22 11V9C22 8.45 21.55 8 21 8H17L15 4L9 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M9 8L15 14M15 8L9 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
-              لديك كود خصم؟
+              Ù„Ø¯ÙŠÙƒ ÙƒÙˆØ¯ Ø®ØµÙ…ØŸ
             </div>
-            <span class="salla-discount-toggle" id="salla-discount-toggle">▼</span>
+            <span class="salla-discount-toggle" id="salla-discount-toggle">â–¼</span>
           </div>
           <div class="salla-discount-body" id="salla-discount-body">
             <div class="salla-discount-input-group">
               <input type="text" 
                      class="salla-discount-input" 
                      id="salla-discount-input"
-                     placeholder="أدخل كود الخصم"
-                     value="\${this.discountCode}"
+                     placeholder="Ø£Ø¯Ø®Ù„ ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ…"
+                     value="${this.discountCode}"
                      autocomplete="off"
                      autocorrect="off"
                      autocapitalize="off"
                      spellcheck="false" />
               <button class="salla-discount-apply-btn" 
                       onclick="window.sallaBundleModal.applyDiscountCode()">
-                تطبيق
+                ØªØ·Ø¨ÙŠÙ‚
               </button>
             </div>
             <div id="salla-discount-message"></div>
           </div>
         </div>
-      \`;
+      `;
     }
 
     toggleDiscountSection() {
@@ -4064,7 +3806,7 @@ router.get("/modal.js", (req, res) => {
       
       // Check if user is logged in first
       if (!this.isUserLoggedIn()) {
-        messageEl.innerHTML = '<div class="salla-discount-message error">يجب تسجيل الدخول لتطبيق كود الخصم</div>';
+        messageEl.innerHTML = '<div class="salla-discount-message error">ÙŠØ¬Ø¨ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù„ØªØ·Ø¨ÙŠÙ‚ ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ…</div>';
         setTimeout(() => {
           this.showLoginModal();
         }, 1500);
@@ -4074,14 +3816,14 @@ router.get("/modal.js", (req, res) => {
       const code = input.value.trim();
       
       if (!code) {
-        messageEl.innerHTML = '<div class="salla-discount-message error">الرجاء إدخل كود الخصم</div>';
+        messageEl.innerHTML = '<div class="salla-discount-message error">Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ù„ ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ…</div>';
         return;
       }
       
       try {
         const selectedBundleData = this.getSelectedBundleData();
         if (!selectedBundleData) {
-          messageEl.innerHTML = '<div class="salla-discount-message error">يرجى اختيار باقة أولاً</div>';
+          messageEl.innerHTML = '<div class="salla-discount-message error">ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ø¨Ø§Ù‚Ø© Ø£ÙˆÙ„Ø§Ù‹</div>';
           return;
         }
         
@@ -4090,14 +3832,14 @@ router.get("/modal.js", (req, res) => {
         // Check for missing variants
         const missingVariants = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
         if (missingVariants.length > 0) {
-          const missingDetails = missingVariants.map(mv => \`\${mv.productName}: \${mv.optionName}\`).join('، ');
-          messageEl.innerHTML = \`<div class="salla-discount-message error">يجب اختيار الخيارات أولاً: \${missingDetails}</div>\`;
+          const missingDetails = missingVariants.map(mv => `${mv.productName}: ${mv.optionName}`).join('ØŒ ');
+          messageEl.innerHTML = `<div class="salla-discount-message error">ÙŠØ¬Ø¨ Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª Ø£ÙˆÙ„Ø§Ù‹: ${missingDetails}</div>`;
           this.highlightMissingVariants(missingVariants);
           return;
         }
         
         // Show loading indicator immediately before any cart operations
-        this.showLoadingIndicator('جاري إضافة المنتجات...');
+        this.showLoadingIndicator('Ø¬Ø§Ø±ÙŠ Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª...');
         
         // Add items to cart (same logic as handleCheckout)
         const addedProducts = [];
@@ -4109,7 +3851,7 @@ router.get("/modal.js", (req, res) => {
         for (let i = 0; i < targetQuantity; i++) {
           let targetOptionsForThisQuantity;
           if (targetQuantity > 1 && bundleConfig.target_product_data && bundleConfig.target_product_data.has_variants) {
-            const productIdWithIndex = \`\${this.productId}-qty\${i+1}\`;
+            const productIdWithIndex = `${this.productId}-qty${i+1}`;
             targetOptionsForThisQuantity = this.getSelectedVariantOptions(productIdWithIndex);
           } else {
             targetOptionsForThisQuantity = targetOptions;
@@ -4159,7 +3901,7 @@ router.get("/modal.js", (req, res) => {
         
         // Now apply the coupon to the cart
         // Update loading message
-        this.showLoadingIndicator('جاري تطبيق كود الخصم...');
+        this.showLoadingIndicator('Ø¬Ø§Ø±ÙŠ ØªØ·Ø¨ÙŠÙ‚ ÙƒÙˆØ¯ Ø§Ù„Ø®ØµÙ…...');
         
         try {
           const couponResponse = await window.salla.cart.addCoupon(code);
@@ -4187,7 +3929,7 @@ router.get("/modal.js", (req, res) => {
           this.trackBundleSelection(selectedBundleData);
 
           // Update loading to checkout message
-          this.showLoadingIndicator('جاري التوجه للدفع...');
+          this.showLoadingIndicator('Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªÙˆØ¬Ù‡ Ù„Ù„Ø¯ÙØ¹...');
 
           // Close modal and hide sticky button
           const modal = document.getElementById('salla-product-modal');
@@ -4211,29 +3953,29 @@ router.get("/modal.js", (req, res) => {
             this.hideLoadingIndicator();
             // Fallback to checkout page
             const currentPath = window.location.pathname;
-            const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+            const pathMatch = currentPath.match(/^(\/[^/]+\/)/);
             const basePath = pathMatch ? pathMatch[1] : '/';
-            window.location.href = \`\${window.location.origin}\${basePath}checkout\`;
+            window.location.href = `${window.location.origin}${basePath}checkout`;
           }
           
         } catch (couponError) {
           console.error('[Coupon] Failed to apply coupon:', couponError);
           this.hideLoadingIndicator();
-          messageEl.innerHTML = \`<div class="salla-discount-message error">فشل تطبيق الكود. جاري التوجه للسلة...</div>\`;
+          messageEl.innerHTML = `<div class="salla-discount-message error">ÙØ´Ù„ ØªØ·Ø¨ÙŠÙ‚ Ø§Ù„ÙƒÙˆØ¯. Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªÙˆØ¬Ù‡ Ù„Ù„Ø³Ù„Ø©...</div>`;
           
           // Still go to cart even if coupon fails
           setTimeout(() => {
             const currentPath = window.location.pathname;
-            const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+            const pathMatch = currentPath.match(/^(\/[^/]+\/)/);
             const basePath = pathMatch ? pathMatch[1] : '/';
-            window.location.href = \`\${window.location.origin}\${basePath}cart\`;
+            window.location.href = `${window.location.origin}${basePath}cart`;
           }, 1000);
         }
         
       } catch (error) {
         console.error('[Discount] Apply error:', error);
         this.hideLoadingIndicator();
-        messageEl.innerHTML = '<div class="salla-discount-message error">حدث خطأ، حاول مرة أخرى</div>';
+        messageEl.innerHTML = '<div class="salla-discount-message error">Ø­Ø¯Ø« Ø®Ø·Ø£ØŒ Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰</div>';
       }
     }
 
@@ -4269,22 +4011,22 @@ router.get("/modal.js", (req, res) => {
         const iconFile = iconMap[method.slug];
         const iconPath = baseUrl + '/icons/' + iconFile;
 
-        return \`
-          <div class="salla-payment-badge" title="\${method.name || ''}">
-            <img src="\${iconPath}" alt="\${method.name || method.slug}" class="salla-payment-logo" />
+        return `
+          <div class="salla-payment-badge" title="${method.name || ''}">
+            <img src="${iconPath}" alt="${method.name || method.slug}" class="salla-payment-logo" />
           </div>
-        \`;
+        `;
       }).join('');
 
       const duplicatedBadges = paymentBadges + paymentBadges + paymentBadges;
 
-      return \`
+      return `
         <div class="salla-payment-methods">
           <div class="salla-payment-slider" id="salla-payment-slider">
-            \${duplicatedBadges}
+            ${duplicatedBadges}
           </div>
         </div>
-      \`;
+      `;
     }
 
     getPaymentIconSVG(slug) {
@@ -4399,7 +4141,7 @@ router.get("/modal.js", (req, res) => {
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
         document.body.style.width = '100%';
-        document.body.style.top = \`-\${window.scrollY}px\`;
+        document.body.style.top = `-${window.scrollY}px`;
         
         // Store current scroll position
         this.scrollPosition = window.scrollY;
@@ -4479,14 +4221,9 @@ router.get("/modal.js", (req, res) => {
     }
   }
 
-  window.SallaBundleModal = SallaBundleModal;
+// Export for bundler - will be exposed to window by esbuild IIFE
+export { SallaBundleModal };
 
-  window.sallaBundleModal = null;
-
-})();
-`;
-
-  res.send(modalScript);
-});
-
-export default router;
+// Initialize on window
+window.SallaBundleModal = SallaBundleModal;
+window.sallaBundleModal = null;

@@ -95,6 +95,9 @@ class SnippetController {
       hideAllToasts();
       
       if (!window.salla?.cart) {
+        console.log('[Salla Bundle] Salla SDK not ready, will retry...');
+        // Retry after a short delay if Salla SDK is not ready
+        setTimeout(clearCartSilently, 500);
         return;
       }
 
@@ -102,11 +105,15 @@ class SnippetController {
         .then(({ data }) => {
           const items = data?.items || [];
           if (!items.length) {
+            console.log('[Salla Bundle] Cart is already empty');
             return;
           }
+          console.log(\`[Salla Bundle] Clearing \${items.length} items from cart...\`);
           // Delete each line item silently
           const deletions = items.map((it) => salla.cart.deleteItem({ id: it.id }));
-          return Promise.allSettled(deletions);
+          return Promise.allSettled(deletions).then(() => {
+            console.log('[Salla Bundle] Cart cleared successfully');
+          });
         })
         .catch((err) => {
           console.log('[Salla Bundle] Clear cart failed:', err);
@@ -118,6 +125,11 @@ class SnippetController {
       document.addEventListener('DOMContentLoaded', clearCartSilently);
     } else {
       clearCartSilently();
+    }
+    
+    // Also run when Salla SDK is ready (if available)
+    if (window.salla?.onReady) {
+      window.salla.onReady(clearCartSilently);
     }
   })();
 
