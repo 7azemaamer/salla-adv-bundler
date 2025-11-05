@@ -4200,7 +4200,26 @@ router.get("/modal.js", (req, res) => {
     show() {
       if (this.modalElement) {
         this.modalElement.classList.add('show');
+        
+        // Prevent body scroll on all platforms
         document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.top = \`-\${window.scrollY}px\`;
+        
+        // Store current scroll position
+        this.scrollPosition = window.scrollY;
+        
+        // Add touch event listener to prevent scroll on modal overlay
+        this.preventScrollHandler = (e) => {
+          // Only prevent if touching the overlay (not the scrollable content)
+          if (e.target.classList.contains('salla-bundle-modal')) {
+            e.preventDefault();
+          }
+        };
+        
+        this.modalElement.addEventListener('touchmove', this.preventScrollHandler, { passive: false });
+        
         this.triggerFeedback('success');
         setTimeout(() => {
           this.startTimer();
@@ -4213,7 +4232,25 @@ router.get("/modal.js", (req, res) => {
     hide() {
       if (this.modalElement) {
         this.modalElement.classList.remove('show');
+        
+        // Restore body scroll
         document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.top = '';
+        
+        // Restore scroll position
+        if (this.scrollPosition !== undefined) {
+          window.scrollTo(0, this.scrollPosition);
+          this.scrollPosition = undefined;
+        }
+        
+        // Remove touch event listener
+        if (this.preventScrollHandler) {
+          this.modalElement.removeEventListener('touchmove', this.preventScrollHandler);
+          this.preventScrollHandler = null;
+        }
+        
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
           this.timerInterval = null;
