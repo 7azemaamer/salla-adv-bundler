@@ -117,7 +117,7 @@ function UserMenu() {
         <Menu.Label>الحساب</Menu.Label>
         <Menu.Item
           leftSection={<IconUser size="0.9rem" />}
-          onClick={() => navigate("/dashboard/settings")}
+          onClick={() => navigate("/dashboard/profile")}
         >
           الملف الشخصي
         </Menu.Item>
