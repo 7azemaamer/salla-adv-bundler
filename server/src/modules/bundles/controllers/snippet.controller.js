@@ -1402,7 +1402,31 @@ class SnippetController {
         }
 
       } catch (error) {
-        alert('عذراً، حدث خطأ في تحميل العروض. يرجى المحاولة مرة أخرى.');
+        console.error('[Bundle Modal] Error:', error);
+        
+        // Show more specific error message based on the error type
+        let errorMessage = 'عذراً، حدث خطأ في تحميل العروض. يرجى المحاولة مرة أخرى.';
+        
+        if (error.message && error.message.includes('No active bundle offers')) {
+          errorMessage = 'لا توجد عروض باقات متاحة حالياً لهذا المنتج.';
+        } else if (error.message && error.message.includes('No bundle offers found')) {
+          errorMessage = 'لم يتم العثور على عروض باقات لهذا المنتج.';
+        } else if (error.message && error.message.includes('Bundle API error: 404')) {
+          errorMessage = 'هذا المنتج لا يحتوي على عروض باقات.';
+        } else if (error.message && error.message.includes('Bundle API error')) {
+          errorMessage = 'لم نتمكن من تحميل عروض الباقات. يرجى التحديث والمحاولة مرة أخرى.';
+        } else if (error.message && error.message.includes('Invalid JSON')) {
+          errorMessage = 'حدث خطأ في معالجة البيانات. يرجى المحاولة مرة أخرى.';
+        } else if (error.message && (error.message.includes('network') || error.message.includes('fetch'))) {
+          errorMessage = 'خطأ في الاتصال بالإنترنت. يرجى التحقق من اتصالك والمحاولة مرة أخرى.';
+        }
+        
+        // Use Salla's notification if available, otherwise use alert
+        if (window.salla && window.salla.notify) {
+          window.salla.notify.error(errorMessage);
+        } else {
+          alert(errorMessage);
+        }
       }
     }
 

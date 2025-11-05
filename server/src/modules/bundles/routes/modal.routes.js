@@ -506,8 +506,14 @@ router.get("/modal.js", (req, res) => {
 
           try {
             this.bundleData = JSON.parse(responseText);
+            
+            // Check if bundle data is valid
+            if (!this.bundleData || (!this.bundleData.data && !this.bundleData.bundles)) {
+              throw new Error('No bundle offers found for this product');
+            }
+            
             SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
-            console.log('[Modal] ✅ Bundle data fetched and cached');
+            console.log('[Modal] Bundle data fetched and cached');
           } catch (jsonError) {
             console.error('[Salla Bundle Modal] JSON parse error:', jsonError);
             console.error('[Salla Bundle Modal] Response text:', responseText);
@@ -516,6 +522,11 @@ router.get("/modal.js", (req, res) => {
         }
 
         const bundleConfig = this.bundleData.data || this.bundleData;
+        
+        // Validate that we have bundle offers
+        if (!bundleConfig || !bundleConfig.bundles || bundleConfig.bundles.length === 0) {
+          throw new Error('No active bundle offers available for this product');
+        }
         if (bundleConfig.settings && bundleConfig.settings.timer) {
           this.timerSettings = {
             enabled: bundleConfig.settings.timer.enabled,
@@ -544,6 +555,13 @@ router.get("/modal.js", (req, res) => {
 
       } catch (error) {
         console.error('[Salla Bundle Modal] Initialization failed:', error);
+        console.error('[Salla Bundle Modal] Error details:', {
+          message: error.message,
+          productId: this.productId,
+          storeDomain: this.storeDomain,
+          storeId: this.contextData?.storeId,
+          hasCache: !!SallaBundleModal.dataCache.bundleData[this.productId]
+        });
         throw error;
       }
     }
