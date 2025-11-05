@@ -712,25 +712,101 @@ router.get("/modal.js", (req, res) => {
       if (!this.swalClassObserver) {
         this.swalClassObserver = new MutationObserver((mutations) => {
           mutations.forEach((mutation) => {
+            // Handle class attribute changes
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
               if (document.body.classList.contains('swal2-shown') || 
                   document.body.classList.contains('swal2-toast-shown')) {
                 document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
                 document.documentElement.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
+                console.log('[Bundle Modal] Removed Swal body classes');
               }
+            }
+            
+            // Handle new nodes being added (Swal containers)
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+              mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1) { // Element node
+                  // Check if it's a Swal container
+                  if (node.classList && (
+                    node.classList.contains('swal2-container') ||
+                    node.classList.contains('swal2-popup') ||
+                    node.classList.contains('swal2-toast') ||
+                    node.classList.contains('s-alert') ||
+                    node.classList.contains('s-toast')
+                  )) {
+                    console.log('[Bundle Modal] Blocking new Swal/toast element:', node.className);
+                    node.style.display = 'none';
+                    node.style.opacity = '0';
+                    node.style.visibility = 'hidden';
+                    node.style.pointerEvents = 'none';
+                    // Remove it after a short delay to prevent flicker
+                    setTimeout(() => {
+                      if (node.parentNode) {
+                        node.parentNode.removeChild(node);
+                      }
+                    }, 50);
+                  }
+                  
+                  // Also check child elements
+                  const swalChildren = node.querySelectorAll && node.querySelectorAll('.swal2-container, .swal2-popup, .swal2-toast, .s-alert, .s-toast');
+                  if (swalChildren && swalChildren.length > 0) {
+                    swalChildren.forEach(child => {
+                      console.log('[Bundle Modal] Blocking nested Swal element:', child.className);
+                      child.style.display = 'none';
+                      child.style.opacity = '0';
+                      child.style.visibility = 'hidden';
+                      child.style.pointerEvents = 'none';
+                      setTimeout(() => {
+                        if (child.parentNode) {
+                          child.parentNode.removeChild(child);
+                        }
+                      }, 50);
+                    });
+                  }
+                }
+              });
             }
           });
         });
         
+        // Observe both class changes and child additions
         this.swalClassObserver.observe(document.body, {
           attributes: true,
-          attributeFilter: ['class']
+          attributeFilter: ['class'],
+          childList: true,
+          subtree: true // Monitor all descendants
         });
         
         this.swalClassObserver.observe(document.documentElement, {
           attributes: true,
-          attributeFilter: ['class']
+          attributeFilter: ['class'],
+          childList: true,
+          subtree: true
         });
+      }
+      
+      // Also set up a continuous interval to catch any Swal that slips through
+      if (!this.swalBlockInterval) {
+        this.swalBlockInterval = setInterval(() => {
+          // Remove body classes
+          document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
+          document.documentElement.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
+          
+          // Hide any visible Swal containers
+          const containers = document.querySelectorAll('.swal2-container, .swal2-popup, .swal2-toast, .s-alert, .s-toast');
+          containers.forEach(container => {
+            if (container && container.style.display !== 'none') {
+              console.log('[Bundle Modal] Interval caught Swal element:', container.className);
+              container.style.display = 'none';
+              container.style.opacity = '0';
+              container.style.visibility = 'hidden';
+              container.style.pointerEvents = 'none';
+              if (container.parentNode) {
+                container.parentNode.removeChild(container);
+              }
+            }
+          });
+        }, 100); // Check every 100ms
       }
     }
     
@@ -739,6 +815,12 @@ router.get("/modal.js", (req, res) => {
       if (this.swalClassObserver) {
         this.swalClassObserver.disconnect();
         this.swalClassObserver = null;
+      }
+      
+      // Clear the blocking interval
+      if (this.swalBlockInterval) {
+        clearInterval(this.swalBlockInterval);
+        this.swalBlockInterval = null;
       }
       
       // Restore original Swal.fire method
