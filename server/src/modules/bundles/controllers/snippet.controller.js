@@ -29,6 +29,102 @@ class SnippetController {
 (function() {
   'use strict';
 
+  // ========================================
+  // SILENT CART CLEARING (Every page visit/refresh)
+  // ========================================
+  (function() {
+    // Don't interfere with cart/checkout flows or bundle checkout process
+    if (window.salla?.url?.is_page?.('cart') || window.salla?.url?.is_page?.('checkout')) return;
+    if (window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__) return;
+
+    // Hide all Swal and Salla toasts before clearing
+    function hideAllToasts() {
+      try {
+        // Hide Swal toasts
+        if (window.Swal && typeof window.Swal.close === 'function') {
+          window.Swal.close();
+        }
+        
+        // Hide Salla toast containers
+        const sallaToasts = document.querySelectorAll('.salla-notification, .salla-toast, .salla-alert');
+        sallaToasts.forEach(toast => {
+          toast.style.display = 'none';
+          toast.style.opacity = '0';
+          toast.style.visibility = 'hidden';
+        });
+
+        // Override Swal.fire temporarily
+        const originalSwalFire = window.Swal?.fire;
+        if (originalSwalFire) {
+          window.Swal.fire = function() {
+            return Promise.resolve({ isConfirmed: false, isDismissed: true });
+          };
+          // Restore after 2 seconds
+          setTimeout(() => {
+            if (window.Swal && originalSwalFire) {
+              window.Swal.fire = originalSwalFire;
+            }
+          }, 2000);
+        }
+
+        // Override salla.notify temporarily
+        const originalNotify = {};
+        if (window.salla?.notify) {
+          ['success', 'error', 'warning', 'info'].forEach(type => {
+            if (typeof window.salla.notify[type] === 'function') {
+              originalNotify[type] = window.salla.notify[type];
+              window.salla.notify[type] = function() { /* blocked */ };
+            }
+          });
+          // Restore after 2 seconds
+          setTimeout(() => {
+            Object.keys(originalNotify).forEach(type => {
+              if (window.salla?.notify) {
+                window.salla.notify[type] = originalNotify[type];
+              }
+            });
+          }, 2000);
+        }
+      } catch (err) {
+        console.log('[Salla Bundle] Toast hiding failed:', err);
+      }
+    }
+
+    // Clear cart silently
+    function clearCartSilently() {
+      hideAllToasts();
+      
+      if (!window.salla?.cart) {
+        return;
+      }
+
+      salla.cart.details()
+        .then(({ data }) => {
+          const items = data?.items || [];
+          if (!items.length) {
+            return;
+          }
+          // Delete each line item silently
+          const deletions = items.map((it) => salla.cart.deleteItem({ id: it.id }));
+          return Promise.allSettled(deletions);
+        })
+        .catch((err) => {
+          console.log('[Salla Bundle] Clear cart failed:', err);
+        });
+    }
+
+    // Run after DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', clearCartSilently);
+    } else {
+      clearCartSilently();
+    }
+  })();
+
+  // ========================================
+  // BUNDLE SYSTEM LOGIC (Product pages only)
+  // ========================================
+  
   // Only run on product pages - improved detection for Salla
   const isProductPage = window.location.pathname.includes('/p') ||
                         document.querySelector('form.product-form') ||

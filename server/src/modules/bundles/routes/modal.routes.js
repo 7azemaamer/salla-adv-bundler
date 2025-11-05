@@ -1795,6 +1795,9 @@ router.get("/modal.js", (req, res) => {
 
         this.trackBundleSelection(selectedBundleData);
 
+        // Set flag to prevent cart clearing during checkout
+        window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = true;
+
           this.showLoadingIndicator('جاري إضافة المنتجات...');
 
         try {
@@ -1825,12 +1828,18 @@ router.get("/modal.js", (req, res) => {
               options: targetOptionsForThisQuantity
             };
 
-            await window.salla.cart.addItem(targetCartItem);
-            addedProducts.push({
-              name: bundleConfig.target_product_data.name,
-              type: 'target',
-              quantity: 1
-            });
+            try {
+              await window.salla.cart.addItem(targetCartItem);
+              console.log('[Bundle Checkout] Target product added:', targetCartItem);
+              addedProducts.push({
+                name: bundleConfig.target_product_data.name,
+                type: 'target',
+                quantity: 1
+              });
+            } catch (addError) {
+              console.error('[Bundle Checkout] Failed to add target product:', targetCartItem, addError);
+              throw addError;
+            }
           }
           
 
@@ -1866,6 +1875,7 @@ router.get("/modal.js", (req, res) => {
 
 
                 await window.salla.cart.addItem(addToCartParams);
+                console.log('[Bundle Checkout] Offer product added:', addToCartParams);
 
                 successfulOffers.push(offer);
                 addedProducts.push({
@@ -1877,6 +1887,7 @@ router.get("/modal.js", (req, res) => {
                 });
 
               } catch (offerError) {
+                console.error('[Bundle Checkout] Failed to add offer product:', offer.product_id, offerError);
                 failedOffers.push({
                   ...offer,
                   reason: 'add_to_cart_failed',
@@ -1933,8 +1944,13 @@ router.get("/modal.js", (req, res) => {
         try {
           await window.salla.cart.submit();
           this.hideLoadingIndicator();
+          // Clear flag after successful checkout
+          window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = false;
         } catch (submitError) {
+          console.error('[Bundle Checkout] Cart submit failed:', submitError);
           this.hideLoadingIndicator();
+          // Clear flag before redirect
+          window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = false;
           const currentPath = window.location.pathname;
           const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
           const basePath = pathMatch ? pathMatch[1] : '/';
@@ -1942,8 +1958,11 @@ router.get("/modal.js", (req, res) => {
         }
 
       } catch (error) {
+        console.error('[Bundle Checkout] Complete error:', error);
         this.hideLoadingIndicator();
-        this.showSallaToast('حدث خطأ. يرجى المحاولة مرة أخرى.', 'error');
+        // Clear flag on error
+        window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = false;
+        this.showSallaToast(\`حدث خطأ: \${error.message || 'يرجى المحاولة مرة أخرى'}\`, 'error');
         return; 
       }
     }
@@ -3076,7 +3095,12 @@ router.get("/modal.js", (req, res) => {
         const canProceed = this.canProceedToNextStep();
         nextBtn.disabled = !canProceed;
         
-        if (this.currentStep === this.totalSteps) {
+        // Check if next step is the review/checkout step or if we're on the last step
+        const nextStepType = this.stepTypes ? this.stepTypes[this.currentStep] : null;
+        const isLastStep = this.currentStep === this.totalSteps;
+        const isBeforeCheckout = nextStepType === 'review';
+        
+        if (isLastStep || isBeforeCheckout) {
           const bundleConfig = this.bundleData.data || this.bundleData;
           const checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب';
           nextBtn.textContent = checkoutButtonText;
