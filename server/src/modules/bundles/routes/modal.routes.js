@@ -126,22 +126,61 @@ router.get("/modal.js", (req, res) => {
         oscillator.stop(this.audioContext.currentTime + duration);
       },
       triggerHaptic(type = 'light') {
-        if (!window.navigator.vibrate) return;
+        // iOS Haptic Engine API (iOS 10+)
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic) {
+          try {
+            const hapticTypes = {
+              light: 'impact-light',
+              medium: 'impact-medium',
+              heavy: 'impact-heavy',
+              success: 'notification-success',
+              progress: 'selection',
+              click: 'selection',
+              complete: 'notification-success'
+            };
+            window.webkit.messageHandlers.haptic.postMessage(hapticTypes[type] || 'impact-light');
+          } catch (e) {
+            console.log('iOS haptic not available:', e);
+          }
+        }
+        
+        // Try Haptic API for newer iOS devices
+        if (window.navigator && typeof window.navigator.vibrate === 'function') {
+          const patterns = {
+            light: [10],
+            medium: [50],
+            heavy: [100],
+            success: [50, 50, 50, 50, 100],
+            progress: [20],
+            click: [10],
+            complete: [100, 50, 100]
+          };
 
-        const patterns = {
-          light: [10],
-          medium: [50],
-          heavy: [100],
-          success: [50, 50, 50, 50, 100],
-          progress: [20],
-          click: [10],
-          complete: [100, 50, 100]
-        };
-
-        try {
-          window.navigator.vibrate(patterns[type] || patterns.light);
-        } catch (e) {
-          console.log('Vibration not supported:', e);
+          try {
+            window.navigator.vibrate(patterns[type] || patterns.light);
+          } catch (e) {
+            console.log('Vibration not supported:', e);
+          }
+        }
+        
+        // Try AudioContext for subtle haptic simulation on iOS Safari
+        if (!window.navigator.vibrate && window.AudioContext) {
+          try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 10;
+            gainNode.gain.setValueAtTime(0.00001, audioContext.currentTime);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.01);
+          } catch (e) {
+            // Silent fail for haptic simulation
+          }
         }
       },
       triggerFeedback(type) {
@@ -1800,6 +1839,9 @@ router.get("/modal.js", (req, res) => {
 
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        // Show loading indicator
+        this.showLoadingIndicator('جاري التوجه للدفع...');
+
         // Close modal and hide sticky button
         const modal = document.getElementById('salla-product-modal');
         const stickyButton = document.querySelector('.salla-bundle-sticky-button');
@@ -1816,6 +1858,8 @@ router.get("/modal.js", (req, res) => {
         // Submit cart and go to checkout directly
         try {
           await window.salla.cart.submit();
+          // Hide loading before Salla redirects
+          this.hideLoadingIndicator();
         } catch (submitError) {
           console.error('[Checkout] Cart submit error:', submitError);
           this.hideLoadingIndicator();
@@ -2377,6 +2421,77 @@ router.get("/modal.js", (req, res) => {
     }
 
   
+    showLoadingIndicator(message = 'جاري المعالجة...') {
+      // Remove any existing loader first
+      this.hideLoadingIndicator();
+      
+      const loader = document.createElement('div');
+      loader.id = 'salla-bundle-loader';
+      loader.innerHTML = \`
+        <style>
+          #salla-bundle-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            animation: fadeIn 0.2s ease;
+          }
+          
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+          }
+          
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+          
+          .salla-loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+          }
+          
+          .salla-loader-text {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            animation: pulse 1.5s ease-in-out infinite;
+          }
+        </style>
+        <div class="salla-loader-spinner"></div>
+        <div class="salla-loader-text">\${message}</div>
+      \`;
+      
+      document.body.appendChild(loader);
+      
+      // Trigger haptic feedback
+      this.triggerHaptic('progress');
+    }
 
 
 
@@ -3710,7 +3825,11 @@ router.get("/modal.js", (req, res) => {
                      class="salla-discount-input" 
                      id="salla-discount-input"
                      placeholder="أدخل كود الخصم"
-                     value="\${this.discountCode}" />
+                     value="\${this.discountCode}"
+                     autocomplete="off"
+                     autocorrect="off"
+                     autocapitalize="off"
+                     spellcheck="false" />
               <button class="salla-discount-apply-btn" 
                       onclick="window.sallaBundleModal.applyDiscountCode()">
                 تطبيق
@@ -3876,6 +3995,9 @@ router.get("/modal.js", (req, res) => {
 
           // Submit cart and go to checkout (instead of cart page)
           setTimeout(async () => {
+            // Show loading indicator
+            this.showLoadingIndicator('جاري التوجه للدفع...');
+
             // Close modal and hide sticky button
             const modal = document.getElementById('salla-product-modal');
             const stickyButton = document.querySelector('.salla-bundle-sticky-button');
@@ -3891,6 +4013,8 @@ router.get("/modal.js", (req, res) => {
 
             try {
               await window.salla.cart.submit();
+              // Hide loading before Salla redirects
+              this.hideLoadingIndicator();
             } catch (submitError) {
               console.error('[Coupon] Cart submit error:', submitError);
               this.hideLoadingIndicator();
