@@ -201,32 +201,6 @@ router.get("/modal.js", (req, res) => {
         };
 
         actions[type]?.();
-      },
-      hideSwalToasts() {
-        // Hide SweetAlert2 toasts
-        if (window.Swal && typeof window.Swal.close === 'function') {
-          window.Swal.close();
-        }
-        
-        // Hide any visible Swal toast containers
-        const swalContainers = document.querySelectorAll('.swal2-container, .swal2-popup, .swal2-toast');
-        swalContainers.forEach(container => {
-          if (container) {
-            container.style.display = 'none';
-            container.style.opacity = '0';
-            container.style.visibility = 'hidden';
-          }
-        });
-        
-        // Hide Salla's toast notifications as well
-        const sallaToasts = document.querySelectorAll('.s-alert, .s-toast, [class*="toast"], [class*="notification"]');
-        sallaToasts.forEach(toast => {
-          if (toast && toast.classList.contains('swal2-show')) {
-            toast.style.display = 'none';
-            toast.style.opacity = '0';
-            toast.style.visibility = 'hidden';
-          }
-        });
       }
     };
     static preloadPromise = null;
@@ -602,6 +576,79 @@ router.get("/modal.js", (req, res) => {
         }
       } catch (error) {
         console.error('[Reviews] Fetch failed:', error);
+      }
+    }
+
+    hideSwalToasts() {
+      // Hide SweetAlert2 toasts
+      if (window.Swal && typeof window.Swal.close === 'function') {
+        window.Swal.close();
+      }
+      
+      // Hide any visible Swal toast containers
+      const swalContainers = document.querySelectorAll('.swal2-container, .swal2-popup, .swal2-toast');
+      swalContainers.forEach(container => {
+        if (container) {
+          container.style.display = 'none';
+          container.style.opacity = '0';
+          container.style.visibility = 'hidden';
+        }
+      });
+      
+      // Hide Salla's toast notifications as well
+      const sallaToasts = document.querySelectorAll('.s-alert, .s-toast, [class*="toast"], [class*="notification"]');
+      sallaToasts.forEach(toast => {
+        if (toast && toast.classList.contains('swal2-show')) {
+          toast.style.display = 'none';
+          toast.style.opacity = '0';
+          toast.style.visibility = 'hidden';
+        }
+      });
+      
+      // Store original Swal fire method
+      if (window.Swal && window.Swal.fire && !this.originalSwalFire) {
+        this.originalSwalFire = window.Swal.fire.bind(window.Swal);
+        
+        // Override Swal.fire to prevent toasts while modal is open
+        window.Swal.fire = (...args) => {
+          console.log('[Bundle Modal] Blocked Swal toast while modal is open');
+          return Promise.resolve({ isConfirmed: false, isDismissed: true });
+        };
+      }
+      
+      if (window.salla && window.salla.notify && !this.originalSallaNotify) {
+        this.originalSallaNotify = {
+          success: window.salla.notify.success?.bind(window.salla.notify),
+          error: window.salla.notify.error?.bind(window.salla.notify),
+          warning: window.salla.notify.warning?.bind(window.salla.notify),
+          info: window.salla.notify.info?.bind(window.salla.notify)
+        };
+        
+        const blockNotify = () => {
+          console.log('[Bundle Modal] Blocked Salla notification while modal is open');
+        };
+        
+        if (window.salla.notify.success) window.salla.notify.success = blockNotify;
+        if (window.salla.notify.error) window.salla.notify.error = blockNotify;
+        if (window.salla.notify.warning) window.salla.notify.warning = blockNotify;
+        if (window.salla.notify.info) window.salla.notify.info = blockNotify;
+      }
+    }
+    
+    restoreSwalToasts() {
+      // Restore original Swal.fire method
+      if (this.originalSwalFire && window.Swal) {
+        window.Swal.fire = this.originalSwalFire;
+        this.originalSwalFire = null;
+      }
+      
+      // Restore original Salla notify methods
+      if (this.originalSallaNotify && window.salla && window.salla.notify) {
+        if (this.originalSallaNotify.success) window.salla.notify.success = this.originalSallaNotify.success;
+        if (this.originalSallaNotify.error) window.salla.notify.error = this.originalSallaNotify.error;
+        if (this.originalSallaNotify.warning) window.salla.notify.warning = this.originalSallaNotify.warning;
+        if (this.originalSallaNotify.info) window.salla.notify.info = this.originalSallaNotify.info;
+        this.originalSallaNotify = null;
       }
     }
 
@@ -4268,6 +4315,9 @@ router.get("/modal.js", (req, res) => {
           this.modalElement.removeEventListener('touchmove', this.preventScrollHandler);
           this.preventScrollHandler = null;
         }
+        
+        // Restore Swal and Salla notifications
+        this.restoreSwalToasts();
         
         if (this.timerInterval) {
           clearInterval(this.timerInterval);
