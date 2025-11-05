@@ -113,6 +113,39 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
         </Stack>
       </Paper>
 
+      {/* Show in Step Selection */}
+      {reviewCountSettings.enabled !== false && (
+        <Paper p="md" radius="md" withBorder>
+          <Stack gap="md">
+            <Group gap="xs">
+              <Text fw={600} size="sm">
+                إظهار عدد التقييمات في الخطوة
+              </Text>
+            </Group>
+            <Select
+              value={reviewCountSettings.show_in_step || "bundles"}
+              onChange={(value) => onToggle("review_count.show_in_step", value)}
+              data={[
+                { value: "bundles", label: "اختيار الباقة" },
+                { value: "target_variants", label: "تحديد الخيارات" },
+                { value: "free_gifts", label: "الهدايا المجانية" },
+                { value: "discounted", label: "المنتجات المخفضة" },
+                { value: "review", label: "مراجعة الطلب" },
+                { value: "all", label: "جميع الخطوات" },
+              ]}
+              disabled={false}
+              comboboxProps={{
+                position: "bottom",
+                middlewares: { flip: false, shift: false },
+              }}
+            />
+            <Text size="xs" c="dimmed">
+              اختر في أي خطوة سيظهر عدد التقييمات في نافذة الباقة
+            </Text>
+          </Stack>
+        </Paper>
+      )}
+
       {/* Mode Selection */}
       {reviewCountSettings.enabled !== false && (
         <Paper p="md" radius="md" withBorder>

@@ -50,6 +50,9 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
     timer.label_color || "#60646C"
   );
   const [timerFontSize, setTimerFontSize] = useState(timer.font_size || 14);
+  const [timerShowInStep, setTimerShowInStep] = useState(
+    timer.show_in_step || "bundles"
+  );
 
   // Sync local state with fetched settings
   useEffect(() => {
@@ -66,6 +69,7 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
       setTimerLabel(t.label || "عرض محدود ينتهي خلال");
       setTimerLabelColor(t.label_color || "#60646C");
       setTimerFontSize(t.font_size || 14);
+      setTimerShowInStep(t.show_in_step || "bundles");
     }
   }, [settings.timer]);
 
@@ -95,6 +99,7 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
           label: timerLabel,
           label_color: timerLabelColor,
           font_size: timerFontSize,
+          show_in_step: timerShowInStep,
         },
       });
 
@@ -139,6 +144,27 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
           <Divider label="تخصيص المؤقت" labelPosition="center" />
 
           <Grid>
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <Select
+                label="إظهار المؤقت في الخطوة"
+                value={timerShowInStep}
+                onChange={setTimerShowInStep}
+                data={[
+                  { value: "bundles", label: "اختيار الباقة" },
+                  { value: "target_variants", label: "تحديد الخيارات" },
+                  { value: "free_gifts", label: "الهدايا المجانية" },
+                  { value: "discounted", label: "المنتجات المخفضة" },
+                  { value: "review", label: "مراجعة الطلب" },
+                  { value: "all", label: "جميع الخطوات" },
+                ]}
+                description="اختر في أي خطوة سيظهر المؤقت"
+                comboboxProps={{
+                  position: "bottom",
+                  middlewares: { flip: false, shift: false },
+                }}
+              />
+            </Grid.Col>
+
             <Grid.Col span={{ base: 12, md: 6 }}>
               <Select
                 label="مدة المؤقت"

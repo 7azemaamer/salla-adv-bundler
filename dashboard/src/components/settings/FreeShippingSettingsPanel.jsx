@@ -59,6 +59,9 @@ export default function FreeShippingSettingsPanel({
   const [freeShippingBorderRadius, setFreeShippingBorderRadius] = useState(
     freeShipping.border_radius || 12
   );
+  const [freeShippingShowInStep, setFreeShippingShowInStep] = useState(
+    freeShipping.show_in_step || "review"
+  );
 
   // Sync local state with fetched settings
   useEffect(() => {
@@ -81,6 +84,7 @@ export default function FreeShippingSettingsPanel({
         fs.progress_bg_color || "rgba(255, 255, 255, 0.3)"
       );
       setFreeShippingBorderRadius(fs.border_radius || 12);
+      setFreeShippingShowInStep(fs.show_in_step || "review");
     }
   }, [settings.free_shipping]);
 
@@ -109,6 +113,7 @@ export default function FreeShippingSettingsPanel({
           progress_color: freeShippingProgressColor,
           progress_bg_color: freeShippingProgressBgColor,
           border_radius: freeShippingBorderRadius,
+          show_in_step: freeShippingShowInStep,
         },
       });
 
@@ -154,6 +159,27 @@ export default function FreeShippingSettingsPanel({
           <Divider label="تخصيص لافتة الشحن المجاني" labelPosition="center" />
 
           <Grid>
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <Select
+                label="إظهار لافتة الشحن المجاني في الخطوة"
+                value={freeShippingShowInStep}
+                onChange={setFreeShippingShowInStep}
+                data={[
+                  { value: "bundles", label: "اختيار الباقة" },
+                  { value: "target_variants", label: "تحديد الخيارات" },
+                  { value: "free_gifts", label: "الهدايا المجانية" },
+                  { value: "discounted", label: "المنتجات المخفضة" },
+                  { value: "review", label: "مراجعة الطلب" },
+                  { value: "all", label: "جميع الخطوات" },
+                ]}
+                description="اختر في أي خطوة ستظهر لافتة الشحن المجاني"
+                comboboxProps={{
+                  position: "bottom",
+                  middlewares: { flip: false, shift: false },
+                }}
+              />
+            </Grid.Col>
+
             <Grid.Col span={{ base: 12, md: 6 }}>
               <Select
                 label="وضع العرض"
