@@ -255,6 +255,65 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
+    triggerHaptic(type = 'light') {
+      // iOS Haptic Engine API (iOS 10+)
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic) {
+        try {
+          const hapticTypes = {
+            light: 'impact-light',
+            medium: 'impact-medium',
+            heavy: 'impact-heavy',
+            success: 'notification-success',
+            progress: 'selection',
+            click: 'selection',
+            complete: 'notification-success'
+          };
+          window.webkit.messageHandlers.haptic.postMessage(hapticTypes[type] || 'impact-light');
+        } catch (e) {
+          console.log('iOS haptic not available:', e);
+        }
+      }
+      
+      // Try Haptic API for newer iOS devices
+      if (window.navigator && typeof window.navigator.vibrate === 'function') {
+        const patterns = {
+          light: [10],
+          medium: [50],
+          heavy: [100],
+          success: [50, 50, 50, 50, 100],
+          progress: [20],
+          click: [10],
+          complete: [100, 50, 100]
+        };
+
+        try {
+          window.navigator.vibrate(patterns[type] || patterns.light);
+        } catch (e) {
+          console.log('Vibration not supported:', e);
+        }
+      }
+      
+      // Try AudioContext for subtle haptic simulation on iOS Safari
+      if (!window.navigator.vibrate && window.AudioContext) {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 10;
+          gainNode.gain.setValueAtTime(0.00001, audioContext.currentTime);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.01);
+        } catch (e) {
+          // Silent fail for haptic simulation
+        }
+      }
+    }
+
     setupGlobalFeedbackListeners() {
       if (!this.modalElement) return;
 
