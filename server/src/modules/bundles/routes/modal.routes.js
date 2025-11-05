@@ -95,12 +95,12 @@ router.get("/modal.js", (req, res) => {
         };
 
         this.sounds.complete = () => {
-          this.playTone(523, 0.15, 'sine', 0.2); // C5
+          this.playTone(523, 0.15, 'sine', 0.2); 
           setTimeout(() => this.playTone(659, 0.15, 'sine', 0.2), 100); // E5
           setTimeout(() => this.playTone(784, 0.2, 'sine', 0.3), 200); // G5
         };
         this.sounds.success = () => {
-          this.playTone(523, 0.1, 'triangle', 0.15); // C5
+          this.playTone(523, 0.1, 'triangle', 0.15); 
           setTimeout(() => this.playTone(659, 0.1, 'triangle', 0.15), 75); // E5
           setTimeout(() => this.playTone(784, 0.1, 'triangle', 0.15), 150); // G5
           setTimeout(() => this.playTone(1047, 0.2, 'triangle', 0.25), 225); // C6
@@ -201,6 +201,32 @@ router.get("/modal.js", (req, res) => {
         };
 
         actions[type]?.();
+      },
+      hideSwalToasts() {
+        // Hide SweetAlert2 toasts
+        if (window.Swal && typeof window.Swal.close === 'function') {
+          window.Swal.close();
+        }
+        
+        // Hide any visible Swal toast containers
+        const swalContainers = document.querySelectorAll('.swal2-container, .swal2-popup, .swal2-toast');
+        swalContainers.forEach(container => {
+          if (container) {
+            container.style.display = 'none';
+            container.style.opacity = '0';
+            container.style.visibility = 'hidden';
+          }
+        });
+        
+        // Hide Salla's toast notifications as well
+        const sallaToasts = document.querySelectorAll('.s-alert, .s-toast, [class*="toast"], [class*="notification"]');
+        sallaToasts.forEach(toast => {
+          if (toast && toast.classList.contains('swal2-show')) {
+            toast.style.display = 'none';
+            toast.style.opacity = '0';
+            toast.style.visibility = 'hidden';
+          }
+        });
       }
     };
     static preloadPromise = null;
@@ -1704,7 +1730,7 @@ router.get("/modal.js", (req, res) => {
 
         this.trackBundleSelection(selectedBundleData);
 
-        this.showSallaToast('جارٍ إضافة المنتجات إلى السلة...', 'info');
+          this.showLoadingIndicator('جاري إضافة المنتجات...');
 
         try {
           const addedProducts = []; 
@@ -1797,23 +1823,12 @@ router.get("/modal.js", (req, res) => {
           } else {
           }
 
-          const totalAdded = addedProducts.length; 
-          let successMessage = '';
-          
-          if (successfulOffers.length > 0 && failedOffers.length === 0) {
-            successMessage = \`تمت إضافة جميع المنتجات بنجاح! (\${totalAdded} منتج)\`;
-          } else if (successfulOffers.length > 0 && failedOffers.length > 0) {
-            successMessage = \`تمت إضافة \${totalAdded} منتج. \${failedOffers.length} منتجات لم تتم إضافتها.\`;
-          } else if (failedOffers.length > 0) {
-            successMessage = \`تمت إضافة المنتج الأساسي. \${failedOffers.length} منتجات إضافية غير متوفرة.\`;
-          } else {
-            successMessage = \`تمت إضافة المنتج الأساسي بنجاح!\`;
-          }
-
-          this.showSallaToast(successMessage, failedOffers.length > 0 ? 'warning' : 'success');
+          // Update loading message
+          this.showLoadingIndicator('جاري التوجه للدفع...');
 
         } catch (error) {
-
+          this.hideLoadingIndicator();
+          
           if (error.message && (error.message.includes('options') || error.message.includes('variant') || error.message.includes('required'))) {
             const missingVariants = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
             if (missingVariants.length > 0) {
@@ -1831,16 +1846,11 @@ router.get("/modal.js", (req, res) => {
 
         const finalVariantCheck = this.getAllMissingRequiredVariants(bundleConfig, selectedBundleData);
         if (finalVariantCheck.length > 0) {
+          this.hideLoadingIndicator();
           this.showSallaToast('لا يمكن المتابعة بدون اختيار جميع الخيارات', 'error');
           this.highlightMissingVariants(finalVariantCheck);
           return;
         }
-
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Show loading indicator
-        this.showLoadingIndicator('جاري التوجه للدفع...');
 
         // Close modal and hide sticky button
         const modal = document.getElementById('salla-product-modal');
@@ -1855,15 +1865,11 @@ router.get("/modal.js", (req, res) => {
           stickyButton.style.zIndex = '20';
         }
 
-        // Submit cart and go to checkout directly
         try {
           await window.salla.cart.submit();
-          // Hide loading before Salla redirects
           this.hideLoadingIndicator();
         } catch (submitError) {
-          console.error('[Checkout] Cart submit error:', submitError);
           this.hideLoadingIndicator();
-          // Fallback to checkout page
           const currentPath = window.location.pathname;
           const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
           const basePath = pathMatch ? pathMatch[1] : '/';
@@ -1871,6 +1877,7 @@ router.get("/modal.js", (req, res) => {
         }
 
       } catch (error) {
+        this.hideLoadingIndicator();
         this.showSallaToast('حدث خطأ. يرجى المحاولة مرة أخرى.', 'error');
         return; 
       }
@@ -2422,14 +2429,13 @@ router.get("/modal.js", (req, res) => {
 
   
     showLoadingIndicator(message = 'جاري المعالجة...') {
-      // Remove any existing loader first
       this.hideLoadingIndicator();
       
       const loader = document.createElement('div');
-      loader.id = 'salla-bundle-loader';
+      loader.id = 'hazem-bundle-loader';
       loader.innerHTML = \`
         <style>
-          #salla-bundle-loader {
+          #hazem-bundle-loader {
             position: fixed;
             top: 0;
             left: 0;
@@ -2489,7 +2495,6 @@ router.get("/modal.js", (req, res) => {
       
       document.body.appendChild(loader);
       
-      // Trigger haptic feedback
       this.triggerHaptic('progress');
     }
 
@@ -2497,7 +2502,7 @@ router.get("/modal.js", (req, res) => {
 
 
     hideLoadingIndicator() {
-      const loader = document.getElementById('salla-bundle-loader');
+      const loader = document.getElementById('hazem-bundle-loader');
       if (loader) {
         loader.style.animation = 'fadeOut 0.3s ease';
         setTimeout(() => {
@@ -3259,7 +3264,7 @@ router.get("/modal.js", (req, res) => {
         }
 
         const percentage = 100;
-        const progressText = isEligible ? '🎉 مبروك! لقد حصلت على الشحن المجاني!' : '🚀 شحن مجاني متاح دائماً لهذه الباقة!';
+        const progressText = isEligible ? '🎉 مبروك! لقد حصلت على الشحن المجاني!' : ' شحن مجاني متاح دائماً لهذه الباقة!';
 
         return \`
           <div class="salla-free-shipping-banner salla-free-shipping-success salla-progress-complete" style="
@@ -3473,7 +3478,6 @@ router.get("/modal.js", (req, res) => {
                 box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.3);
                 border: 1px solid rgba(255,255,255,0.2);
               ">
-                <!-- Shimmer effect -->
                 <div style="
                   position: absolute;
                   top: 0;
@@ -3484,8 +3488,6 @@ router.get("/modal.js", (req, res) => {
                   animation: progressShimmer 2s ease-in-out infinite;
                 "></div>
               </div>
-
-              <!-- Milestone markers -->
               <div style="
                 position: absolute;
                 top: 0;
@@ -3505,7 +3507,6 @@ router.get("/modal.js", (req, res) => {
               </div>
             </div>
 
-            <!-- Progress motivation text -->
             <div style="
               font-size: 11px;
               text-align: center;
@@ -3513,10 +3514,10 @@ router.get("/modal.js", (req, res) => {
               font-weight: 500;
               animation: fadeInSlide 0.8s ease-out 0.2s both;
             ">
-              ' + (percentage < 25 ? '🚀 ابدأ رحلتك نحو الشحن المجاني!' :
-                percentage < 50 ? '💪 أحسنت! واصل التقدم...' :
-                percentage < 75 ? '🔥 رائع! اقتربت جداً من الهدف!' :
-                percentage < 100 ? '⭐ ممتاز! خطوة أخيرة فقط!' : '') + '
+              ' + (percentage < 25 ? (freeShipping.motivation_0_25 || ' ابدأ رحلتك نحو الشحن المجاني!') :
+                percentage < 50 ? (freeShipping.motivation_25_50 || ' أحسنت! واصل التقدم...') :
+                percentage < 75 ? (freeShipping.motivation_50_75 || 'رائع! اقتربت جداً من الهدف!') :
+                percentage < 100 ? (freeShipping.motivation_75_100 || ' ممتاز! خطوة أخيرة فقط!') : '') + '
             </div>
           </div>
         \`;
@@ -3585,7 +3586,7 @@ router.get("/modal.js", (req, res) => {
       return \`
         <div class="salla-reviews-section">
           <div class="salla-reviews-header">
-            <span>⭐ آراء العملاء</span>
+            <span> آراء العملاء</span>
             <span style="font-size: 13px; color: var(--text-2); font-weight: normal;">\${avgRating} ★ متوسط</span>
           </div>
           <div class="salla-reviews-carousel">
@@ -3599,7 +3600,7 @@ router.get("/modal.js", (req, res) => {
                          onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />
                     <div class="salla-review-customer">
                       <div class="salla-review-name">\${review.customerName}</div>
-                      <div class="salla-review-rating">\${'⭐'.repeat(review.rating)}</div>
+                      <div class="salla-review-rating">\${''.repeat(review.rating)}</div>
                     </div>
                   </div>
                   <div class="salla-review-content">\${review.content}</div>
@@ -3884,9 +3885,6 @@ router.get("/modal.js", (req, res) => {
       }
       
       try {
-        // Skip validation - Salla will validate when applying coupon
-        messageEl.innerHTML = '<div class="salla-discount-message">جاري إضافة المنتجات للسلة...</div>';
-        
         const selectedBundleData = this.getSelectedBundleData();
         if (!selectedBundleData) {
           messageEl.innerHTML = '<div class="salla-discount-message error">يرجى اختيار باقة أولاً</div>';
@@ -3903,6 +3901,9 @@ router.get("/modal.js", (req, res) => {
           this.highlightMissingVariants(missingVariants);
           return;
         }
+        
+        // Show loading indicator immediately before any cart operations
+        this.showLoadingIndicator('جاري إضافة المنتجات...');
         
         // Add items to cart (same logic as handleCheckout)
         const addedProducts = [];
@@ -3963,7 +3964,8 @@ router.get("/modal.js", (req, res) => {
         }
         
         // Now apply the coupon to the cart
-        messageEl.innerHTML = '<div class="salla-discount-message">جاري تطبيق كود الخصم...</div>';
+        // Update loading message
+        this.showLoadingIndicator('جاري تطبيق كود الخصم...');
         
         try {
           const couponResponse = await window.salla.cart.addCoupon(code);
@@ -3987,47 +3989,42 @@ router.get("/modal.js", (req, res) => {
             };
           }
           
-          messageEl.innerHTML = \`<div class="salla-discount-message success">تم تطبيق الكود بنجاح! جاري التوجه للدفع...</div>\`;
-          
           // Track the bundle selection
           this.trackBundleSelection(selectedBundleData);
 
+          // Update loading to checkout message
+          this.showLoadingIndicator('جاري التوجه للدفع...');
 
-          // Submit cart and go to checkout (instead of cart page)
-          setTimeout(async () => {
-            // Show loading indicator
-            this.showLoadingIndicator('جاري التوجه للدفع...');
+          // Close modal and hide sticky button
+          const modal = document.getElementById('salla-product-modal');
+          const stickyButton = document.querySelector('.salla-bundle-sticky-button');
+          
+          if (modal) {
+            modal.classList.remove('show');
+            modal.style.zIndex = '20'; // Less than Salla modals (z-index: 30)
+          }
+          if (stickyButton) {
+            stickyButton.style.display = 'none';
+            stickyButton.style.zIndex = '20';
+          }
 
-            // Close modal and hide sticky button
-            const modal = document.getElementById('salla-product-modal');
-            const stickyButton = document.querySelector('.salla-bundle-sticky-button');
-            
-            if (modal) {
-              modal.classList.remove('show');
-              modal.style.zIndex = '20'; // Less than Salla modals (z-index: 30)
-            }
-            if (stickyButton) {
-              stickyButton.style.display = 'none';
-              stickyButton.style.zIndex = '20';
-            }
-
-            try {
-              await window.salla.cart.submit();
-              // Hide loading before Salla redirects
-              this.hideLoadingIndicator();
-            } catch (submitError) {
-              console.error('[Coupon] Cart submit error:', submitError);
-              this.hideLoadingIndicator();
-              // Fallback to checkout page
-              const currentPath = window.location.pathname;
-              const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
-              const basePath = pathMatch ? pathMatch[1] : '/';
-              window.location.href = \`\${window.location.origin}\${basePath}checkout\`;
-            }
-          }, 800);
+          try {
+            await window.salla.cart.submit();
+            // Hide loading before Salla redirects
+            this.hideLoadingIndicator();
+          } catch (submitError) {
+            console.error('[Coupon] Cart submit error:', submitError);
+            this.hideLoadingIndicator();
+            // Fallback to checkout page
+            const currentPath = window.location.pathname;
+            const pathMatch = currentPath.match(/^(\\/[^/]+\\/)/);
+            const basePath = pathMatch ? pathMatch[1] : '/';
+            window.location.href = \`\${window.location.origin}\${basePath}checkout\`;
+          }
           
         } catch (couponError) {
           console.error('[Coupon] Failed to apply coupon:', couponError);
+          this.hideLoadingIndicator();
           messageEl.innerHTML = \`<div class="salla-discount-message error">فشل تطبيق الكود. جاري التوجه للسلة...</div>\`;
           
           // Still go to cart even if coupon fails
@@ -4041,6 +4038,7 @@ router.get("/modal.js", (req, res) => {
         
       } catch (error) {
         console.error('[Discount] Apply error:', error);
+        this.hideLoadingIndicator();
         messageEl.innerHTML = '<div class="salla-discount-message error">حدث خطأ، حاول مرة أخرى</div>';
       }
     }
@@ -4199,6 +4197,8 @@ router.get("/modal.js", (req, res) => {
 
     show() {
       if (this.modalElement) {
+        this.hideSwalToasts();
+        
         this.modalElement.classList.add('show');
         
         // Prevent body scroll on all platforms

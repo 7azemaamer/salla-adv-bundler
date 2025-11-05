@@ -1629,7 +1629,7 @@ router.get("/modal.js", (req, res) => {
         }
       }
 
-      // 🔥 NEW: Automatically expand the selected bundle's details
+      // NEW: Automatically expand the selected bundle's details
       setTimeout(() => {
         const itemsList = document.querySelector(\`#bundle-items-\${bundleId}\`);
         if (itemsList && !itemsList.classList.contains('expanded')) {
@@ -3355,7 +3355,7 @@ router.get("/modal.js", (req, res) => {
 
         // For 'always' mode, show 100% progress bar to indicate completion
         const percentage = 100;
-        const progressText = isEligible ? '🎉 مبروك! لقد حصلت على الشحن المجاني!' : '🚀 شحن مجاني متاح دائماً لهذه الباقة!';
+        const progressText = isEligible ? '🎉 مبروك! لقد حصلت على الشحن المجاني!' : ' شحن مجاني متاح دائماً لهذه الباقة!';
 
         return \`
           <div class="salla-free-shipping-banner salla-free-shipping-success salla-progress-complete" style="
@@ -3612,10 +3612,10 @@ router.get("/modal.js", (req, res) => {
               font-weight: 500;
               animation: fadeInSlide 0.8s ease-out 0.2s both;
             ">
-              ' + (percentage < 25 ? '🚀 ابدأ رحلتك نحو الشحن المجاني!' :
-                percentage < 50 ? '💪 أحسنت! واصل التقدم...' :
-                percentage < 75 ? '🔥 رائع! اقتربت جداً من الهدف!' :
-                percentage < 100 ? '⭐ ممتاز! خطوة أخيرة فقط!' : '') + '
+              ' + (percentage < 25 ? ' ابدأ رحلتك نحو الشحن المجاني!' :
+                percentage < 50 ? ' أحسنت! واصل التقدم...' :
+                percentage < 75 ? 'رائع! اقتربت جداً من الهدف!' :
+                percentage < 100 ? ' ممتاز! خطوة أخيرة فقط!' : '') + '
             </div>
           </div>
         \`;
@@ -3692,7 +3692,7 @@ router.get("/modal.js", (req, res) => {
       return \`
         <div class="salla-reviews-section">
           <div class="salla-reviews-header">
-            <span>⭐ آراء العملاء</span>
+            <span> آراء العملاء</span>
             <span style="font-size: 13px; color: var(--text-2); font-weight: normal;">\${avgRating} ★ متوسط</span>
           </div>
           <div class="salla-reviews-carousel">
@@ -3706,7 +3706,7 @@ router.get("/modal.js", (req, res) => {
                          onerror="this.src='https://via.placeholder.com/40'" />
                     <div class="salla-review-customer">
                       <div class="salla-review-name">\${review.customerName}</div>
-                      <div class="salla-review-rating">\${'⭐'.repeat(review.rating)}</div>
+                      <div class="salla-review-rating">\${''.repeat(review.rating)}</div>
                     </div>
                   </div>
                   <div class="salla-review-content">\${review.content}</div>

@@ -98,6 +98,22 @@ const settingsSchema = new mongoose.Schema(
         type: String,
         default: "أضف {amount} ريال للحصول على شحن مجاني",
       },
+      motivation_0_25: {
+        type: String,
+        default: " ابدأ رحلتك نحو الشحن المجاني!",
+      },
+      motivation_25_50: {
+        type: String,
+        default: " أحسنت! واصل التقدم...",
+      },
+      motivation_50_75: {
+        type: String,
+        default: "رائع! اقتربت جداً من الهدف!",
+      },
+      motivation_75_100: {
+        type: String,
+        default: " ممتاز! خطوة أخيرة فقط!",
+      },
       bg_color: {
         type: String,
         default: "#10b981",

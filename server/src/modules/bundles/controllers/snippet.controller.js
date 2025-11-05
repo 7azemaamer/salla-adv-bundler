@@ -165,7 +165,7 @@ class SnippetController {
     constructor() {
       this.productId = null;
       this.isInjected = false;
-      this.isStarting = false;  // 🔥 NEW: Prevent duplicate start() calls
+      this.isStarting = false;  // NEW: Prevent duplicate start() calls
       this.retryCount = 0;
       this.maxRetries = 10;
       this.modalScriptLoaded = false;
@@ -255,10 +255,10 @@ class SnippetController {
 
     async start() {
       try {
-        // 🔥 NEW: Prevent multiple starts (fixes duplicate API calls)
+        // NEW: Prevent multiple starts (fixes duplicate API calls)
         if (this.isStarting || this.isInjected || this.retryCount >= this.maxRetries) return;
 
-        this.isStarting = true;  // 🔥 Mark as starting
+        this.isStarting = true;  // Mark as starting
         this.retryCount++;
 
 
@@ -291,7 +291,7 @@ class SnippetController {
 
       } catch (error) {
         console.error('[Salla Bundle] Error:', error);
-        this.isStarting = false;  // 🔥 Reset flag on error
+        this.isStarting = false;  // Reset flag on error
         if (this.retryCount < this.maxRetries) {
           setTimeout(() => this.start(), 2000);
         }

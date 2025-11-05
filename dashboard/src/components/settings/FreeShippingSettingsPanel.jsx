@@ -41,6 +41,17 @@ export default function FreeShippingSettingsPanel({
   const [freeShippingProgressText, setFreeShippingProgressText] = useState(
     freeShipping.progress_text || "أضف {amount} ريال للحصول على شحن مجاني"
   );
+  const [freeShippingMotivation025, setFreeShippingMotivation025] = useState(
+    freeShipping.motivation_0_25 || " ابدأ رحلتك نحو الشحن المجاني!"
+  );
+  const [freeShippingMotivation2550, setFreeShippingMotivation2550] = useState(
+    freeShipping.motivation_25_50 || " أحسنت! واصل التقدم..."
+  );
+  const [freeShippingMotivation5075, setFreeShippingMotivation5075] = useState(
+    freeShipping.motivation_50_75 || "رائع! اقتربت جداً من الهدف!"
+  );
+  const [freeShippingMotivation75100, setFreeShippingMotivation75100] =
+    useState(freeShipping.motivation_75_100 || " ممتاز! خطوة أخيرة فقط!");
   const [freeShippingBgColor, setFreeShippingBgColor] = useState(
     freeShipping.bg_color || "#10b981"
   );
@@ -72,6 +83,18 @@ export default function FreeShippingSettingsPanel({
       setFreeShippingText(fs.text || "شحن مجاني لهذه الباقة");
       setFreeShippingProgressText(
         fs.progress_text || "أضف {amount} ريال للحصول على شحن مجاني"
+      );
+      setFreeShippingMotivation025(
+        fs.motivation_0_25 || " ابدأ رحلتك نحو الشحن المجاني!"
+      );
+      setFreeShippingMotivation2550(
+        fs.motivation_25_50 || " أحسنت! واصل التقدم..."
+      );
+      setFreeShippingMotivation5075(
+        fs.motivation_50_75 || "رائع! اقتربت جداً من الهدف!"
+      );
+      setFreeShippingMotivation75100(
+        fs.motivation_75_100 || " ممتاز! خطوة أخيرة فقط!"
       );
       setFreeShippingBgColor(fs.bg_color || "#10b981");
       setFreeShippingTextColor(fs.text_color || "#ffffff");
@@ -107,6 +130,10 @@ export default function FreeShippingSettingsPanel({
           min_price: freeShippingMinPrice,
           text: freeShippingText,
           progress_text: freeShippingProgressText,
+          motivation_0_25: freeShippingMotivation025,
+          motivation_25_50: freeShippingMotivation2550,
+          motivation_50_75: freeShippingMotivation5075,
+          motivation_75_100: freeShippingMotivation75100,
           bg_color: freeShippingBgColor,
           text_color: freeShippingTextColor,
           icon: freeShippingIcon,
@@ -239,6 +266,65 @@ export default function FreeShippingSettingsPanel({
                   setFreeShippingProgressText(event.currentTarget.value)
                 }
                 description="النص الذي يظهر قبل الوصول للحد الأدنى. استخدم {amount} للمبلغ المتبقي"
+              />
+            </Grid.Col>
+
+            <Grid.Col span={12}>
+              <Divider
+                label="نصوص التحفيز حسب التقدم"
+                labelPosition="center"
+                my="md"
+              />
+              <Text size="sm" c="dimmed" mb="md">
+                نصوص تحفيزية تظهر أسفل شريط التقدم حسب نسبة الإنجاز
+              </Text>
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <TextInput
+                label="نص البداية (0-25%)"
+                placeholder="مثال:  ابدأ رحلتك نحو الشحن المجاني!"
+                value={freeShippingMotivation025}
+                onChange={(event) =>
+                  setFreeShippingMotivation025(event.currentTarget.value)
+                }
+                description="يظهر عندما يكون التقدم أقل من 25%"
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <TextInput
+                label="نص التقدم الأولي (25-50%)"
+                placeholder="مثال:  أحسنت! واصل التقدم..."
+                value={freeShippingMotivation2550}
+                onChange={(event) =>
+                  setFreeShippingMotivation2550(event.currentTarget.value)
+                }
+                description="يظهر عندما يكون التقدم بين 25% و 50%"
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <TextInput
+                label="نص التقدم المتوسط (50-75%)"
+                placeholder="مثال: رائع! اقتربت جداً من الهدف!"
+                value={freeShippingMotivation5075}
+                onChange={(event) =>
+                  setFreeShippingMotivation5075(event.currentTarget.value)
+                }
+                description="يظهر عندما يكون التقدم بين 50% و 75%"
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <TextInput
+                label="نص شبه المكتمل (75-100%)"
+                placeholder="مثال:  ممتاز! خطوة أخيرة فقط!"
+                value={freeShippingMotivation75100}
+                onChange={(event) =>
+                  setFreeShippingMotivation75100(event.currentTarget.value)
+                }
+                description="يظهر عندما يكون التقدم بين 75% و 99%"
               />
             </Grid.Col>
 
