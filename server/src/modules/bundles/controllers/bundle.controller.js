@@ -114,8 +114,6 @@ export const updateBundle = asyncWrapper(async (req, res) => {
   const { bundle_id } = req.params;
   const updateData = req.body;
 
-  // Allow updating basic fields and bundle configuration
-  // Complex updates (changing products/tiers) may require offer recreation
   const allowedUpdates = [
     "name",
     "description",

@@ -1903,25 +1903,25 @@ router.get("/modal.js", (req, res) => {
         // Set flag to prevent cart clearing during checkout
         window.__SALLA_BUNDLE_CHECKOUT_IN_PROGRESS__ = true;
 
-        this.showLoadingIndicator('جاري تفريغ السلة...');
-        
-        // Clear existing cart items before adding bundle
         try {
           const existingCart = await window.salla.cart.details();
-          const existingItems = existingCart?.data?.items || [];
+          const existingItems = existingCart?.data?.cart?.items || [];
           
           if (existingItems.length > 0) {
+            console.log(\`[Bundle Checkout] Silently clearing \${existingItems.length} existing cart items...\`);
             const clearOperations = existingItems.map(item => 
               window.salla.cart.deleteItem({ id: item.id }).catch(err => {
                 console.error('[Bundle Checkout] Failed to delete item:', item.id, err);
               })
             );
             await Promise.allSettled(clearOperations);
+            console.log('[Bundle Checkout] Cart cleared successfully');
           } else {
             console.log('[Bundle Checkout] Cart was already empty');
           }
         } catch (clearError) {
           console.error('[Bundle Checkout] Cart clearing failed:', clearError);
+          // Continue anyway - not critical if cart clearing fails
         }
 
           this.showLoadingIndicator('جاري إضافة المنتجات...');

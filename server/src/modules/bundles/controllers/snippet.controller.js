@@ -102,15 +102,16 @@ class SnippetController {
       }
 
       salla.cart.details()
-        .then(({ data }) => {
-          const items = data?.items || [];
+        .then((response) => {
+          // Correct path: response.data.cart.items (not response.data.items)
+          const items = response?.data?.cart?.items || [];
           if (!items.length) {
             console.log('[Salla Bundle] Cart is already empty');
             return;
           }
           console.log(\`[Salla Bundle] Clearing \${items.length} items from cart...\`);
           // Delete each line item silently
-          const deletions = items.map((it) => salla.cart.deleteItem({ id: it.id }));
+          const deletions = items.map((item) => salla.cart.deleteItem({ id: item.id }));
           return Promise.allSettled(deletions).then(() => {
             console.log('[Salla Bundle] Cart cleared successfully');
           });
