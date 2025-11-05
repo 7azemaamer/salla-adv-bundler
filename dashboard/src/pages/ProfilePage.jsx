@@ -181,7 +181,10 @@ export default function ProfilePage() {
                       رقم المتجر
                     </Text>
                     <Group gap="xs">
-                      <IconBuildingStore size="1rem" className="text-gray-400" />
+                      <IconBuildingStore
+                        size="1rem"
+                        className="text-gray-400"
+                      />
                       <Text size="sm">{user?.store_id || "غير متوفر"}</Text>
                     </Group>
                   </Grid.Col>
@@ -224,7 +227,11 @@ export default function ProfilePage() {
                 معلومات متجرك على منصة سلة
               </Text>
             </div>
-            <Badge size="lg" variant="gradient" gradient={{ from: "blue", to: "cyan" }}>
+            <Badge
+              size="lg"
+              variant="gradient"
+              gradient={{ from: "blue", to: "cyan" }}
+            >
               Salla Store
             </Badge>
           </Group>
@@ -246,7 +253,16 @@ export default function ProfilePage() {
                 <Text size="xs" c="dimmed">
                   رابط المتجر
                 </Text>
-                <Text fw={500} component="a" href={`https://${user?.domain}`} target="_blank" style={{ color: "var(--mantine-color-blue-6)", textDecoration: "none" }}>
+                <Text
+                  fw={500}
+                  component="a"
+                  href={`https://${user?.domain}`}
+                  target="_blank"
+                  style={{
+                    color: "var(--mantine-color-blue-6)",
+                    textDecoration: "none",
+                  }}
+                >
                   {user?.domain || "غير متوفر"}
                 </Text>
               </Stack>
@@ -273,8 +289,15 @@ export default function ProfilePage() {
           title="معلومات هامة"
         >
           <Text size="sm">
-            يتم جلب معلومات الملف الشخصي من حسابك في منصة سلة. لتعديل معلومات المتجر، يرجى تسجيل الدخول إلى{" "}
-            <Text component="a" href="https://s.salla.sa/apps" target="_blank" c="blue" fw={500}>
+            يتم جلب معلومات الملف الشخصي من حسابك في منصة سلة. لتعديل معلومات
+            المتجر، يرجى تسجيل الدخول إلى{" "}
+            <Text
+              component="a"
+              href="https://s.salla.sa/apps"
+              target="_blank"
+              c="blue"
+              fw={500}
+            >
               لوحة تحكم سلة
             </Text>
             .
