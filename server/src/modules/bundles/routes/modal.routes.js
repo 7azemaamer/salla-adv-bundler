@@ -675,7 +675,6 @@ router.get("/modal.js", (req, res) => {
         
         // Override Swal.fire to prevent toasts while modal is open
         window.Swal.fire = (...args) => {
-          console.log('[Bundle Modal] Blocked Swal toast while modal is open');
           // Remove body classes immediately if Swal tries to add them
           setTimeout(() => {
             document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
@@ -694,7 +693,6 @@ router.get("/modal.js", (req, res) => {
         };
         
         const blockNotify = () => {
-          console.log('[Bundle Modal] Blocked Salla notification while modal is open');
           // Remove body classes immediately
           setTimeout(() => {
             document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
@@ -718,7 +716,6 @@ router.get("/modal.js", (req, res) => {
                   document.body.classList.contains('swal2-toast-shown')) {
                 document.body.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
                 document.documentElement.classList.remove('swal2-shown', 'swal2-toast-shown', 'swal2-height-auto');
-                console.log('[Bundle Modal] Removed Swal body classes');
               }
             }
             
@@ -734,7 +731,6 @@ router.get("/modal.js", (req, res) => {
                     node.classList.contains('s-alert') ||
                     node.classList.contains('s-toast')
                   )) {
-                    console.log('[Bundle Modal] Blocking new Swal/toast element:', node.className);
                     node.style.display = 'none';
                     node.style.opacity = '0';
                     node.style.visibility = 'hidden';
@@ -751,7 +747,6 @@ router.get("/modal.js", (req, res) => {
                   const swalChildren = node.querySelectorAll && node.querySelectorAll('.swal2-container, .swal2-popup, .swal2-toast, .s-alert, .s-toast');
                   if (swalChildren && swalChildren.length > 0) {
                     swalChildren.forEach(child => {
-                      console.log('[Bundle Modal] Blocking nested Swal element:', child.className);
                       child.style.display = 'none';
                       child.style.opacity = '0';
                       child.style.visibility = 'hidden';
@@ -796,7 +791,6 @@ router.get("/modal.js", (req, res) => {
           const containers = document.querySelectorAll('.swal2-container, .swal2-popup, .swal2-toast, .s-alert, .s-toast');
           containers.forEach(container => {
             if (container && container.style.display !== 'none') {
-              console.log('[Bundle Modal] Interval caught Swal element:', container.className);
               container.style.display = 'none';
               container.style.opacity = '0';
               container.style.visibility = 'hidden';
@@ -3897,7 +3891,7 @@ router.get("/modal.js", (req, res) => {
                          onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />
                     <div class="salla-review-customer">
                       <div class="salla-review-name">\${review.customerName}</div>
-                      <div class="salla-review-rating">\${''.repeat(review.rating)}</div>
+                      <div class="salla-review-rating">\${'★'.repeat(review.rating || 5)}</div>
                     </div>
                   </div>
                   <div class="salla-review-content">\${review.content}</div>
@@ -4273,7 +4267,6 @@ router.get("/modal.js", (req, res) => {
           // Fetch the updated cart to get actual discount amount
           try {
             const cartDetails = await window.salla.cart.details();
-            console.log('[Coupon] Cart details after coupon:', cartDetails);
             
             // Extract discount from cart response
             // The discount can be in cart.discount or calculated from cart.sub_total - cart.total
@@ -4286,8 +4279,6 @@ router.get("/modal.js", (req, res) => {
                 discount_type: couponResponse?.data?.discount_type || 'fixed',
                 discount_amount: actualDiscount
               };
-              
-              console.log('[Coupon] Discount amount from cart:', actualDiscount);
             } else {
               // Fallback to coupon response
               this.appliedDiscount = {
@@ -4437,8 +4428,6 @@ router.get("/modal.js", (req, res) => {
         if (summaryTotal) {
           summaryTotal.textContent = formatPrice(finalTotal);
         }
-
-        console.log('[Summary] Updated with coupon discount:', couponDiscount);
       } catch (error) {
         console.error('[Summary] Update failed:', error);
       }

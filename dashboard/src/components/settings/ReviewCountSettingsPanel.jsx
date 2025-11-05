@@ -352,7 +352,9 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
                   <IconTrash size="1rem" />
                 </ActionIcon>
               </Group>
-              <Rating value={review.stars} readOnly size="sm" mb="xs" />
+              <div style={{ direction: "ltr", display: "inline-block" }}>
+                <Rating value={review.stars} readOnly size="sm" mb="xs" />
+              </div>
               {review.comment && (
                 <Text size="sm" c="dimmed">
                   {review.comment}
@@ -419,13 +421,15 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
                 <Text size="sm" fw={500} mb="xs">
                   عدد النجوم
                 </Text>
-                <Rating
-                  value={newReview.stars}
-                  onChange={(value) =>
-                    setNewReview({ ...newReview, stars: value })
-                  }
-                  size="lg"
-                />
+                <div style={{ direction: "ltr", display: "inline-block" }}>
+                  <Rating
+                    value={newReview.stars}
+                    onChange={(value) =>
+                      setNewReview({ ...newReview, stars: value })
+                    }
+                    size="lg"
+                  />
+                </div>
               </div>
             </Group>
 
