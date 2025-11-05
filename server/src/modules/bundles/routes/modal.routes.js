@@ -2658,7 +2658,7 @@ router.get("/modal.js", (req, res) => {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 999999;
+            z-index: 199;
             animation: fadeIn 0.2s ease;
           }
           
@@ -4188,21 +4188,44 @@ router.get("/modal.js", (req, res) => {
           
           this.discountCode = code;
           
-          // Store discount info from Salla response
-          if (couponResponse && couponResponse.data) {
+          // Fetch the updated cart to get actual discount amount
+          try {
+            const cartDetails = await window.salla.cart.details();
+            console.log('[Coupon] Cart details after coupon:', cartDetails);
+            
+            // Extract discount from cart response
+            // The discount can be in cart.discount or calculated from cart.sub_total - cart.total
+            const cartData = cartDetails?.data?.cart;
+            if (cartData) {
+              const actualDiscount = cartData.discount || (cartData.sub_total - cartData.total) || 0;
+              
+              this.appliedDiscount = {
+                code: code,
+                discount_type: couponResponse?.data?.discount_type || 'fixed',
+                discount_amount: actualDiscount
+              };
+              
+              console.log('[Coupon] Discount amount from cart:', actualDiscount);
+            } else {
+              // Fallback to coupon response
+              this.appliedDiscount = {
+                code: code,
+                discount_type: couponResponse?.data?.discount_type || 'fixed',
+                discount_amount: couponResponse?.data?.discount_amount || couponResponse?.data?.amount || 0
+              };
+            }
+          } catch (cartError) {
+            console.error('[Coupon] Failed to fetch cart details:', cartError);
+            // Fallback to coupon response
             this.appliedDiscount = {
               code: code,
-              discount_type: couponResponse.data.discount_type || 'fixed',
-              discount_amount: couponResponse.data.discount_amount || couponResponse.data.amount || 0
-            };
-          } else {
-            // Fallback: assume fixed discount (will be updated from webhook)
-            this.appliedDiscount = {
-              code: code,
-              discount_type: 'fixed',
-              discount_amount: 0 // Will be updated from webhook
+              discount_type: couponResponse?.data?.discount_type || 'fixed',
+              discount_amount: couponResponse?.data?.discount_amount || couponResponse?.data?.amount || 0
             };
           }
+          
+          // Update the summary to reflect the coupon discount
+          this.updateSummaryWithDiscount();
           
           // Track the bundle selection
           this.trackBundleSelection(selectedBundleData);
@@ -4259,6 +4282,92 @@ router.get("/modal.js", (req, res) => {
     }
 
     updateSummaryWithDiscount() {
+      try {
+        // Find the summary section in the modal
+        const summaryContainer = document.querySelector('.salla-summary-container');
+        if (!summaryContainer) {
+          console.warn('[Summary] Summary container not found');
+          return;
+        }
+
+        // Calculate totals
+        const formatPrice = (price) => {
+          const formattedPrice = Number(price).toFixed(2);
+          return formattedPrice + ' ' + (this.currency_code || 'ر.س');
+        };
+
+        // Calculate bundle total and savings
+        let totalPrice = 0;
+        let originalPrice = 0;
+        
+        this.selectedProducts.forEach(product => {
+          const price = parseFloat(product.price) || 0;
+          const original = parseFloat(product.regular_price) || price;
+          const quantity = parseInt(product.quantity) || 1;
+          
+          totalPrice += price * quantity;
+          originalPrice += original * quantity;
+        });
+
+        const bundleSavings = originalPrice - totalPrice;
+        const couponDiscount = this.appliedDiscount ? (this.appliedDiscount.discount_amount || 0) : 0;
+        const finalTotal = totalPrice - couponDiscount;
+
+        // Build summary details HTML
+        let summaryDetailsHtml = '';
+
+        // سعر المنتجات
+        summaryDetailsHtml += `
+          <div class="salla-summary-row">
+            <span class="salla-summary-label">سعر المنتجات</span>
+            <span class="salla-summary-value">${formatPrice(originalPrice)}</span>
+          </div>
+        `;
+
+        // خصم الباقة
+        if (bundleSavings > 0) {
+          summaryDetailsHtml += `
+            <div class="salla-summary-row">
+              <span class="salla-summary-label">خصم الباقة</span>
+              <span class="salla-summary-value" style="color: #16a34a;">-${formatPrice(bundleSavings)}</span>
+            </div>
+          `;
+        }
+
+        // خصم الكوبون
+        if (this.discountCode && couponDiscount > 0) {
+          summaryDetailsHtml += `
+            <div class="salla-summary-row">
+              <span class="salla-summary-label">كود الخصم (${this.discountCode})</span>
+              <span class="salla-summary-value" style="color: #16a34a;">-${formatPrice(couponDiscount)}</span>
+            </div>
+          `;
+        }
+
+        // إجمالي الطلب
+        summaryDetailsHtml += `
+          <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
+            <span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>
+            <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">${formatPrice(finalTotal)}</span>
+          </div>
+        `;
+
+        // Update the summary details
+        const summaryDetails = summaryContainer.querySelector('.salla-summary-details');
+        if (summaryDetails) {
+          summaryDetails.innerHTML = summaryDetailsHtml;
+        }
+
+        // Update the summary toggle total
+        const summaryTotal = summaryContainer.querySelector('.salla-summary-total');
+        if (summaryTotal) {
+          summaryTotal.textContent = formatPrice(finalTotal);
+        }
+
+        console.log('[Summary] Updated with coupon discount:', couponDiscount);
+      } catch (error) {
+        console.error('[Summary] Update failed:', error);
+      }
     }
 
     renderPaymentMethods() {
