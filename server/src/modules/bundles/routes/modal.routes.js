@@ -4317,40 +4317,32 @@ router.get("/modal.js", (req, res) => {
         let summaryDetailsHtml = '';
 
         // سعر المنتجات
-        summaryDetailsHtml += `
-          <div class="salla-summary-row">
-            <span class="salla-summary-label">سعر المنتجات</span>
-            <span class="salla-summary-value">${formatPrice(originalPrice)}</span>
-          </div>
-        `;
+        summaryDetailsHtml += '<div class="salla-summary-row">' +
+          '<span class="salla-summary-label">سعر المنتجات</span>' +
+          '<span class="salla-summary-value">' + formatPrice(originalPrice) + '</span>' +
+          '</div>';
 
         // خصم الباقة
         if (bundleSavings > 0) {
-          summaryDetailsHtml += `
-            <div class="salla-summary-row">
-              <span class="salla-summary-label">خصم الباقة</span>
-              <span class="salla-summary-value" style="color: #16a34a;">-${formatPrice(bundleSavings)}</span>
-            </div>
-          `;
+          summaryDetailsHtml += '<div class="salla-summary-row">' +
+            '<span class="salla-summary-label">خصم الباقة</span>' +
+            '<span class="salla-summary-value" style="color: #16a34a;">-' + formatPrice(bundleSavings) + '</span>' +
+            '</div>';
         }
 
         // خصم الكوبون
         if (this.discountCode && couponDiscount > 0) {
-          summaryDetailsHtml += `
-            <div class="salla-summary-row">
-              <span class="salla-summary-label">كود الخصم (${this.discountCode})</span>
-              <span class="salla-summary-value" style="color: #16a34a;">-${formatPrice(couponDiscount)}</span>
-            </div>
-          `;
+          summaryDetailsHtml += '<div class="salla-summary-row">' +
+            '<span class="salla-summary-label">كود الخصم (' + this.discountCode + ')</span>' +
+            '<span class="salla-summary-value" style="color: #16a34a;">-' + formatPrice(couponDiscount) + '</span>' +
+            '</div>';
         }
 
         // إجمالي الطلب
-        summaryDetailsHtml += `
-          <div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">
-            <span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>
-            <span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">${formatPrice(finalTotal)}</span>
-          </div>
-        `;
+        summaryDetailsHtml += '<div class="salla-summary-row" style="border-top: 1px solid var(--border); padding-top: 6px; margin-top: 6px;">' +
+          '<span class="salla-summary-label" style="font-weight: 600;">إجمالي الطلب</span>' +
+          '<span class="salla-summary-value" style="font-weight: 600; font-size: 16px;">' + formatPrice(finalTotal) + '</span>' +
+          '</div>';
 
         // Update the summary details
         const summaryDetails = summaryContainer.querySelector('.salla-summary-details');
