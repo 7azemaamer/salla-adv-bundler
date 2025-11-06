@@ -3294,11 +3294,22 @@ router.get("/modal.js", (req, res) => {
         if (isLastStep || isBeforeCheckout) {
           const bundleConfig = this.bundleData.data || this.bundleData;
           const checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب';
+          const checkoutBgColor = bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff';
+          const checkoutTextColor = bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff';
+          
           nextBtn.textContent = checkoutButtonText;
           nextBtn.classList.add('primary');
+          // Apply dynamic colors as inline styles to override CSS
+          nextBtn.style.backgroundColor = checkoutBgColor;
+          nextBtn.style.color = checkoutTextColor;
+          nextBtn.style.borderColor = checkoutBgColor;
         } else {
           nextBtn.textContent = 'التالي';
           nextBtn.classList.add('primary');
+          // Reset to default styles for non-checkout steps
+          nextBtn.style.backgroundColor = '';
+          nextBtn.style.color = '';
+          nextBtn.style.borderColor = '';
         }
       }
     }

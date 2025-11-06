@@ -128,6 +128,8 @@ export const updateBundle = asyncWrapper(async (req, res) => {
     "cta_button_bg_color",
     "cta_button_text_color",
     "checkout_button_text",
+    "checkout_button_bg_color",
+    "checkout_button_text_color",
   ];
   const updates = {};
 
@@ -147,23 +149,70 @@ export const updateBundle = asyncWrapper(async (req, res) => {
     });
   }
 
-  const updatedBundle = await BundleConfig.findOneAndUpdate(
-    { _id: bundle_id, store_id },
-    updates,
-    { new: true }
-  );
+  // Check if bundle was active before update
+  const existingBundle = await BundleConfig.findOne({
+    _id: bundle_id,
+    store_id,
+  });
 
-  if (!updatedBundle) {
+  if (!existingBundle) {
     return res.status(404).json({
       success: false,
       message: "Bundle not found",
     });
   }
 
+  const wasActive = existingBundle.status === "active";
+
+  // Update the bundle
+  const updatedBundle = await BundleConfig.findOneAndUpdate(
+    { _id: bundle_id, store_id },
+    updates,
+    { new: true }
+  );
+
+  // If bundle was active, automatically deactivate and regenerate offers
+  if (wasActive) {
+    try {
+      console.log(
+        `[Bundle]: Auto-reactivating bundle ${bundle_id} after update...`
+      );
+
+      // Deactivate (delete old offers)
+      await bundleService.deactivateBundle(bundle_id);
+
+      // Regenerate offers with new configuration
+      const result = await bundleService.generateOffers(bundle_id);
+
+      return res.status(200).json({
+        success: true,
+        message: `Bundle updated and reactivated successfully with ${result.offers_created} offers`,
+        data: updatedBundle,
+        offers_regenerated: true,
+        offers_count: result.offers_created,
+      });
+    } catch (error) {
+      console.error(
+        `[Bundle]: Failed to regenerate offers after update:`,
+        error
+      );
+      // Return success for update but warn about offer regeneration failure
+      return res.status(200).json({
+        success: true,
+        message:
+          "Bundle updated but offer regeneration failed. Please reactivate manually.",
+        data: updatedBundle,
+        offers_regenerated: false,
+        error: error.message,
+      });
+    }
+  }
+
   res.status(200).json({
     success: true,
     message: "Bundle updated successfully",
     data: updatedBundle,
+    offers_regenerated: false,
   });
 });
 

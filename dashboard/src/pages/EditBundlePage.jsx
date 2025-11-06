@@ -379,14 +379,35 @@ export default function EditBundlePage() {
         updated_by: "dashboard",
       };
 
-      await updateBundle(bundleId, bundleData);
+      const result = await updateBundle(bundleId, bundleData);
 
-      notifications.show({
-        title: "تم تحديث الباقة بنجاح",
-        message: `تم حفظ التعديلات على الباقة "${values.name}" بنجاح`,
-        color: "green",
-        icon: <IconCheck size="1rem" />,
-      });
+      // Check if offers were automatically regenerated
+      if (result?.offers_regenerated) {
+        notifications.show({
+          title: "تم تحديث وإعادة تفعيل الباقة بنجاح",
+          message: `تم حفظ التعديلات وإعادة إنشاء ${result.offers_count} عروض تلقائياً`,
+          color: "green",
+          icon: <IconCheck size="1rem" />,
+          autoClose: 5000,
+        });
+      } else if (result?.error) {
+        // Update succeeded but offer regeneration failed
+        notifications.show({
+          title: "تم التحديث مع تحذير",
+          message:
+            "تم حفظ التعديلات ولكن فشلت إعادة تفعيل العروض. يرجى التفعيل يدوياً.",
+          color: "yellow",
+          icon: <IconCheck size="1rem" />,
+          autoClose: 7000,
+        });
+      } else {
+        notifications.show({
+          title: "تم تحديث الباقة بنجاح",
+          message: `تم حفظ التعديلات على الباقة "${values.name}" بنجاح`,
+          color: "green",
+          icon: <IconCheck size="1rem" />,
+        });
+      }
 
       navigate("/dashboard/bundles");
     } catch (error) {

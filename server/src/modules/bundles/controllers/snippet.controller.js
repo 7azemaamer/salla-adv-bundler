@@ -30,7 +30,23 @@ class SnippetController {
   'use strict';
 
   // ========================================
-  // SILENT CART CLEARING (Every page visit/refresh)
+  // BUNDLE SYSTEM LOGIC (Product pages only)
+  // ========================================
+  
+  // Only run on product pages - improved detection for Salla
+  const isProductPage = window.location.pathname.includes('/p') ||
+                        document.querySelector('form.product-form') ||
+                        document.querySelector('salla-add-product-button') ||
+                        document.querySelector('input[name="id"]') ||
+                        document.querySelector('[data-product-id]') ||
+                        document.querySelector('.product-details');
+
+  if (!isProductPage) {
+    return;
+  }
+
+  // ========================================
+  // SILENT CART CLEARING (Product pages only)
   // ========================================
   (function() {
     // Don't interfere with cart/checkout flows or bundle checkout process
@@ -129,22 +145,6 @@ class SnippetController {
       window.salla.onReady(clearCartSilently);
     }
   })();
-
-  // ========================================
-  // BUNDLE SYSTEM LOGIC (Product pages only)
-  // ========================================
-  
-  // Only run on product pages - improved detection for Salla
-  const isProductPage = window.location.pathname.includes('/p') ||
-                        document.querySelector('form.product-form') ||
-                        document.querySelector('salla-add-product-button') ||
-                        document.querySelector('input[name="id"]') ||
-                        document.querySelector('[data-product-id]') ||
-                        document.querySelector('.product-details');
-
-  if (!isProductPage) {
-    return;
-  }
 
   const storeContext = window.sallaStoreContext || {};
   
