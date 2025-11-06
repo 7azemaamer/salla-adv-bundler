@@ -299,6 +299,24 @@ const settingsSchema = new mongoose.Schema(
         default: false,
       },
     },
+    review_display: {
+      hide_dates: {
+        type: Boolean,
+        default: false,
+      },
+      hide_ratings: {
+        type: Boolean,
+        default: false,
+      },
+      hide_names: {
+        type: Boolean,
+        default: false,
+      },
+      hide_avatars: {
+        type: Boolean,
+        default: false,
+      },
+    },
     // Custom reviews (array of review objects)
     custom_reviews: {
       type: [

@@ -64,6 +64,12 @@ const useSettingsStore = create((set, get) => ({
       ],
       hide_real_reviews: false,
     },
+    review_display: {
+      hide_dates: false,
+      hide_ratings: false,
+      hide_names: false,
+      hide_avatars: false,
+    },
   },
   loading: {
     fetching: false,

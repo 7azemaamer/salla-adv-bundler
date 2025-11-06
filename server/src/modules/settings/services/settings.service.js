@@ -69,6 +69,12 @@ class SettingsService {
             ],
             hide_real_reviews: false,
           },
+          review_display: {
+            hide_dates: false,
+            hide_ratings: false,
+            hide_names: false,
+            hide_avatars: false,
+          },
         });
       }
 
@@ -101,6 +107,7 @@ class SettingsService {
         "timer", // Nested object
         "review_count", // Nested object - review count settings
         "review_date_randomizer", // Nested object - review date presets
+        "review_display", // Nested object - review display toggles
         "custom_reviews", // Array of custom review objects
       ];
 

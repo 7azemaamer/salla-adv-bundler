@@ -48,6 +48,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
   const reviewCountSettings = settings?.review_count || {};
   const customReviews = settings?.custom_reviews || [];
   const dateRandomizer = settings?.review_date_randomizer || {};
+  const reviewDisplay = settings?.review_display || {};
 
   const normalizedDatePresets = useMemo(() => {
     if (
@@ -66,6 +67,10 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
   const dateRandomizerEnabled =
     dateRandomizer.enabled === undefined ? false : dateRandomizer.enabled;
   const hideRealReviews = dateRandomizer.hide_real_reviews === true;
+  const hideDates = reviewDisplay.hide_dates === true;
+  const hideRatings = reviewDisplay.hide_ratings === true;
+  const hideNames = reviewDisplay.hide_names === true;
+  const hideAvatars = reviewDisplay.hide_avatars === true;
 
   useEffect(() => {
     setDatePresetsInput(normalizedDatePresets.join("\n"));
@@ -352,6 +357,89 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
             )}
           </>
         )}
+
+      {/* Review Display Options */}
+      <Paper p="md" radius="md" withBorder>
+        <Stack gap="md">
+          <Group gap="xs">
+            <IconStar size="1.1rem" style={{ color: "#339af0" }} />
+            <Text fw={600} size="sm">
+              عناصر التقييم الظاهرة
+            </Text>
+          </Group>
+          <Text size="xs" c="dimmed">
+            تحكّم في العناصر التي تظهر داخل بطاقة التقييم.
+          </Text>
+
+          <Group justify="space-between">
+            <div>
+              <Text fw={600} size="sm">
+                إخفاء التاريخ
+              </Text>
+              <Text size="xs" c="dimmed">
+                لن يظهر عمر التقييم (مثل منذ أسبوع).
+              </Text>
+            </div>
+            <Switch
+              checked={hideDates}
+              onChange={(e) =>
+                onToggle("review_display.hide_dates", e.currentTarget.checked)
+              }
+            />
+          </Group>
+
+          <Group justify="space-between">
+            <div>
+              <Text fw={600} size="sm">
+                إخفاء التقييم النجمي
+              </Text>
+              <Text size="xs" c="dimmed">
+                سيتم إخفاء عدد النجوم لكل مراجعة.
+              </Text>
+            </div>
+            <Switch
+              checked={hideRatings}
+              onChange={(e) =>
+                onToggle("review_display.hide_ratings", e.currentTarget.checked)
+              }
+            />
+          </Group>
+
+          <Group justify="space-between">
+            <div>
+              <Text fw={600} size="sm">
+                إخفاء اسم العميل
+              </Text>
+              <Text size="xs" c="dimmed">
+                يتم عرض التعليق بدون اسم العميل.
+              </Text>
+            </div>
+            <Switch
+              checked={hideNames}
+              onChange={(e) =>
+                onToggle("review_display.hide_names", e.currentTarget.checked)
+              }
+            />
+          </Group>
+
+          <Group justify="space-between">
+            <div>
+              <Text fw={600} size="sm">
+                إخفاء صورة الملف الشخصي
+              </Text>
+              <Text size="xs" c="dimmed">
+                لن يتم عرض الصورة الرمزية للعميل.
+              </Text>
+            </div>
+            <Switch
+              checked={hideAvatars}
+              onChange={(e) =>
+                onToggle("review_display.hide_avatars", e.currentTarget.checked)
+              }
+            />
+          </Group>
+        </Stack>
+      </Paper>
 
       {/* Review Date Randomizer */}
       <Paper p="md" radius="md" withBorder>

@@ -62,7 +62,8 @@ router.get("/modal.js", (req, res) => {
       reviews: null,
       paymentMethods: null,
       bundleData: {},
-      productReviews: {}
+      productReviews: {},
+      reviewDisplayConfig: null,
     };
 
     static isPreloading = false;
@@ -215,6 +216,7 @@ router.get("/modal.js", (req, res) => {
       this.modalElement = null;
       this.selectedBundle = null;
       this.isInitializing = false; 
+      this.reviewDisplayConfig = {};
 
       this.feedbackInitialized = false;
       this.initializeFeedbackOnFirstInteraction();
@@ -489,9 +491,12 @@ router.get("/modal.js", (req, res) => {
           this.paymentMethods = SallaBundleModal.dataCache.paymentMethods;
         }
 
+        if (SallaBundleModal.dataCache.reviewDisplayConfig) {
+          this.reviewDisplayConfig = SallaBundleModal.dataCache.reviewDisplayConfig;
+        }
 
         
-        if (window.__SALLA_BUNDLE_CACHE__ && window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`]) {
+        if (window.__SALLA_BUNDLE_CACHE__ && window.__SALLA_BUNDLE_CACHE__[`product_\${this.productId}\`]) {
           this.bundleData = window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`];
           SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
         } else if (SallaBundleModal.dataCache.bundleData[this.productId]) {
@@ -672,16 +677,17 @@ router.get("/modal.js", (req, res) => {
 
         if (response.ok) {
           const result = await response.json();
-          const reviews = result.data || [];
-          this.reviews = reviews;
+          this.reviews = result.data || [];
+          this.reviewDisplayConfig = result.display_config || {};
 
           if (normalizedProductId) {
-            SallaBundleModal.dataCache.productReviews[normalizedProductId] = reviews;
+            SallaBundleModal.dataCache.productReviews[normalizedProductId] = this.reviews;
           } else {
-            SallaBundleModal.dataCache.reviews = reviews;
+            SallaBundleModal.dataCache.reviews = this.reviews;
           }
+          SallaBundleModal.dataCache.reviewDisplayConfig = this.reviewDisplayConfig;
 
-          return reviews;
+          return this.reviews;
         }
       } catch (error) {
         console.error('[Reviews] Fetch failed:', error);
@@ -3916,91 +3922,98 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderReviews(currentStepType = 'bundles') {
-      if (!this.reviews || this.reviews.length === 0) return '';
-      if (!this.shouldShowInStep('reviews', currentStepType)) return '';
-      
-      const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
-      const avgRating = (totalRating / this.reviews.length).toFixed(1);
-      
-      return \`
-        <div class="salla-reviews-section">
-          <div class="salla-reviews-header">
-            <span>آراء العملاء (\${this.reviews.length})</span>
-            <span style="
-              display: inline-flex;
-              align-items: center;
-              gap: 4px;
-              color: #fbbf24;
-              font-size: 14px;
-              font-weight: 600;
-            ">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block;">
-                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-              </svg>
-              \${avgRating}
-            </span>
-          </div>
-          <div class="salla-reviews-carousel">
-            <div class="salla-reviews-track" id="salla-reviews-track">
-              \${this.reviews.map(review => {
-                const stars = Array.from({length: 5}, (_, i) => i < review.rating ? '★' : '☆').join('');
-                return \`
-                <div class="salla-review-card" style="
-                  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-                  border: 1px solid #e5e7eb;
-                  border-radius: 16px;
-                  padding: 16px;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                  transition: transform 0.2s, box-shadow 0.2s;
-                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.12)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';">
-                  <div class="salla-review-header" style="margin-bottom: 12px;">
-                    <img src="\${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
-                         alt="\${review.customerName}" 
-                         class="salla-review-avatar"
-                         style="
-                           width: 48px;
-                           height: 48px;
-                           border-radius: 50%;
-                           object-fit: cover;
-                           border: 2px solid #e5e7eb;
-                           box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                         "
-                         onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />
-                    <div class="salla-review-customer" style="flex: 1;">
-                      <div class="salla-review-name" style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">\${review.customerName}</div>
-                      <div class="salla-review-rating" style="color: #fbbf24; font-size: 16px; letter-spacing: 2px;">\${stars}</div>
-                    </div>
-                  </div>
-                  <div class="salla-review-content" style="
-                    color: #4b5563;
-                    line-height: 1.6;
-                    font-size: 14px;
-                    margin-bottom: 8px;
-                    max-height: 4.8em;
-                    overflow: hidden;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 3;
-                    -webkit-box-orient: vertical;
-                  ">\${review.content}</div>
-                  <div class="salla-review-time" style="
-                    font-size: 12px;
-                    color: #9ca3af;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                  ">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    \${review.timeAgo}
-                  </div>
-                </div>
-              \`;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-      \`;
+       if (!this.reviews || this.reviews.length === 0) return '';
+       if (!this.shouldShowInStep('reviews', currentStepType)) return '';
+       
+       const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
+       const avgRating = (totalRating / this.reviews.length).toFixed(1);
+       const displayConfig = this.reviewDisplayConfig || {};
+       const hideNames = !!displayConfig.hide_names;
+       const hideDates = !!displayConfig.hide_dates;
+       const hideRatings = !!displayConfig.hide_ratings;
+       const hideAvatars = !!displayConfig.hide_avatars;
+      const ratingHeaderMarkup = hideRatings
+        ? ''
+        : '<div style="font-size: 13px; color: var(--text-2);">' +
+          avgRating +
+          ' ★ متوسط</div>';
+       
+       return \`
+         <div class="salla-reviews-section">
+           <div class="salla-reviews-header">
+             <span>آراء العملاء (${this.reviews.length})</span>
+             ${ratingHeaderMarkup}
+           </div>
+           <div class="salla-reviews-carousel">
+             <div class="salla-reviews-track" id="salla-reviews-track">
+               \${this.reviews.map(review => {
+                 const ratingValue = typeof review.rating === 'number' ? review.rating : 0;
+                 const showName = !hideNames && review.customerName;
+                 const showDate = !hideDates && review.timeAgo;
+                 const showRating = !hideRatings && typeof review.rating === 'number';
+                 const showAvatar = !hideAvatars && review.customerAvatar;
+                 const stars = showRating
+                   ? Array.from({length: 5}, (_, i) => i < ratingValue ? '★' : '☆').join('')
+                   : '';
+                 return \`
+                 <div class="salla-review-card" style="
+                   background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+                   border: 1px solid #e5e7eb;
+                   border-radius: 16px;
+                   padding: 16px;
+                   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                   transition: transform 0.2s, box-shadow 0.2s;
+                 " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.12)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';">
+                   <div class="salla-review-header" style="margin-bottom: 12px;">
+                     ${showAvatar ? `
+                     <img src="${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
+                          alt="${review.customerName || ''}" 
+                          class="salla-review-avatar"
+                          style="
+                            width: 48px;
+                            height: 48px;
+                            border-radius: 50%;
+                            object-fit: cover;
+                            border: 2px solid #e5e7eb;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                          "
+                          onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />` : ''}
+                     <div class="salla-review-customer" style="flex: 1;">
+                       <div class="salla-review-name" style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">${showName || ''}</div>
+                       ${showRating ? `<div class="salla-review-rating" style="color: #fbbf24; font-size: 16px; letter-spacing: 2px;">${stars}</div>` : ''}
+                     </div>
+                   </div>
+                   <div class="salla-review-content" style="
+                     color: #4b5563;
+                     line-height: 1.6;
+                     font-size: 14px;
+                     margin-bottom: 8px;
+                     max-height: 4.8em;
+                     overflow: hidden;
+                     display: -webkit-box;
+                     -webkit-line-clamp: 3;
+                     -webkit-box-orient: vertical;
+                   ">${review.content}</div>
+                   ${showDate ? `
+                   <div class="salla-review-time" style="
+                     font-size: 12px;
+                     color: #9ca3af;
+                     display: flex;
+                     align-items: center;
+                     gap: 4px;
+                   ">
+                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                     </svg>
+                     ${review.timeAgo}
+                   </div>` : ''}
+                 </div>
+               \`;
+               }).join('')}
+             </div>
+           </div>
+         </div>
+       \`;
     }
 
     startReviewsAutoScroll() {
@@ -4760,6 +4773,69 @@ router.get("/modal.js", (req, res) => {
           }
         }, 300);
       }
+    }
+
+    renderModernReviews() {
+       if (!this.reviews || this.reviews.length === 0) return '';
+       
+       const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
+       const avgRating = (totalRating / this.reviews.length).toFixed(1);
+       const displayConfig = this.reviewDisplayConfig || {};
+       const hideNames = !!displayConfig.hide_names;
+       const hideDates = !!displayConfig.hide_dates;
+       const hideRatings = !!displayConfig.hide_ratings;
+       const hideAvatars = !!displayConfig.hide_avatars;
+       
+       return \`
+         <div class="salla-reviews-modern" style="margin-top: 16px;">
+           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+             <h3 style="font-size: 15px; font-weight: 600; margin: 0;">آراء العملاء</h3>
+             ${ratingHeaderMarkup}
+           </div>
+           <div style="position: relative;">
+             <div class="salla-reviews-track-modern" id="salla-reviews-track-modern" style="display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+               \${this.reviews.map((review, index) => {
+                 const showName = !hideNames && review.customerName;
+                 const showDate = !hideDates && review.timeAgo;
+                 const showRating = !hideRatings && typeof review.rating === 'number';
+                 const showAvatar = !hideAvatars && review.customerAvatar;
+                 const ratingMarkup = showRating
+                   ? \`<div style="display: flex; align-items: center; gap: 4px; margin-bottom: 8px;">
+                       \${Array.from({ length: 5 }).map((_, i) => \`
+                         <svg width="14" height="14" viewBox="0 0 24 24" style="\${i < review.rating ? 'fill: var(--text-1);' : 'fill: none;'}">
+                           <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" stroke="var(--text-1)" stroke-width="1" />
+                         </svg>
+                       \`).join('')}
+                     </div>\`
+                   : '';
+                 return \`
+                 <article style="min-width: 80%; max-width: 320px; flex-shrink: 0; scroll-snap-align: center; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-card); padding: 16px; box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 1px rgba(16,24,40,.04);">
+                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                     <div style="font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 12px;">\${showName || ''}</div>
+                     <div style="font-size: 12px; color: var(--text-2); white-space: nowrap;">\${showDate || ''}</div>
+                   </div>
+                   \${ratingMarkup}
+                   <p style="font-size: 14px; color: var(--text-1); line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;">\${review.content}</p>
+                 </article>
+               \`;
+               }).join('')}
+             </div>
+             <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none;">
+               <button onclick="window.sallaBundleModal.scrollReviewBy(-1)" aria-label="السابق" style="pointer-events: auto; margin-left: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
+                 <svg width="16" height="16" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+               </button>
+               <button onclick="window.sallaBundleModal.scrollReviewBy(1)" aria-label="التالي" style="pointer-events: auto; margin-right: -4px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); box-shadow: 0 1px 2px rgba(16,24,40,.06); cursor: pointer;">
+                 <svg width="16" height="16" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+               </button>
+             </div>
+           </div>
+         </div>
+         <style>
+           .salla-reviews-track-modern::-webkit-scrollbar {
+             display: none;
+           }
+         </style>
+       \`;
     }
   }
 

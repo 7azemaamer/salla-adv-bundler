@@ -178,6 +178,13 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
 
     const reviewDateRandomizer = settings.review_date_randomizer || {};
     const hideRealReviews = reviewDateRandomizer.hide_real_reviews === true;
+    const reviewDisplayRaw = settings.review_display || {};
+    const reviewDisplay = {
+      hide_dates: !!reviewDisplayRaw.hide_dates,
+      hide_ratings: !!reviewDisplayRaw.hide_ratings,
+      hide_names: !!reviewDisplayRaw.hide_names,
+      hide_avatars: !!reviewDisplayRaw.hide_avatars,
+    };
     const defaultDatePresets = [
       "قبل يوم",
       "قبل يومين",
@@ -212,6 +219,24 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         timeAgo:
           presetPool[Math.floor(Math.random() * presetPool.length)] ||
           review.timeAgo,
+      }));
+    };
+
+    const applyDisplayConfig = (reviews = []) => {
+      if (!Array.isArray(reviews) || reviews.length === 0) return reviews;
+
+      return reviews.map((review) => ({
+        ...review,
+        timeAgo: reviewDisplay.hide_dates ? null : review.timeAgo,
+        rating:
+          reviewDisplay.hide_ratings || review.rating === undefined
+            ? null
+            : review.rating,
+        customerName: reviewDisplay.hide_names ? "" : review.customerName,
+        customerAvatar: reviewDisplay.hide_avatars
+          ? null
+          : review.customerAvatar,
+        _display: reviewDisplay,
       }));
     };
 
@@ -306,7 +331,9 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         } - sorted by newest`
       );
       const limitedReviews = allReviews.slice(0, parseInt(limit));
-      const finalReviews = randomizeReviewDates(limitedReviews);
+      const finalReviews = applyDisplayConfig(
+        randomizeReviewDates(limitedReviews)
+      );
 
       return res.status(200).json({
         success: true,
@@ -314,6 +341,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         total: finalReviews.length,
         fromCache,
         hasCustomReviews: formattedCustomReviews.length > 0,
+        display_config: reviewDisplay,
       });
     }
 
@@ -322,13 +350,16 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         "[Reviews]: No product_id provided, returning custom reviews only"
       );
       const limitedCustom = formattedCustomReviews.slice(0, parseInt(limit));
-      const finalCustom = randomizeReviewDates(limitedCustom);
+      const finalCustom = applyDisplayConfig(
+        randomizeReviewDates(limitedCustom)
+      );
       return res.status(200).json({
         success: true,
         data: finalCustom,
         total: finalCustom.length,
         fromCache,
         hasCustomReviews: formattedCustomReviews.length > 0,
+        display_config: reviewDisplay,
       });
     }
 
@@ -337,13 +368,16 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         `[Reviews]: Real reviews are hidden by settings, returning custom reviews only for product ${product_id}`
       );
       const limitedCustom = formattedCustomReviews.slice(0, parseInt(limit));
-      const finalCustom = randomizeReviewDates(limitedCustom);
+      const finalCustom = applyDisplayConfig(
+        randomizeReviewDates(limitedCustom)
+      );
       return res.status(200).json({
         success: true,
         data: finalCustom,
         total: finalCustom.length,
         fromCache,
         hasCustomReviews: formattedCustomReviews.length > 0,
+        display_config: reviewDisplay,
       });
     }
 
@@ -380,7 +414,9 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     });
 
     const limitedReviews = allReviews.slice(0, parseInt(limit));
-    const finalReviews = randomizeReviewDates(limitedReviews);
+    const finalReviews = applyDisplayConfig(
+      randomizeReviewDates(limitedReviews)
+    );
 
     res.status(200).json({
       success: true,
@@ -388,6 +424,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       total: finalReviews.length,
       fromCache,
       hasCustomReviews: formattedCustomReviews.length > 0,
+      display_config: reviewDisplay,
     });
   } catch (error) {
     console.error("[Reviews]: Error fetching reviews:", error.message);
@@ -395,6 +432,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       success: true,
       data: [],
       message: "Failed to fetch reviews",
+      display_config: reviewDisplay,
     });
   }
 });
