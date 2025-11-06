@@ -11,6 +11,7 @@ import {
   trackBundleView,
   trackBundleClick,
   trackBundleConversion,
+  refetchProductReviews,
 } from "../controllers/bundle.controller.js";
 import {
   getBundlesByProduct,
@@ -40,5 +41,8 @@ router.post("/:bundle_id/deactivate", deactivateBundle);
 router.post("/:bundle_id/track/view", trackBundleView);
 router.post("/:bundle_id/track/click", trackBundleClick);
 router.post("/:bundle_id/track/conversion", trackBundleConversion);
+
+// Product reviews cache
+router.post("/:bundle_id/refetch-reviews", refetchProductReviews);
 
 export default router;

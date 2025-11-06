@@ -1,6 +1,8 @@
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import bundleService from "../services/bundle.service.js";
 import BundleConfig from "../model/bundleConfig.model.js";
+import { invalidateProductCache, getCachedReviews } from "../../products/services/productCache.service.js";
+import { getValidAccessToken } from "../../../utils/tokenHelper.js";
 
 /* ===============================================
  * Create a new bundle configuration
@@ -235,4 +237,68 @@ export const trackBundleConversion = asyncWrapper(async (req, res) => {
     success: true,
     message: "Conversion tracked",
   });
+});
+
+/* ===============================================
+ * Refetch and cache product reviews
+ * =============================================== */
+export const refetchProductReviews = asyncWrapper(async (req, res) => {
+  const { store_id } = req.user;
+  const { bundle_id } = req.params;
+
+  try {
+    // Get bundle to find target product
+    const bundle = await BundleConfig.findOne({ _id: bundle_id, store_id });
+
+    if (!bundle) {
+      return res.status(404).json({
+        success: false,
+        message: "Bundle not found",
+      });
+    }
+
+    // Get access token
+    const accessToken = await getValidAccessToken(store_id);
+
+    if (!accessToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Access token not available",
+      });
+    }
+
+    // Invalidate existing cache
+    await invalidateProductCache(store_id, bundle.target_product_id);
+
+    // Fetch fresh reviews
+    const result = await getCachedReviews(
+      store_id,
+      bundle.target_product_id,
+      accessToken
+    );
+
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        message: `تم تحديث ${result.data.length} تقييم بنجاح`,
+        data: {
+          reviews_count: result.data.length,
+          product_id: bundle.target_product_id,
+          product_name: bundle.target_product_name,
+          last_fetched: result.lastFetched,
+        },
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch reviews",
+      });
+    }
+  } catch (error) {
+    console.error("[RefetchReviews]: Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to refetch reviews",
+    });
+  }
 });

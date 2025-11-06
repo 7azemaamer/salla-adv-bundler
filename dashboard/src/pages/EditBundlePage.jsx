@@ -53,6 +53,7 @@ export default function EditBundlePage() {
     getBundleDetails,
     fetchProducts,
     generateOffers,
+    refetchProductReviews,
     currentBundle,
     products,
     loading,
@@ -62,6 +63,7 @@ export default function EditBundlePage() {
   const [offerSearch, setOfferSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isReactivating, setIsReactivating] = useState(false);
+  const [isRefetchingReviews, setIsRefetchingReviews] = useState(false);
 
   const form = useForm({
     initialValues: {
@@ -426,6 +428,31 @@ export default function EditBundlePage() {
       });
     } finally {
       setIsReactivating(false);
+    }
+  };
+
+  const handleRefetchReviews = async () => {
+    try {
+      setIsRefetchingReviews(true);
+
+      const result = await refetchProductReviews(bundleId);
+
+      notifications.show({
+        title: "تم تحديث التقييمات بنجاح",
+        message: result.message || `تم تحديث ${result.data.reviews_count} تقييم للمنتج`,
+        color: "green",
+        icon: <IconCheck size="1rem" />,
+        autoClose: 5000,
+      });
+    } catch (error) {
+      notifications.show({
+        title: "خطأ في تحديث التقييمات",
+        message: error.message || "حدث خطأ أثناء تحديث التقييمات",
+        color: "red",
+        icon: <IconX size="1rem" />,
+      });
+    } finally {
+      setIsRefetchingReviews(false);
     }
   };
 
@@ -1364,36 +1391,46 @@ export default function EditBundlePage() {
                 </Group>
               </Button>
 
-              {active < 3 ? (
-                <Button type="button" onClick={nextStep}>
-                  <Group gap="xs">
-                    <span>التالي</span>
-                    <IconArrowLeft size="1rem" />
-                  </Group>
-                </Button>
-              ) : (
-                <Group gap="sm">
-                  {currentBundle && currentBundle.status === "inactive" && (
+                {active < 3 ? (
+                  <Button type="button" onClick={nextStep}>
+                    <Group gap="xs">
+                      <span>التالي</span>
+                      <IconArrowLeft size="1rem" />
+                    </Group>
+                  </Button>
+                ) : (
+                  <Group gap="sm">
+                    {currentBundle && currentBundle.status === "inactive" && (
+                      <Button
+                        type="button"
+                        variant="light"
+                        color="green"
+                        onClick={handleReactivate}
+                        loading={isReactivating}
+                        leftSection={<IconRefresh size="1rem" />}
+                      >
+                        إعادة تفعيل العروض
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="light"
-                      color="green"
-                      onClick={handleReactivate}
-                      loading={isReactivating}
-                      leftSection={<IconRefresh size="1rem" />}
+                      color="blue"
+                      onClick={handleRefetchReviews}
+                      loading={isRefetchingReviews}
+                      leftSection={<IconStar size="1rem" />}
                     >
-                      إعادة تفعيل العروض
+                      تحديث تقييمات المنتج
                     </Button>
-                  )}
-                  <Button
-                    type="submit"
-                    loading={loading.updating}
-                    leftSection={<IconEdit size="1rem" />}
-                  >
-                    حفظ التعديلات
-                  </Button>
-                </Group>
-              )}
+                    <Button
+                      type="submit"
+                      loading={loading.updating}
+                      leftSection={<IconEdit size="1rem" />}
+                    >
+                      حفظ التعديلات
+                    </Button>
+                  </Group>
+                )}
             </Group>
           </Card>
         </form>

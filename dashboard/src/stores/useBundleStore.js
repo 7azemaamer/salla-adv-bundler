@@ -176,6 +176,22 @@ const useBundleStore = create((set, get) => ({
     }
   },
 
+  refetchProductReviews: async (bundleId) => {
+    try {
+      const response = await axios.post(`/bundles/${bundleId}/refetch-reviews`);
+
+      if (response.data.success) {
+        return response.data;
+      } else {
+        throw new Error(response.data.message || "Failed to refetch reviews");
+      }
+    } catch (error) {
+      console.error("Refetch reviews error:", error);
+      const errorMessage = error.response?.data?.message || error.message;
+      throw new Error(errorMessage);
+    }
+  },
+
   deactivateBundle: async (bundleId) => {
     try {
       set({ error: null });
