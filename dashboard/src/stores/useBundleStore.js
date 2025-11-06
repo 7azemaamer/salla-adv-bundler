@@ -102,13 +102,7 @@ const useBundleStore = create((set, get) => ({
             bundle._id === bundleId ? response.data.data : bundle
           ),
         }));
-
-        return {
-          ...response.data.data,
-          offers_regenerated: response.data.offers_regenerated,
-          offers_count: response.data.offers_count,
-          error: response.data.error,
-        };
+        return response.data.data;
       } else {
         throw new Error(response.data.message || "Failed to update bundle");
       }

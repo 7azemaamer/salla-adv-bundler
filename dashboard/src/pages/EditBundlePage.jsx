@@ -39,6 +39,7 @@ import {
   IconEdit,
   IconPalette,
   IconStar,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
@@ -51,6 +52,7 @@ export default function EditBundlePage() {
     updateBundle,
     getBundleDetails,
     fetchProducts,
+    generateOffers,
     currentBundle,
     products,
     loading,
@@ -59,6 +61,7 @@ export default function EditBundlePage() {
   const [productSearch, setProductSearch] = useState("");
   const [offerSearch, setOfferSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isReactivating, setIsReactivating] = useState(false);
 
   const form = useForm({
     initialValues: {
@@ -379,35 +382,14 @@ export default function EditBundlePage() {
         updated_by: "dashboard",
       };
 
-      const result = await updateBundle(bundleId, bundleData);
+      await updateBundle(bundleId, bundleData);
 
-      // Check if offers were automatically regenerated
-      if (result?.offers_regenerated) {
-        notifications.show({
-          title: "تم تحديث وإعادة تفعيل الباقة بنجاح",
-          message: `تم حفظ التعديلات وإعادة إنشاء ${result.offers_count} عروض تلقائياً`,
-          color: "green",
-          icon: <IconCheck size="1rem" />,
-          autoClose: 5000,
-        });
-      } else if (result?.error) {
-        // Update succeeded but offer regeneration failed
-        notifications.show({
-          title: "تم التحديث مع تحذير",
-          message:
-            "تم حفظ التعديلات ولكن فشلت إعادة تفعيل العروض. يرجى التفعيل يدوياً.",
-          color: "yellow",
-          icon: <IconCheck size="1rem" />,
-          autoClose: 7000,
-        });
-      } else {
-        notifications.show({
-          title: "تم تحديث الباقة بنجاح",
-          message: `تم حفظ التعديلات على الباقة "${values.name}" بنجاح`,
-          color: "green",
-          icon: <IconCheck size="1rem" />,
-        });
-      }
+      notifications.show({
+        title: "تم تحديث الباقة بنجاح",
+        message: `تم حفظ التعديلات على الباقة "${values.name}" بنجاح`,
+        color: "green",
+        icon: <IconCheck size="1rem" />,
+      });
 
       navigate("/dashboard/bundles");
     } catch (error) {
@@ -417,6 +399,34 @@ export default function EditBundlePage() {
         color: "red",
         icon: <IconX size="1rem" />,
       });
+    }
+  };
+
+  const handleReactivate = async () => {
+    try {
+      setIsReactivating(true);
+
+      const result = await generateOffers(bundleId);
+
+      notifications.show({
+        title: "تم إعادة تفعيل الباقة بنجاح",
+        message: `تم إنشاء ${result.offers_created} عروض بنجاح`,
+        color: "green",
+        icon: <IconCheck size="1rem" />,
+        autoClose: 5000,
+      });
+
+      // Refresh bundle details
+      await getBundleDetails(bundleId);
+    } catch (error) {
+      notifications.show({
+        title: "خطأ في إعادة التفعيل",
+        message: error.message || "حدث خطأ أثناء إعادة تفعيل الباقة",
+        color: "red",
+        icon: <IconX size="1rem" />,
+      });
+    } finally {
+      setIsReactivating(false);
     }
   };
 
@@ -1363,13 +1373,27 @@ export default function EditBundlePage() {
                   </Group>
                 </Button>
               ) : (
-                <Button
-                  type="submit"
-                  loading={loading.updating}
-                  leftSection={<IconEdit size="1rem" />}
-                >
-                  حفظ التعديلات
-                </Button>
+                <Group gap="sm">
+                  {currentBundle && currentBundle.status === "inactive" && (
+                    <Button
+                      type="button"
+                      variant="light"
+                      color="green"
+                      onClick={handleReactivate}
+                      loading={isReactivating}
+                      leftSection={<IconRefresh size="1rem" />}
+                    >
+                      إعادة تفعيل العروض
+                    </Button>
+                  )}
+                  <Button
+                    type="submit"
+                    loading={loading.updating}
+                    leftSection={<IconEdit size="1rem" />}
+                  >
+                    حفظ التعديلات
+                  </Button>
+                </Group>
               )}
             </Group>
           </Card>

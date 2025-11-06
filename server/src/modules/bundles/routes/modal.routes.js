@@ -1486,8 +1486,18 @@ router.get("/modal.js", (req, res) => {
       return \`
         <div class="salla-step-container" data-step="3">
           <div class="salla-bundle-section">
-            <h3>\${this.stepLabels[2]}</h3>
-            <div class="subtitle">توفر \${formatPrice(totalSavings)}</div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <h3 style="margin: 0;">\${this.stepLabels[2]}</h3>
+              <span style="
+                background: #10b981;
+                color: #ffffff;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 600;
+                white-space: nowrap;
+              ">وفرت \${formatPrice(totalSavings)}</span>
+            </div>
             <div class="salla-gifts-grid">
               \${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
             </div>
@@ -1555,8 +1565,18 @@ router.get("/modal.js", (req, res) => {
       return \`
         <div class="salla-step-container" data-step="4">
           <div class="salla-bundle-section">
-            <h3>منتجات مخفضة</h3>
-            <div class="subtitle">وفر \${formatPrice(discountSavings)} إضافية</div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <h3 style="margin: 0;">منتجات مخفضة</h3>
+              <span style="
+                background: #10b981;
+                color: #ffffff;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 600;
+                white-space: nowrap;
+              ">وفرت \${formatPrice(discountSavings)} إضافية</span>
+            </div>
             <div class="salla-discounted-scroll">
               \${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
             </div>
@@ -3538,8 +3558,8 @@ router.get("/modal.js", (req, res) => {
       const text = freeShipping.text || 'شحن مجاني لهذه الباقة';
       const progressText = freeShipping.progress_text || 'أضف {amount} ريال للحصول على شحن مجاني';
 
-      const progressColor = this.getContrastColor(bgColor, freeShipping.progress_color || '#ffffff');
-      const progressBgColor = this.getDarkerColor(bgColor, 0.2); // Darker background for contrast
+      const progressColor = freeShipping.progress_color || '#ffffff';
+      const progressBgColor = freeShipping.progress_bg_color || 'rgba(255, 255, 255, 0.3)';
       const borderRadius = freeShipping.border_radius || 12;
 
       const animateProgress = (percentage) => {
