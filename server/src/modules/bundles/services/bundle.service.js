@@ -77,7 +77,6 @@ class BundleService {
       created_by: bundleData.created_by || "system",
     });
 
-
     return bundle;
   }
 
@@ -95,8 +94,6 @@ class BundleService {
         }
       });
     });
-
-
 
     const { products, failed } = await productService.getMultipleProducts(
       store_id,
@@ -278,8 +275,6 @@ class BundleService {
         activated_at: new Date(),
         offers_count: savedOffers.length,
       });
-
-
 
       return {
         success: true,
@@ -600,6 +595,10 @@ class BundleService {
         cta_button_text: bundle.cta_button_text,
         cta_button_bg_color: bundle.cta_button_bg_color,
         cta_button_text_color: bundle.cta_button_text_color,
+        // Checkout Button Customization fields
+        checkout_button_text: bundle.checkout_button_text,
+        checkout_button_bg_color: bundle.checkout_button_bg_color,
+        checkout_button_text_color: bundle.checkout_button_text_color,
       };
 
       return result;
