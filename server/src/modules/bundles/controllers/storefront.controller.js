@@ -154,14 +154,12 @@ export const trackBundleInteraction = asyncWrapper(async (req, res) => {
 
 /* ===============================================
  * Get Store Reviews (Public endpoint for modal)
- * Uses cached reviews + custom reviews to reduce API calls
  * =============================================== */
 export const getStoreReviews = asyncWrapper(async (req, res) => {
   let { store_id } = req.params;
   const { limit = 10, product_id } = req.query;
 
   try {
-    // If store_id is a domain (contains dots), look up the actual store_id
     if (store_id && store_id.includes(".")) {
       const storeDoc = await storeService.getStoreByDomain(store_id);
       if (storeDoc) {
@@ -176,21 +174,21 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       }
     }
 
-    // Get store settings (includes custom_reviews)
     const settings = await settingsService.getSettings(store_id);
 
     let cachedReviews = [];
     let fromCache = false;
 
-    // If product_id provided, try to get cached reviews for this product
     if (product_id) {
       try {
         const accessToken = await getValidAccessToken(store_id);
 
         if (accessToken) {
+          const normalizedProductId = product_id.toString().replace(/^p/, "");
+
           const cacheResult = await getCachedReviews(
             store_id,
-            product_id,
+            normalizedProductId,
             accessToken
           );
           if (cacheResult.success) {
@@ -199,17 +197,15 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
             console.log(
               `[Reviews]: ${
                 fromCache ? "Using cached" : "Fetched fresh"
-              } reviews for product ${product_id}`
+              } reviews for product ${product_id} (normalized: ${normalizedProductId})`
             );
           }
         }
       } catch (tokenError) {
         console.error("[Reviews]: Token error:", tokenError.message);
-        // Continue without cached reviews
       }
     }
 
-    // Get custom reviews from settings
     const customReviews = settings.custom_reviews || [];
 
     const formattedCustomReviews = customReviews.map((review) => ({
@@ -227,17 +223,14 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       isVerified: review.is_verified || false,
     }));
 
-    // Merge cached reviews + custom reviews
     let allReviews = [...cachedReviews, ...formattedCustomReviews];
 
-    // Sort by date - newest first
     allReviews.sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
-      return dateB - dateA; // Descending order (newest first)
+      return dateB - dateA;
     });
 
-    // If we have any reviews (custom or cached), return them
     if (allReviews.length > 0) {
       console.log(
         `[Reviews]: Returning ${allReviews.length} reviews (${formattedCustomReviews.length} custom, ${cachedReviews.length} cached) - sorted by newest`
@@ -253,7 +246,6 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    // If no product_id, return empty (only show custom reviews or product-specific reviews)
     if (!product_id) {
       console.log("[Reviews]: No product_id provided, no reviews available");
       return res.status(200).json({

@@ -243,14 +243,13 @@ export const trackBundleConversion = asyncWrapper(async (req, res) => {
 });
 
 /* ===============================================
- * Refetch and cache product reviews
+ * Refetch product reviews
  * =============================================== */
 export const refetchProductReviews = asyncWrapper(async (req, res) => {
   const { store_id } = req.user;
   const { bundle_id } = req.params;
 
   try {
-    // Get bundle to find target product
     const bundle = await BundleConfig.findOne({ _id: bundle_id, store_id });
 
     if (!bundle) {
@@ -260,7 +259,6 @@ export const refetchProductReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    // Get access token
     const accessToken = await getValidAccessToken(store_id);
 
     if (!accessToken) {
@@ -270,15 +268,11 @@ export const refetchProductReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    // Invalidate existing cache
-    await invalidateProductCache(store_id, bundle.target_product_id);
+    const productId = bundle.target_product_id.toString().replace(/^p/, "");
 
-    // Fetch fresh reviews
-    const result = await getCachedReviews(
-      store_id,
-      bundle.target_product_id,
-      accessToken
-    );
+    await invalidateProductCache(store_id, productId);
+
+    const result = await getCachedReviews(store_id, productId, accessToken);
 
     if (result.success) {
       return res.status(200).json({
