@@ -3305,32 +3305,8 @@ router.get("/modal.js", (req, res) => {
       if (nextBtn) {
         const canProceed = this.canProceedToNextStep();
         nextBtn.disabled = !canProceed;
-        
-        // Check if next step is the review/checkout step or if we're on the last step
-        const nextStepType = this.stepTypes ? this.stepTypes[this.currentStep] : null;
-        const isLastStep = this.currentStep === this.totalSteps;
-        const isBeforeCheckout = nextStepType === 'review';
-        
-        if (isLastStep || isBeforeCheckout) {
-          const bundleConfig = this.bundleData.data || this.bundleData;
-          const checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب';
-          const checkoutBgColor = bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff';
-          const checkoutTextColor = bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff';
-          
-          nextBtn.textContent = checkoutButtonText;
-          nextBtn.classList.add('primary');
-          // Apply dynamic colors as inline styles to override CSS
-          nextBtn.style.backgroundColor = checkoutBgColor;
-          nextBtn.style.color = checkoutTextColor;
-          nextBtn.style.borderColor = checkoutBgColor;
-        } else {
-          nextBtn.textContent = 'التالي';
-          nextBtn.classList.add('primary');
-          // Reset to default styles for non-checkout steps
-          nextBtn.style.backgroundColor = '';
-          nextBtn.style.color = '';
-          nextBtn.style.borderColor = '';
-        }
+        nextBtn.textContent = 'التالي';
+        nextBtn.classList.add('primary');
       }
     }
 
