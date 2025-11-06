@@ -189,6 +189,25 @@ const useSettingsStore = create((set, get) => ({
       throw error;
     }
   },
+
+  // Refetch payment methods from Salla
+  refetchPaymentMethods: async () => {
+    try {
+      const response = await axios.post("/settings/refetch-payment-methods");
+
+      if (response.data.success) {
+        return response.data;
+      } else {
+        throw new Error(
+          response.data.message || "Failed to refetch payment methods"
+        );
+      }
+    } catch (error) {
+      console.error("Refetch payment methods error:", error);
+      const errorMessage = error.response?.data?.message || error.message;
+      throw new Error(errorMessage);
+    }
+  },
 }));
 
 export default useSettingsStore;

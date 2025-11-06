@@ -1,6 +1,7 @@
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import storeService from "../../stores/services/store.service.js";
 import { sendWelcomeMessage } from "../services/notification.service.js";
+import { fetchPaymentMethods } from "../../bundles/services/payment.service.js";
 import Store from "../../stores/model/store.model.js";
 
 /* ===============
@@ -67,6 +68,26 @@ export const registerNewStore = asyncWrapper(async (req, res) => {
         } catch (error) {
           console.error(
             `[Webhook]: Failed to send welcome message to ${merchant}:`,
+            error.message
+          );
+        }
+
+        // Fetch and cache payment methods on installation
+        try {
+          const methodsResult = await fetchPaymentMethods(payload.access_token);
+
+          const store = await Store.findOne({ store_id: merchant });
+          if (store && methodsResult.data) {
+            store.payment_methods = methodsResult.data;
+            store.payment_methods_updated_at = new Date();
+            await store.save();
+            console.log(
+              `[Webhook]: Cached ${methodsResult.data.length} payment methods for store ${merchant}`
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[Webhook]: Failed to fetch payment methods for ${merchant}:`,
             error.message
           );
         }

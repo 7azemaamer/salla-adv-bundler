@@ -115,11 +115,10 @@ export default function EditBundlePage() {
 
   useEffect(() => {
     const loadBundleData = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-
-        // Fetch bundle details and products in parallel
         await Promise.all([getBundleDetails(bundleId), fetchProducts()]);
+        await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
         notifications.show({
           title: "خطأ في تحميل البيانات",

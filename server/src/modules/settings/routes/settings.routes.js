@@ -20,4 +20,10 @@ router.get("/", settingsController.getSettings);
 // PUT /api/v1/settings - Update store settings
 router.put("/", settingsController.updateSettings);
 
+// POST /api/v1/settings/refetch-payment-methods - Refetch payment methods from Salla
+router.post(
+  "/refetch-payment-methods",
+  settingsController.refetchPaymentMethods
+);
+
 export default router;
