@@ -48,6 +48,21 @@ const useSettingsStore = create((set, get) => ({
       label_color: "#60646C",
       font_size: 14,
     },
+    review_date_randomizer: {
+      enabled: false,
+      presets: [
+        "قبل يوم",
+        "قبل يومين",
+        "قبل 3 أيام",
+        "قبل 5 أيام",
+        "منذ أسبوع",
+        "منذ 10 أيام",
+        "منذ أسبوعين",
+        "منذ 3 أسابيع",
+        "منذ شهر",
+        "منذ شهر ونصف",
+      ],
+    },
   },
   loading: {
     fetching: false,

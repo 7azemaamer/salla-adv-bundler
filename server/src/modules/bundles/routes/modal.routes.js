@@ -3944,25 +3944,6 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-reviews-track" id="salla-reviews-track">
               \${this.reviews.map(review => {
                 const stars = Array.from({length: 5}, (_, i) => i < review.rating ? '★' : '☆').join('');
-                const verified = review.isVerified ? \`
-                  <div style="
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                    font-size: 11px;
-                    color: #10b981;
-                    background: #d1fae5;
-                    padding: 3px 8px;
-                    border-radius: 12px;
-                    margin-top: 4px;
-                    font-weight: 500;
-                  ">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                    </svg>
-                    عميل موثق
-                  </div>
-                \` : '';
                 return \`
                 <div class="salla-review-card" style="
                   background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
@@ -3988,7 +3969,6 @@ router.get("/modal.js", (req, res) => {
                     <div class="salla-review-customer" style="flex: 1;">
                       <div class="salla-review-name" style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">\${review.customerName}</div>
                       <div class="salla-review-rating" style="color: #fbbf24; font-size: 16px; letter-spacing: 2px;">\${stars}</div>
-                      \${verified}
                     </div>
                   </div>
                   <div class="salla-review-content" style="

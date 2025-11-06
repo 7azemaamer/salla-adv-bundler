@@ -53,6 +53,21 @@ class SettingsService {
             label_color: "#60646C",
             font_size: 14,
           },
+          review_date_randomizer: {
+            enabled: false,
+            presets: [
+              "قبل يوم",
+              "قبل يومين",
+              "قبل 3 أيام",
+              "قبل 5 أيام",
+              "منذ أسبوع",
+              "منذ 10 أيام",
+              "منذ أسبوعين",
+              "منذ 3 أسابيع",
+              "منذ شهر",
+              "منذ شهر ونصف",
+            ],
+          },
         });
       }
 
@@ -84,6 +99,7 @@ class SettingsService {
         "free_shipping", // Nested object
         "timer", // Nested object
         "review_count", // Nested object - review count settings
+        "review_date_randomizer", // Nested object - review date presets
         "custom_reviews", // Array of custom review objects
       ];
 
@@ -109,6 +125,16 @@ class SettingsService {
           "[Settings]: Syncing current_count with initial_count:",
           filteredUpdates.review_count.initial_count
         );
+      }
+
+      if (
+        filteredUpdates.review_date_randomizer &&
+        Array.isArray(filteredUpdates.review_date_randomizer.presets)
+      ) {
+        filteredUpdates.review_date_randomizer.presets =
+          filteredUpdates.review_date_randomizer.presets
+            .map((preset) => (preset || "").trim())
+            .filter((preset) => preset.length > 0);
       }
 
       // Update or create settings

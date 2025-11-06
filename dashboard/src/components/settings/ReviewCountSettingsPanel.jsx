@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Stack,
   Switch,
@@ -27,11 +27,70 @@ import {
   IconUserCircle,
   IconShoppingBag,
   IconInfoCircle,
+  IconRefresh,
+  IconClock,
 } from "@tabler/icons-react";
+
+const DEFAULT_REVIEW_DATE_PRESETS = [
+  "قبل يوم",
+  "قبل يومين",
+  "قبل 3 أيام",
+  "قبل 5 أيام",
+  "منذ أسبوع",
+  "منذ 10 أيام",
+  "منذ أسبوعين",
+  "منذ 3 أسابيع",
+  "منذ شهر",
+  "منذ شهر ونصف",
+];
 
 export default function ReviewCountSettingsPanel({ settings, onToggle }) {
   const reviewCountSettings = settings?.review_count || {};
   const customReviews = settings?.custom_reviews || [];
+  const dateRandomizer = settings?.review_date_randomizer || {};
+
+  const normalizedDatePresets = useMemo(() => {
+    if (
+      Array.isArray(dateRandomizer.presets) &&
+      dateRandomizer.presets.length > 0
+    ) {
+      return dateRandomizer.presets;
+    }
+    return DEFAULT_REVIEW_DATE_PRESETS;
+  }, [dateRandomizer.presets]);
+
+  const [datePresetsInput, setDatePresetsInput] = useState(
+    normalizedDatePresets.join("\n")
+  );
+
+  const dateRandomizerEnabled =
+    dateRandomizer.enabled === undefined ? false : dateRandomizer.enabled;
+
+  useEffect(() => {
+    setDatePresetsInput(normalizedDatePresets.join("\n"));
+  }, [normalizedDatePresets]);
+
+  const handlePresetsBlur = () => {
+    const sanitizedPresets = datePresetsInput
+      .split("\n")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    if (
+      Array.isArray(dateRandomizer.presets) &&
+      JSON.stringify(sanitizedPresets) ===
+        JSON.stringify(dateRandomizer.presets)
+    ) {
+      return;
+    }
+
+    onToggle("review_date_randomizer.presets", sanitizedPresets);
+  };
+
+  const handleResetPresets = () => {
+    setDatePresetsInput(DEFAULT_REVIEW_DATE_PRESETS.join("\n"));
+    onToggle("review_date_randomizer.presets", DEFAULT_REVIEW_DATE_PRESETS);
+  };
 
   // State for new review form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -292,6 +351,64 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
             )}
           </>
         )}
+
+      {/* Review Date Randomizer */}
+      <Paper p="md" radius="md" withBorder>
+        <Stack gap="md">
+          <Group justify="space-between" align="flex-start">
+            <div style={{ flex: 1 }}>
+              <Group gap="xs" mb={4}>
+                <IconClock size="1.1rem" style={{ color: "#228be6" }} />
+                <Text fw={600} size="sm">
+                  تواريخ التقييمات الظاهرة
+                </Text>
+              </Group>
+              <Text size="xs" c="dimmed">
+                فعّل هذا الخيار لعرض تواريخ حديثة وعشوائية بدلاً من التواريخ
+                الأصلية القادمة من سلة.
+              </Text>
+            </div>
+            <Switch
+              checked={dateRandomizerEnabled}
+              onChange={(e) =>
+                onToggle(
+                  "review_date_randomizer.enabled",
+                  e.currentTarget.checked
+                )
+              }
+              size="md"
+            />
+          </Group>
+
+          <Textarea
+            label="القيم المحتملة"
+            placeholder="قبل يوم\nقبل يومين\nمنذ أسبوع ..."
+            description="يتم اختيار أحد هذه القيم بشكل عشوائي لكل تقييم. اكتب كل قيمة في سطر مستقل."
+            value={datePresetsInput}
+            onChange={(event) => setDatePresetsInput(event.currentTarget.value)}
+            onBlur={handlePresetsBlur}
+            disabled={!dateRandomizerEnabled}
+            minRows={4}
+            autosize
+          />
+
+          <Group justify="space-between">
+            <Text size="xs" c="dimmed">
+              يمكنك تعديل النصوص لتناسب أسلوب متجرك. يتم تجاهل الأسطر الفارغة
+              تلقائياً.
+            </Text>
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconRefresh size="0.9rem" />}
+              onClick={handleResetPresets}
+              disabled={!dateRandomizerEnabled}
+            >
+              استعادة القيم الافتراضية
+            </Button>
+          </Group>
+        </Stack>
+      </Paper>
 
       {/* Custom Reviews Section */}
       <Divider

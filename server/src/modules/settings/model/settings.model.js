@@ -274,6 +274,27 @@ const settingsSchema = new mongoose.Schema(
         default: Date.now,
       },
     },
+    review_date_randomizer: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      presets: {
+        type: [String],
+        default: () => [
+          "قبل يوم",
+          "قبل يومين",
+          "قبل 3 أيام",
+          "قبل 5 أيام",
+          "منذ أسبوع",
+          "منذ 10 أيام",
+          "منذ أسبوعين",
+          "منذ 3 أسابيع",
+          "منذ شهر",
+          "منذ شهر ونصف",
+        ],
+      },
+    },
     // Custom reviews (array of review objects)
     custom_reviews: {
       type: [

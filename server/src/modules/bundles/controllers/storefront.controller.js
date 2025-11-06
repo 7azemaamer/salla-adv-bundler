@@ -176,6 +176,44 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
 
     const settings = await settingsService.getSettings(store_id);
 
+    const reviewDateRandomizer = settings.review_date_randomizer || {};
+    const defaultDatePresets = [
+      "قبل يوم",
+      "قبل يومين",
+      "قبل 3 أيام",
+      "قبل 5 أيام",
+      "منذ أسبوع",
+      "منذ 10 أيام",
+      "منذ أسبوعين",
+      "منذ 3 أسابيع",
+      "منذ شهر",
+      "منذ شهر ونصف",
+    ];
+    const presetPoolRaw = Array.isArray(reviewDateRandomizer.presets)
+      ? reviewDateRandomizer.presets.filter(
+          (value) => typeof value === "string" && value.trim().length > 0
+        )
+      : [];
+    const presetPool =
+      presetPoolRaw.length > 0 ? presetPoolRaw : defaultDatePresets;
+
+    const randomizeReviewDates = (reviews = []) => {
+      if (!reviewDateRandomizer.enabled || !Array.isArray(reviews)) {
+        return reviews;
+      }
+
+      if (!presetPool.length) {
+        return reviews;
+      }
+
+      return reviews.map((review) => ({
+        ...review,
+        timeAgo:
+          presetPool[Math.floor(Math.random() * presetPool.length)] ||
+          review.timeAgo,
+      }));
+    };
+
     let cachedReviews = [];
     let fromCache = false;
 
@@ -265,11 +303,12 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         } - sorted by newest`
       );
       const limitedReviews = allReviews.slice(0, parseInt(limit));
+      const finalReviews = randomizeReviewDates(limitedReviews);
 
       return res.status(200).json({
         success: true,
-        data: limitedReviews,
-        total: limitedReviews.length,
+        data: finalReviews,
+        total: finalReviews.length,
         fromCache,
         hasCustomReviews: formattedCustomReviews.length > 0,
       });
@@ -318,11 +357,12 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     });
 
     const limitedReviews = allReviews.slice(0, parseInt(limit));
+    const finalReviews = randomizeReviewDates(limitedReviews);
 
     res.status(200).json({
       success: true,
-      data: limitedReviews,
-      total: limitedReviews.length,
+      data: finalReviews,
+      total: finalReviews.length,
       fromCache,
       hasCustomReviews: formattedCustomReviews.length > 0,
     });
