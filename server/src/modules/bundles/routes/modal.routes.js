@@ -624,7 +624,17 @@ router.get("/modal.js", (req, res) => {
       try {
         const storeId = this.contextData.storeId || this.storeDomain;
         const productId = this.productId || '';
-        const productParam = productId ? \`&product_id=\${productId}\` : '';
+        
+        console.log('[Modal fetchReviews] productId:', productId);
+        console.log('[Modal fetchReviews] this.productId:', this.productId);
+        console.log('[Modal fetchReviews] this.bundleData?.target_product_id:', this.bundleData?.target_product_id);
+        
+        // Use bundleData's target_product_id if this.productId is missing
+        const actualProductId = productId || this.bundleData?.target_product_id || '';
+        const productParam = actualProductId ? \`&product_id=\${actualProductId}\` : '';
+        
+        console.log('[Modal fetchReviews] Final URL:', \`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\${productParam}\`);
+        
         const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\${productParam}\`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });
@@ -3878,15 +3888,11 @@ router.get("/modal.js", (req, res) => {
               display: inline-flex;
               align-items: center;
               gap: 4px;
-              background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-              color: #fff;
-              padding: 4px 10px;
-              border-radius: 20px;
-              font-size: 13px;
+              color: #fbbf24;
+              font-size: 14px;
               font-weight: 600;
-              box-shadow: 0 2px 6px rgba(251, 191, 36, 0.4);
             ">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block;">
                 <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
               </svg>
               \${avgRating}
