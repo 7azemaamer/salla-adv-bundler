@@ -1891,13 +1891,6 @@ router.get("/modal.js", (req, res) => {
       return false;
     }
 
-    showLoginModal() {
-      if (window.salla && window.salla.event) {
-        window.salla.event.emit('login::open');
-      } else {
-        window.location.href = '/login';
-      }
-    }
 
     async handleCheckout() {
       try {
@@ -1916,11 +1909,7 @@ router.get("/modal.js", (req, res) => {
           return;
         }
 
-        if (!this.isUserLoggedIn()) {
-          this.showSallaToast('يجب تسجيل الدخول أولاً لإتمام الطلب', 'warning');
-          this.showLoginModal();
-          return;
-        }
+     
 
         const selectedBundleData = this.getSelectedBundleData();
         if (!selectedBundleData) {
@@ -3882,7 +3871,10 @@ router.get("/modal.js", (req, res) => {
           </div>
           <div class="salla-reviews-carousel">
             <div class="salla-reviews-track" id="salla-reviews-track">
-              \${this.reviews.map(review => \`
+              \${this.reviews.map(review => {
+                const stars = '★'.repeat(review.rating || 5);
+                const verified = review.isVerified ? '<div style="font-size: 10px; color: #16a34a; margin-top: 2px;">✓ قام بالشراء والتقييم</div>' : '';
+                return \`
                 <div class="salla-review-card">
                   <div class="salla-review-header">
                     <img src="\${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
@@ -3891,13 +3883,15 @@ router.get("/modal.js", (req, res) => {
                          onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />
                     <div class="salla-review-customer">
                       <div class="salla-review-name">\${review.customerName}</div>
-                      <div class="salla-review-rating">\${'★'.repeat(review.rating || 5)}</div>
+                      <div class="salla-review-rating">\${stars}</div>
+                      \${verified}
                     </div>
                   </div>
                   <div class="salla-review-content">\${review.content}</div>
                   <!-- <div class="salla-review-time">\${review.timeAgo}</div> -->
                 </div>
-              \`).join('')}
+              \`;
+              }).join('')}
             </div>
           </div>
         </div>
@@ -4159,14 +4153,6 @@ router.get("/modal.js", (req, res) => {
       
       if (!input || !messageEl) return;
       
-      // Check if user is logged in first
-      if (!this.isUserLoggedIn()) {
-        messageEl.innerHTML = '<div class="salla-discount-message error">يجب تسجيل الدخول لتطبيق كود الخصم</div>';
-        setTimeout(() => {
-          this.showLoginModal();
-        }, 1500);
-        return;
-      }
       
       const code = input.value.trim();
       

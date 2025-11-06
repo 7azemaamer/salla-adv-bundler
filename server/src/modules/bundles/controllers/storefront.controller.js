@@ -224,6 +224,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       customerCity: review.city || null,
       createdAt: review.created_at || new Date().toISOString(),
       timeAgo: review.date_text || "قبل يومين",
+      isVerified: review.is_verified || false,
     }));
 
     // Merge cached reviews + custom reviews
