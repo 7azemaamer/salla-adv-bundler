@@ -258,7 +258,11 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
 
     if (allReviews.length > 0) {
       console.log(
-        `[Reviews]: Returning ${allReviews.length} reviews (${formattedCustomReviews.length} custom, ${cachedReviews.length} cached) - sorted by newest`
+        `[Reviews]: Returning ${allReviews.length} reviews (${
+          formattedCustomReviews.length
+        } custom, ${cachedReviews.length} cached) for product ${
+          product_id || "N/A"
+        } - sorted by newest`
       );
       const limitedReviews = allReviews.slice(0, parseInt(limit));
 
