@@ -25,7 +25,6 @@ import {
   IconPlus,
   IconTrash,
   IconUserCircle,
-  IconShoppingBag,
   IconInfoCircle,
   IconRefresh,
   IconClock,
@@ -102,7 +101,6 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newReview, setNewReview] = useState({
     name: "",
-    is_verified: false,
     date_text: "قبل يومين",
     stars: 5,
     gender: "male",
@@ -125,7 +123,6 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
     // Reset form
     setNewReview({
       name: "",
-      is_verified: false,
       date_text: "قبل يومين",
       stars: 5,
       gender: "male",
@@ -556,16 +553,6 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
                       <Text fw={600} size="sm">
                         {review.name}
                       </Text>
-                      {review.is_verified && (
-                        <Badge
-                          size="xs"
-                          variant="light"
-                          color="green"
-                          leftSection={<IconShoppingBag size="0.7rem" />}
-                        >
-                          قام بالشراء والتقييم
-                        </Badge>
-                      )}
                     </Group>
                     <Text size="xs" c="dimmed">
                       {review.date_text}
@@ -670,24 +657,17 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               }
             />
 
-            <Switch
-              label="قام بالشراء والتقييم"
-              checked={newReview.is_verified}
+            <Textarea
+              label="التقييم"
+              placeholder="شارك تجربتك"
+              value={newReview.comment}
               onChange={(e) =>
                 setNewReview({
                   ...newReview,
-                  is_verified: e.currentTarget.checked,
+                  comment: e.currentTarget.value,
                 })
               }
-            />
-
-            <Textarea
-              label="التعليق (اختياري)"
-              placeholder="أدخل تعليق العميل..."
-              value={newReview.comment}
-              onChange={(e) =>
-                setNewReview({ ...newReview, comment: e.target.value })
-              }
+              autosize
               minRows={3}
             />
 
