@@ -67,6 +67,7 @@ class SettingsService {
               "منذ شهر",
               "منذ شهر ونصف",
             ],
+            hide_real_reviews: false,
           },
         });
       }

@@ -65,6 +65,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
 
   const dateRandomizerEnabled =
     dateRandomizer.enabled === undefined ? false : dateRandomizer.enabled;
+  const hideRealReviews = dateRandomizer.hide_real_reviews === true;
 
   useEffect(() => {
     setDatePresetsInput(normalizedDatePresets.join("\n"));
@@ -406,6 +407,28 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
             >
               استعادة القيم الافتراضية
             </Button>
+          </Group>
+
+          <Group justify="space-between">
+            <div>
+              <Text fw={600} size="sm">
+                إخفاء التقييمات الحقيقية
+              </Text>
+              <Text size="xs" c="dimmed">
+                عند التفعيل سيتم عرض التقييمات المخصصة فقط ولن يتم تحميل
+                التقييمات القادمة من سلة.
+              </Text>
+            </div>
+            <Switch
+              checked={hideRealReviews}
+              onChange={(e) =>
+                onToggle(
+                  "review_date_randomizer.hide_real_reviews",
+                  e.currentTarget.checked
+                )
+              }
+              size="md"
+            />
           </Group>
         </Stack>
       </Paper>

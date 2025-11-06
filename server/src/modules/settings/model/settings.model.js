@@ -294,6 +294,10 @@ const settingsSchema = new mongoose.Schema(
           "منذ شهر ونصف",
         ],
       },
+      hide_real_reviews: {
+        type: Boolean,
+        default: false,
+      },
     },
     // Custom reviews (array of review objects)
     custom_reviews: {

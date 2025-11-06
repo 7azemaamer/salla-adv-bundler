@@ -177,6 +177,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     const settings = await settingsService.getSettings(store_id);
 
     const reviewDateRandomizer = settings.review_date_randomizer || {};
+    const hideRealReviews = reviewDateRandomizer.hide_real_reviews === true;
     const defaultDatePresets = [
       "قبل يوم",
       "قبل يومين",
@@ -217,7 +218,7 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     let cachedReviews = [];
     let fromCache = false;
 
-    if (product_id) {
+    if (product_id && !hideRealReviews) {
       try {
         const accessToken = await getValidAccessToken(store_id);
 
@@ -286,7 +287,9 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       isVerified: review.is_verified || false,
     }));
 
-    let allReviews = [...cachedReviews, ...formattedCustomReviews];
+    let allReviews = hideRealReviews
+      ? [...formattedCustomReviews]
+      : [...cachedReviews, ...formattedCustomReviews];
 
     allReviews.sort((a, b) => {
       const dateA = new Date(a.createdAt);
@@ -315,12 +318,32 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     }
 
     if (!product_id) {
-      console.log("[Reviews]: No product_id provided, no reviews available");
+      console.log(
+        "[Reviews]: No product_id provided, returning custom reviews only"
+      );
+      const limitedCustom = formattedCustomReviews.slice(0, parseInt(limit));
+      const finalCustom = randomizeReviewDates(limitedCustom);
       return res.status(200).json({
         success: true,
-        data: [],
-        total: 0,
-        message: "No reviews available without product_id",
+        data: finalCustom,
+        total: finalCustom.length,
+        fromCache,
+        hasCustomReviews: formattedCustomReviews.length > 0,
+      });
+    }
+
+    if (hideRealReviews) {
+      console.log(
+        `[Reviews]: Real reviews are hidden by settings, returning custom reviews only for product ${product_id}`
+      );
+      const limitedCustom = formattedCustomReviews.slice(0, parseInt(limit));
+      const finalCustom = randomizeReviewDates(limitedCustom);
+      return res.status(200).json({
+        success: true,
+        data: finalCustom,
+        total: finalCustom.length,
+        fromCache,
+        hasCustomReviews: formattedCustomReviews.length > 0,
       });
     }
 
