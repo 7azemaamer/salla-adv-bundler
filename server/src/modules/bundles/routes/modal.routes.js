@@ -61,7 +61,8 @@ router.get("/modal.js", (req, res) => {
       timerSettings: null,
       reviews: null,
       paymentMethods: null,
-      bundleData: {} 
+      bundleData: {},
+      productReviews: {}
     };
 
     static isPreloading = false;
@@ -394,12 +395,8 @@ router.get("/modal.js", (req, res) => {
           const apiUrl = 'https://${req.get("host")}/api/v1';
           const storeIdentifier = storeId || storeDomain;
 
-          const [timerResult, reviewsResult, paymentResult] = await Promise.allSettled([
+          const [timerResult, paymentResult] = await Promise.allSettled([
             fetch(\`\${apiUrl}/timer-settings/\${storeIdentifier}\`, {
-              headers: { 'ngrok-skip-browser-warning': 'true' }
-            }).then(r => r.ok ? r.json() : null),
-
-            fetch(\`\${apiUrl}/storefront/stores/\${storeIdentifier}/reviews?limit=10\`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
             }).then(r => r.ok ? r.json() : null),
 
@@ -410,10 +407,6 @@ router.get("/modal.js", (req, res) => {
 
           if (timerResult.status === 'fulfilled' && timerResult.value) {
             SallaBundleModal.dataCache.timerSettings = timerResult.value.data;
-          }
-
-          if (reviewsResult.status === 'fulfilled' && reviewsResult.value) {
-            SallaBundleModal.dataCache.reviews = reviewsResult.value.data || [];
           }
 
           if (paymentResult.status === 'fulfilled' && paymentResult.value) {
@@ -492,10 +485,6 @@ router.get("/modal.js", (req, res) => {
           }
         }
 
-        if (SallaBundleModal.dataCache.reviews && SallaBundleModal.dataCache.reviews.length > 0) {
-          this.reviews = SallaBundleModal.dataCache.reviews;
-        }
-
         if (SallaBundleModal.dataCache.paymentMethods && SallaBundleModal.dataCache.paymentMethods.length > 0) {
           this.paymentMethods = SallaBundleModal.dataCache.paymentMethods;
         }
@@ -560,6 +549,34 @@ router.get("/modal.js", (req, res) => {
         if (!bundleConfig || !bundleConfig.bundles || bundleConfig.bundles.length === 0) {
           throw new Error('No active bundle offers available for this product');
         }
+        const targetProductId =
+          bundleConfig.target_product_id ||
+          bundleConfig.targetProductId ||
+          bundleConfig?.target_product?.id ||
+          this.bundleData?.target_product_id ||
+          this.productId;
+
+        if (targetProductId && !this.productId) {
+          this.productId = targetProductId;
+        }
+
+        const normalizedProductKey = targetProductId
+          ? targetProductId.toString().replace(/^p/, '')
+          : '';
+
+        if (normalizedProductKey) {
+          const cachedProductReviews =
+            SallaBundleModal.dataCache.productReviews?.[normalizedProductKey];
+
+          if (Array.isArray(cachedProductReviews)) {
+            this.reviews = cachedProductReviews;
+          } else {
+            await this.fetchReviews(targetProductId);
+          }
+        } else if (!Array.isArray(this.reviews) || this.reviews.length === 0) {
+          await this.fetchReviews();
+        }
+
         if (bundleConfig.settings && bundleConfig.settings.timer) {
           this.timerSettings = {
             enabled: bundleConfig.settings.timer.enabled,
@@ -620,32 +637,57 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
-    async fetchReviews() {
+    async fetchReviews(productIdOverride = null) {
+      const storeId = this.contextData.storeId || this.storeDomain;
+      const bundleConfig = (this.bundleData && (this.bundleData.data || this.bundleData)) || {};
+      const rawProductId =
+        productIdOverride ||
+        this.productId ||
+        bundleConfig.target_product_id ||
+        '';
+      const normalizedProductId = rawProductId
+        ? rawProductId.toString().replace(/^p/, '')
+        : '';
+      const productParam = normalizedProductId
+        ? '&product_id=' + encodeURIComponent(normalizedProductId)
+        : '';
+      const url =
+        this.apiUrl +
+        '/storefront/stores/' +
+        storeId +
+        '/reviews?limit=10' +
+        productParam;
+
       try {
-        const storeId = this.contextData.storeId || this.storeDomain;
-        const productId = this.productId || '';
-        
-        console.log('[Modal fetchReviews] productId:', productId);
-        console.log('[Modal fetchReviews] this.productId:', this.productId);
-        console.log('[Modal fetchReviews] this.bundleData?.target_product_id:', this.bundleData?.target_product_id);
-        
-        // Use bundleData's target_product_id if this.productId is missing
-        const actualProductId = productId || this.bundleData?.target_product_id || '';
-        const productParam = actualProductId ? \`&product_id=\${actualProductId}\` : '';
-        
-        console.log('[Modal fetchReviews] Final URL:', \`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\${productParam}\`);
-        
-        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/reviews?limit=10\${productParam}\`, {
-          headers: { 'ngrok-skip-browser-warning': 'true' }
+        console.log(
+          '[Modal] Fetching reviews for ' +
+            (normalizedProductId || 'store-level') +
+            ' from ' +
+            url
+        );
+
+        const response = await fetch(url, {
+          headers: { 'ngrok-skip-browser-warning': 'true' },
         });
-        
+
         if (response.ok) {
           const result = await response.json();
-          this.reviews = result.data || [];
+          const reviews = result.data || [];
+          this.reviews = reviews;
+
+          if (normalizedProductId) {
+            SallaBundleModal.dataCache.productReviews[normalizedProductId] = reviews;
+          } else {
+            SallaBundleModal.dataCache.reviews = reviews;
+          }
+
+          return reviews;
         }
       } catch (error) {
         console.error('[Reviews] Fetch failed:', error);
       }
+
+      return this.reviews;
     }
 
     hideSwalToasts() {
