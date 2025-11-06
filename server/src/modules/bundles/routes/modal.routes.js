@@ -496,7 +496,7 @@ router.get("/modal.js", (req, res) => {
         }
 
         
-        if (window.__SALLA_BUNDLE_CACHE__ && window.__SALLA_BUNDLE_CACHE__[`product_\${this.productId}\`]) {
+        if (window.__SALLA_BUNDLE_CACHE__ && window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`]) {
           this.bundleData = window.__SALLA_BUNDLE_CACHE__[\`product_\${this.productId}\`];
           SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
         } else if (SallaBundleModal.dataCache.bundleData[this.productId]) {
