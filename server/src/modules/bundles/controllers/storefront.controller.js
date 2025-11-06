@@ -186,20 +186,45 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         if (accessToken) {
           const normalizedProductId = product_id.toString().replace(/^p/, "");
 
+          console.log(
+            `[Reviews]: Fetching reviews for product ${product_id} (normalized: ${normalizedProductId}), store: ${store_id}`
+          );
+
           const cacheResult = await getCachedReviews(
             store_id,
             normalizedProductId,
             accessToken
           );
-          if (cacheResult.success) {
+
+          console.log(
+            `[Reviews]: Cache result - success: ${
+              cacheResult.success
+            }, data length: ${cacheResult.data?.length || 0}, fromCache: ${
+              cacheResult.fromCache
+            }`
+          );
+
+          if (
+            cacheResult.success &&
+            cacheResult.data &&
+            cacheResult.data.length > 0
+          ) {
             cachedReviews = cacheResult.data;
             fromCache = cacheResult.fromCache;
             console.log(
-              `[Reviews]: ${
-                fromCache ? "Using cached" : "Fetched fresh"
+              `[Reviews]: ${fromCache ? "Using cached" : "Fetched fresh"} ${
+                cachedReviews.length
               } reviews for product ${product_id} (normalized: ${normalizedProductId})`
             );
+          } else {
+            console.log(
+              `[Reviews]: No cached reviews found for product ${normalizedProductId}`
+            );
           }
+        } else {
+          console.log(
+            `[Reviews]: No access token available for store ${store_id}`
+          );
         }
       } catch (tokenError) {
         console.error("[Reviews]: Token error:", tokenError.message);

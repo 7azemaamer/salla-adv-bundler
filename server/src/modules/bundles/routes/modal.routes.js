@@ -3873,29 +3873,99 @@ router.get("/modal.js", (req, res) => {
       return \`
         <div class="salla-reviews-section">
           <div class="salla-reviews-header">
-            <span> آراء العملاء</span>
-            <span style="font-size: 13px; color: var(--text-2); font-weight: normal;">\${avgRating} ★ متوسط</span>
+            <span>آراء العملاء (\${this.reviews.length})</span>
+            <span style="
+              display: inline-flex;
+              align-items: center;
+              gap: 4px;
+              background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+              color: #fff;
+              padding: 4px 10px;
+              border-radius: 20px;
+              font-size: 13px;
+              font-weight: 600;
+              box-shadow: 0 2px 6px rgba(251, 191, 36, 0.4);
+            ">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: inline-block;">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+              </svg>
+              \${avgRating}
+            </span>
           </div>
           <div class="salla-reviews-carousel">
             <div class="salla-reviews-track" id="salla-reviews-track">
               \${this.reviews.map(review => {
-                const stars = '★'.repeat(review.rating || 5);
-                const verified = review.isVerified ? '<div style="font-size: 10px; color: #16a34a; margin-top: 2px;">✓ قام بالشراء والتقييم</div>' : '';
+                const stars = Array.from({length: 5}, (_, i) => i < review.rating ? '★' : '☆').join('');
+                const verified = review.isVerified ? \`
+                  <div style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 11px;
+                    color: #10b981;
+                    background: #d1fae5;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    margin-top: 4px;
+                    font-weight: 500;
+                  ">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    عميل موثق
+                  </div>
+                \` : '';
                 return \`
-                <div class="salla-review-card">
-                  <div class="salla-review-header">
+                <div class="salla-review-card" style="
+                  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+                  border: 1px solid #e5e7eb;
+                  border-radius: 16px;
+                  padding: 16px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                  transition: transform 0.2s, box-shadow 0.2s;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.12)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';">
+                  <div class="salla-review-header" style="margin-bottom: 12px;">
                     <img src="\${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
                          alt="\${review.customerName}" 
                          class="salla-review-avatar"
+                         style="
+                           width: 48px;
+                           height: 48px;
+                           border-radius: 50%;
+                           object-fit: cover;
+                           border: 2px solid #e5e7eb;
+                           box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                         "
                          onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />
-                    <div class="salla-review-customer">
-                      <div class="salla-review-name">\${review.customerName}</div>
-                      <div class="salla-review-rating">\${stars}</div>
+                    <div class="salla-review-customer" style="flex: 1;">
+                      <div class="salla-review-name" style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">\${review.customerName}</div>
+                      <div class="salla-review-rating" style="color: #fbbf24; font-size: 16px; letter-spacing: 2px;">\${stars}</div>
                       \${verified}
                     </div>
                   </div>
-                  <div class="salla-review-content">\${review.content}</div>
-                  <!-- <div class="salla-review-time">\${review.timeAgo}</div> -->
+                  <div class="salla-review-content" style="
+                    color: #4b5563;
+                    line-height: 1.6;
+                    font-size: 14px;
+                    margin-bottom: 8px;
+                    max-height: 4.8em;
+                    overflow: hidden;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 3;
+                    -webkit-box-orient: vertical;
+                  ">\${review.content}</div>
+                  <div class="salla-review-time" style="
+                    font-size: 12px;
+                    color: #9ca3af;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                  ">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    \${review.timeAgo}
+                  </div>
                 </div>
               \`;
               }).join('')}
