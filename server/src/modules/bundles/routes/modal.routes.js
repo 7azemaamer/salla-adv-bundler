@@ -3938,17 +3938,12 @@ router.get("/modal.js", (req, res) => {
        const hideDates = !!displayConfig.hide_dates;
        const hideRatings = !!displayConfig.hide_ratings;
        const hideAvatars = !!displayConfig.hide_avatars;
-      const ratingHeaderMarkup = hideRatings
-        ? ''
-        : '<div style="font-size: 13px; color: var(--text-2);">' +
-          avgRating +
-          ' ★ متوسط</div>';
        
        return \`
          <div class="salla-reviews-section">
            <div class="salla-reviews-header">
             <span>آراء العملاء (\${this.reviews.length})</span>
-            \${ratingHeaderMarkup}
+            \${hideRatings ? '' : '<div style="font-size: 13px; color: var(--text-2);">' + avgRating + ' ★ متوسط</div>'}
            </div>
            <div class="salla-reviews-carousel">
              <div class="salla-reviews-track" id="salla-reviews-track">

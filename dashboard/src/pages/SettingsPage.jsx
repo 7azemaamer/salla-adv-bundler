@@ -136,11 +136,13 @@ export default function SettingsPage() {
               grow
               style={{
                 position: "sticky",
-                top: 0,
+                top: "70px",
                 zIndex: 100,
                 backgroundColor: "white",
                 borderBottom: "1px solid #dee2e6",
                 paddingBottom: "8px",
+                marginTop: "-16px",
+                paddingTop: "16px",
               }}
             >
               <Tabs.Tab
