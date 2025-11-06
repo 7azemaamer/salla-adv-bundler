@@ -439,7 +439,9 @@ export default function EditBundlePage() {
 
       notifications.show({
         title: "تم تحديث التقييمات بنجاح",
-        message: result.message || `تم تحديث ${result.data.reviews_count} تقييم للمنتج`,
+        message:
+          result.message ||
+          `تم تحديث ${result.data.reviews_count} تقييم للمنتج`,
         color: "green",
         icon: <IconCheck size="1rem" />,
         autoClose: 5000,
@@ -1391,46 +1393,46 @@ export default function EditBundlePage() {
                 </Group>
               </Button>
 
-                {active < 3 ? (
-                  <Button type="button" onClick={nextStep}>
-                    <Group gap="xs">
-                      <span>التالي</span>
-                      <IconArrowLeft size="1rem" />
-                    </Group>
-                  </Button>
-                ) : (
-                  <Group gap="sm">
-                    {currentBundle && currentBundle.status === "inactive" && (
-                      <Button
-                        type="button"
-                        variant="light"
-                        color="green"
-                        onClick={handleReactivate}
-                        loading={isReactivating}
-                        leftSection={<IconRefresh size="1rem" />}
-                      >
-                        إعادة تفعيل العروض
-                      </Button>
-                    )}
+              {active < 3 ? (
+                <Button type="button" onClick={nextStep}>
+                  <Group gap="xs">
+                    <span>التالي</span>
+                    <IconArrowLeft size="1rem" />
+                  </Group>
+                </Button>
+              ) : (
+                <Group gap="sm">
+                  {currentBundle && currentBundle.status === "inactive" && (
                     <Button
                       type="button"
                       variant="light"
-                      color="blue"
-                      onClick={handleRefetchReviews}
-                      loading={isRefetchingReviews}
-                      leftSection={<IconStar size="1rem" />}
+                      color="green"
+                      onClick={handleReactivate}
+                      loading={isReactivating}
+                      leftSection={<IconRefresh size="1rem" />}
                     >
-                      تحديث تقييمات المنتج
+                      إعادة تفعيل العروض
                     </Button>
-                    <Button
-                      type="submit"
-                      loading={loading.updating}
-                      leftSection={<IconEdit size="1rem" />}
-                    >
-                      حفظ التعديلات
-                    </Button>
-                  </Group>
-                )}
+                  )}
+                  <Button
+                    type="button"
+                    variant="light"
+                    color="blue"
+                    onClick={handleRefetchReviews}
+                    loading={isRefetchingReviews}
+                    leftSection={<IconStar size="1rem" />}
+                  >
+                    تحديث تقييمات المنتج
+                  </Button>
+                  <Button
+                    type="submit"
+                    loading={loading.updating}
+                    leftSection={<IconEdit size="1rem" />}
+                  >
+                    حفظ التعديلات
+                  </Button>
+                </Group>
+              )}
             </Group>
           </Card>
         </form>
