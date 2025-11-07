@@ -165,7 +165,6 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       if (storeDoc) {
         store_id = storeDoc.store_id;
       } else {
-        console.error(`[Reviews]: Store not found for domain: ${store_id}`);
         return res.status(200).json({
           success: true,
           data: [],
@@ -268,22 +267,10 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         if (accessToken) {
           const normalizedProductId = product_id.toString().replace(/^p/, "");
 
-          console.log(
-            `[Reviews]: Fetching reviews for product ${product_id} (normalized: ${normalizedProductId}), store: ${store_id}`
-          );
-
           const cacheResult = await getCachedReviews(
             store_id,
             normalizedProductId,
             accessToken
-          );
-
-          console.log(
-            `[Reviews]: Cache result - success: ${
-              cacheResult.success
-            }, data length: ${cacheResult.data?.length || 0}, fromCache: ${
-              cacheResult.fromCache
-            }`
           );
 
           if (
@@ -293,23 +280,10 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
           ) {
             cachedReviews = cacheResult.data;
             fromCache = cacheResult.fromCache;
-            console.log(
-              `[Reviews]: ${fromCache ? "Using cached" : "Fetched fresh"} ${
-                cachedReviews.length
-              } reviews for product ${product_id} (normalized: ${normalizedProductId})`
-            );
-          } else {
-            console.log(
-              `[Reviews]: No cached reviews found for product ${normalizedProductId}`
-            );
           }
-        } else {
-          console.log(
-            `[Reviews]: No access token available for store ${store_id}`
-          );
         }
       } catch (tokenError) {
-        console.error("[Reviews]: Token error:", tokenError.message);
+        // Silent fail
       }
     }
 
@@ -341,13 +315,6 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     });
 
     if (allReviews.length > 0) {
-      console.log(
-        `[Reviews]: Returning ${allReviews.length} reviews (${
-          formattedCustomReviews.length
-        } custom, ${cachedReviews.length} cached) for product ${
-          product_id || "N/A"
-        } - sorted by newest`
-      );
       const limitedReviews = allReviews.slice(0, parseInt(limit));
       const finalReviews = applyDisplayConfig(
         randomizeReviewDates(limitedReviews)
@@ -364,9 +331,6 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     }
 
     if (!product_id) {
-      console.log(
-        "[Reviews]: No product_id provided, returning custom reviews only"
-      );
       const limitedCustom = formattedCustomReviews.slice(0, parseInt(limit));
       const finalCustom = applyDisplayConfig(
         randomizeReviewDates(limitedCustom)
@@ -382,9 +346,6 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
     }
 
     if (hideRealReviews) {
-      console.log(
-        `[Reviews]: Real reviews are hidden by settings, returning custom reviews only for product ${product_id}`
-      );
       const limitedCustom = formattedCustomReviews.slice(0, parseInt(limit));
       const finalCustom = applyDisplayConfig(
         randomizeReviewDates(limitedCustom)
@@ -398,10 +359,6 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         display_config: reviewDisplay,
       });
     }
-
-    console.log(
-      `[Reviews]: No cached reviews for product ${product_id}, fetching from API`
-    );
     try {
       const accessToken = await getValidAccessToken(store_id);
 
@@ -415,14 +372,10 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         if (cacheResult.success && cacheResult.data.length > 0) {
           allReviews = cacheResult.data;
           fromCache = cacheResult.fromCache;
-
-          console.log(
-            `[Reviews]: Fetched and cached ${allReviews.length} reviews for product ${product_id}`
-          );
         }
       }
     } catch (apiError) {
-      console.error("[Reviews]: API fetch failed:", apiError.message);
+      // Silent fail
     }
 
     allReviews.sort((a, b) => {
@@ -445,12 +398,10 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
       display_config: reviewDisplay,
     });
   } catch (error) {
-    console.error("[Reviews]: Error fetching reviews:", error.message);
     return res.status(200).json({
       success: true,
       data: [],
       message: "Failed to fetch reviews",
-      display_config: reviewDisplay,
     });
   }
 });
