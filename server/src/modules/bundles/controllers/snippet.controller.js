@@ -30,6 +30,157 @@ class SnippetController {
   'use strict';
 
   // ========================================
+  // CART PAGE AUTO-CHECKOUT LOGIC
+  // ========================================
+  const isCartPage = window.location.pathname.startsWith('/cart') ||
+                     window.salla?.url?.is_page?.('cart');
+
+  if (isCartPage) {
+    (function() {
+      console.log('[Salla Bundle] 🛒 Cart page detected, checking for bundle context...');
+      
+      const CHECKOUT_PATH = '/checkout';
+      const GUARD_KEY = '__BUNDLE_AUTO_CHECKOUT_GUARD__';
+      const GUARD_TTL_MIN = 10; // Don't retry for 10 minutes
+      const LAST_PRODUCT_KEY = '__BUNDLE_LAST_PRODUCT__';
+
+      // --- TTL Guard: Prevent infinite loops ---
+      try {
+        const guardData = sessionStorage.getItem(GUARD_KEY);
+        if (guardData) {
+          const { timestamp } = JSON.parse(guardData);
+          const elapsed = Date.now() - timestamp;
+          const remainingMin = Math.ceil((GUARD_TTL_MIN * 60 * 1000 - elapsed) / 60000);
+          if (elapsed < GUARD_TTL_MIN * 60 * 1000) {
+            console.log('[Salla Bundle] ⏸️ Auto-checkout blocked by TTL guard (' + remainingMin + ' min remaining)');
+            return;
+          }
+          // Stale guard, clear it
+          console.log('[Salla Bundle] ♻️ Clearing stale guard');
+          sessionStorage.removeItem(GUARD_KEY);
+        }
+      } catch (e) {
+        console.warn('[Salla Bundle] ⚠️ Guard check failed:', e);
+      }
+
+      // --- Get referrer pathname ---
+      function getReferrerPath() {
+        try {
+          if (!document.referrer) {
+            console.log('[Salla Bundle] 📭 No referrer found');
+            return null;
+          }
+          const url = new URL(document.referrer);
+          console.log('[Salla Bundle] 🔗 Referrer:', url.pathname);
+          return url.pathname; // Returns full path like: /the-tripod-bottle-1000ml/p2054606251
+        } catch (e) {
+          console.warn('[Salla Bundle] ⚠️ Referrer parse error:', e);
+          return null;
+        }
+      }
+
+      // --- Get last product path from sessionStorage ---
+      function getLastProductPath() {
+        try {
+          const saved = sessionStorage.getItem(LAST_PRODUCT_KEY);
+          if (saved) {
+            console.log('[Salla Bundle] 💾 Saved product path:', saved);
+          } else {
+            console.log('[Salla Bundle] 📭 No saved product path');
+          }
+          return saved || null;
+        } catch (e) {
+          console.warn('[Salla Bundle] ⚠️ SessionStorage read error:', e);
+          return null;
+        }
+      }
+
+      // --- Check if cart has items ---
+      function cartHasItems() {
+        // Try multiple selectors for different Salla themes
+        const cartItems = document.querySelectorAll(
+          '[data-cart-item], .cart-item, .cart__item, ' +
+          '[data-product-id], .product-entry, ' +
+          '.s-cart-item, salla-cart-item'
+        );
+        const count = cartItems.length;
+        console.log('[Salla Bundle] 🛒 Cart items found:', count);
+        return count > 0;
+      }
+
+      // --- Get the product path ---
+      const productPath = getReferrerPath() || getLastProductPath();
+      
+      if (!productPath) {
+        console.log('[Salla Bundle] ❌ No bundle product path found, skipping auto-checkout');
+        return;
+      }
+
+      console.log('[Salla Bundle] ✅ Detected cart from bundle product:', productPath);
+
+      // --- Submit cart using Salla API ---
+      async function goToCheckout() {
+        try {
+          // Set guard to prevent re-triggering
+          sessionStorage.setItem(GUARD_KEY, JSON.stringify({ 
+            timestamp: Date.now(),
+            productPath: productPath 
+          }));
+          
+          console.log('[Salla Bundle] 🚀 Auto-submitting cart using salla.cart.submit()...');
+          
+          // Clear last product to prevent future triggers
+          sessionStorage.removeItem(LAST_PRODUCT_KEY);
+          
+          // Use Salla's cart submit (same as modal checkout)
+          if (window.salla?.cart?.submit) {
+            console.log('[Salla Bundle] ✅ Calling await salla.cart.submit()');
+            await window.salla.cart.submit();
+            console.log('[Salla Bundle] 🎉 Cart submitted successfully');
+          } else {
+            console.warn('[Salla Bundle] ⚠️ salla.cart.submit not available, using fallback redirect');
+            window.location.href = CHECKOUT_PATH;
+          }
+        } catch (e) {
+          console.error('[Salla Bundle] ❌ Cart submit failed:', e);
+          // Fallback to direct redirect
+          try {
+            console.log('[Salla Bundle] 🔄 Attempting fallback redirect to /checkout');
+            window.location.href = CHECKOUT_PATH;
+          } catch (fallbackError) {
+            console.error('[Salla Bundle] ❌ Fallback redirect also failed:', fallbackError);
+          }
+        }
+      }
+
+      // --- Wait for cart to load, then redirect ---
+      const startTime = Date.now();
+      const maxWaitMs = 2000; // Wait max 2 seconds for cart to load
+      
+      const checkInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        
+        // If cart has items OR we've waited long enough, redirect
+        if (cartHasItems() || elapsed > maxWaitMs) {
+          clearInterval(checkInterval);
+          
+          if (cartHasItems()) {
+            console.log('[Salla Bundle] Cart has items, proceeding to checkout');
+          } else {
+            console.log('[Salla Bundle] Cart load timeout, proceeding to checkout anyway');
+          }
+          
+          goToCheckout();
+        }
+      }, 150);
+
+    })();
+    
+    // Don't run product page logic on cart page
+    return;
+  }
+
+  // ========================================
   // BUNDLE SYSTEM LOGIC (Product pages only)
   // ========================================
   
@@ -1449,6 +1600,15 @@ class SnippetController {
 
     async openBundleModal() {
       try {
+        // Save current product path for cart auto-checkout after login
+        try {
+          const currentPath = window.location.pathname;
+          sessionStorage.setItem('__BUNDLE_LAST_PRODUCT__', currentPath);
+          console.log('[Salla Bundle] 💾 Saved product path:', currentPath);
+          console.log('[Salla Bundle] 🔍 Verify saved:', sessionStorage.getItem('__BUNDLE_LAST_PRODUCT__'));
+        } catch (storageError) {
+          console.warn('[Salla Bundle] ⚠️ Could not save product path:', storageError);
+        }
         
         if (!window.SallaBundleModal) {
           this.showLoadingState();
