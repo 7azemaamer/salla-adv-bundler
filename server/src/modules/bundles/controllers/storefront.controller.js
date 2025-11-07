@@ -214,30 +214,48 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
         return reviews;
       }
 
-      return reviews.map((review) => ({
-        ...review,
-        timeAgo:
-          presetPool[Math.floor(Math.random() * presetPool.length)] ||
-          review.timeAgo,
-      }));
+      return reviews.map((review) => {
+        const plainReview = review.toObject ? review.toObject() : { ...review };
+        return {
+          id: plainReview.id,
+          rating: plainReview.rating,
+          content: plainReview.content,
+          customerName: plainReview.customerName,
+          customerAvatar: plainReview.customerAvatar,
+          customerCity: plainReview.customerCity,
+          createdAt: plainReview.createdAt,
+          timeAgo:
+            presetPool[Math.floor(Math.random() * presetPool.length)] ||
+            plainReview.timeAgo,
+        };
+      });
     };
 
     const applyDisplayConfig = (reviews = []) => {
       if (!Array.isArray(reviews) || reviews.length === 0) return reviews;
 
-      return reviews.map((review) => ({
-        ...review,
-        timeAgo: reviewDisplay.hide_dates ? null : review.timeAgo,
-        rating:
-          reviewDisplay.hide_ratings || review.rating === undefined
+      return reviews.map((review) => {
+        // Convert Mongoose doc to plain object
+        const plainReview = review.toObject ? review.toObject() : { ...review };
+        return {
+          id: plainReview.id,
+          rating:
+            reviewDisplay.hide_ratings || plainReview.rating === undefined
+              ? null
+              : plainReview.rating,
+          content: plainReview.content,
+          customerName: reviewDisplay.hide_names
+            ? ""
+            : plainReview.customerName,
+          customerAvatar: reviewDisplay.hide_avatars
             ? null
-            : review.rating,
-        customerName: reviewDisplay.hide_names ? "" : review.customerName,
-        customerAvatar: reviewDisplay.hide_avatars
-          ? null
-          : review.customerAvatar,
-        _display: reviewDisplay,
-      }));
+            : plainReview.customerAvatar,
+          customerCity: plainReview.customerCity,
+          createdAt: plainReview.createdAt,
+          timeAgo: reviewDisplay.hide_dates ? null : plainReview.timeAgo,
+          _display: reviewDisplay,
+        };
+      });
     };
 
     let cachedReviews = [];
