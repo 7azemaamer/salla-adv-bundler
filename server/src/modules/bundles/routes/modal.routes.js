@@ -4789,7 +4789,7 @@ router.get("/modal.js", (req, res) => {
          <div class="salla-reviews-modern" style="margin-top: 16px;">
            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
              <h3 style="font-size: 15px; font-weight: 600; margin: 0;">آراء العملاء</h3>
-             ${ratingHeaderMarkup}
+             \${hideRatings ? '' : '<div style="font-size: 13px; color: var(--text-2);">' + avgRating + ' ★ متوسط</div>'}
            </div>
            <div style="position: relative;">
              <div class="salla-reviews-track-modern" id="salla-reviews-track-modern" style="display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
