@@ -663,7 +663,7 @@ router.get("/modal.js", (req, res) => {
         this.apiUrl +
         '/storefront/stores/' +
         storeId +
-        '/reviews?limit=10' +
+        '/reviews?limit=20' +
         productParam;
 
       try {
@@ -3942,7 +3942,7 @@ router.get("/modal.js", (req, res) => {
        return \`
          <div class="salla-reviews-section">
            <div class="salla-reviews-header">
-            <span>آراء العملاء (\${this.reviews.length})</span>
+            <span>آراء العملاء</span>
             \${hideRatings ? '' : '<div style="font-size: 13px; color: var(--text-2);">' + avgRating + ' ★ متوسط</div>'}
            </div>
            <div class="salla-reviews-carousel">
