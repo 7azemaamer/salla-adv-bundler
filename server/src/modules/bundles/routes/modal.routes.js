@@ -1116,7 +1116,10 @@ router.get("/modal.js", (req, res) => {
       }
 
       const selectedBundleData = bundleDisplayData.find(b => b.id === this.selectedBundle);
-      const selectedTier = selectedBundleData ? selectedBundleData.tier : bundles[0];
+    const reviewSettings = bundleConfig?.settings?.review_count;
+    const reviewShowInStep = reviewSettings?.show_in_step || 'bundles';
+    const shouldRenderGlobalReviews = reviewShowInStep === 'all';
+    const selectedTier = selectedBundleData ? selectedBundleData.tier : bundles[0];
 
       const selectedBundle = selectedBundleData || bundleDisplayData[0];
       const totalPrice = selectedBundle.price; // This is what customer actually pays
@@ -1200,9 +1203,9 @@ router.get("/modal.js", (req, res) => {
           </div>
         \` : ''}
 
-        <!-- Reviews Section (Show on both mobile and desktop) -->
-        \${this.renderReviews('all')}
 
+  <!-- Reviews Section (Show when configured for all steps) -->
+  \${shouldRenderGlobalReviews ? this.renderReviews('all') : ''}
         <!-- Offers Section -->
         \${this.renderOffersSection(selectedTier, selectedBundleData)}
         
