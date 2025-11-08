@@ -78,6 +78,8 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         sticky_button: settings.sticky_button,
         free_shipping: settings.free_shipping,
         timer: settings.timer,
+        review_count: settings.review_count,
+        review_display: settings.review_display,
         show_payment_methods: settings.show_payment_methods !== false, // Default to true
       },
     },
