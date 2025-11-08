@@ -1251,9 +1251,21 @@ class SnippetController {
       button.style.pointerEvents = 'none';
       document.body.appendChild(button);
 
-      // Function to update button positioning on resize
+      // Track current device type to detect actual changes
+      let currentDeviceType = window.innerWidth <= 768 ? 'mobile' : 'desktop';
+      
+      // Function to update button positioning on resize - only when switching device types
       const updateButtonPosition = () => {
         const isMobile = window.innerWidth <= 768;
+        const newDeviceType = isMobile ? 'mobile' : 'desktop';
+        
+        // Only update if device type actually changed (desktop ↔ mobile)
+        if (newDeviceType === currentDeviceType) {
+          return; // Don't update on scroll or minor resizes
+        }
+        
+        currentDeviceType = newDeviceType;
+        
         const newBottomValue = isMobile 
           ? (stickyButton.mobile_bottom ?? 20) 
           : (stickyButton.desktop_bottom ?? 20);
@@ -1302,14 +1314,10 @@ class SnippetController {
           button.style.left = \`\${newLeftValue}px\`;
           button.style.right = \`\${newRightValue}px\`;
         } else if (widthType === 'custom') {
-          const maxPadding = Math.max(newLeftValue, newRightValue) * 2;
-          // Use CSS value directly - supports px, %, calc(), etc.
-          button.style.width = \`\${newButtonWidth}\`;
-          button.style.maxWidth = \`calc(100vw - \${maxPadding}px)\`;
-        } else {
-          const maxPadding = Math.max(newLeftValue, newRightValue) * 2;
-          button.style.maxWidth = \`calc(100vw - \${maxPadding}px)\`;
+          // Update width when switching devices
+          button.style.width = newButtonWidth;
         }
+        // For auto width, no change needed
       };
 
       // Add resize listener
