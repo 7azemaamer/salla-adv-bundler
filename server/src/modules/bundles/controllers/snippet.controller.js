@@ -1144,14 +1144,22 @@ class SnippetController {
       let transformCss = ''; // Full CSS transform for inline styles
       let widthStyle = '';
       
+      // Check if user has set custom left/right values (different from default 20)
+      const hasCustomLeft = leftValue !== 20;
+      const hasCustomRight = rightValue !== 20;
+      const hasCustomPositioning = hasCustomLeft || hasCustomRight;
+      
       // Position handling
-      if (position === 'bottom-center') {
+      if (position === 'bottom-center' && !hasCustomPositioning) {
+        // Only use center positioning if no custom left/right values
         positionStyle += ' left: 50%; right: auto;';
         transformValue = 'translateX(-50%)';
         transformCss = 'transform: translateX(-50%);';
-      } else if (position === 'bottom-left') {
+      } else if (position === 'bottom-left' || (position === 'bottom-center' && hasCustomLeft)) {
+        // Use left positioning with custom value
         positionStyle += \` left: \${leftValue}px; right: auto;\`;
-      } else { // bottom-right
+      } else { // bottom-right or custom right
+        // Use right positioning with custom value
         positionStyle += \` right: \${rightValue}px; left: auto;\`;
       }
       
