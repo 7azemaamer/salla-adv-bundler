@@ -63,10 +63,10 @@ export default function StickyButtonSettingsPanel({
     stickyButton.border_radius ?? 12
   );
   const [desktopWidth, setDesktopWidth] = useState(
-    stickyButton.desktop_width ?? 250
+    stickyButton.desktop_width ?? "250px"
   );
   const [mobileWidth, setMobileWidth] = useState(
-    stickyButton.mobile_width ?? 250
+    stickyButton.mobile_width ?? "250px"
   );
 
   // Sync local state with fetched settings
@@ -85,8 +85,8 @@ export default function StickyButtonSettingsPanel({
       setMobileLeft(sb.mobile_left ?? 20);
       setMobileRight(sb.mobile_right ?? 20);
       setBorderRadius(sb.border_radius ?? 12);
-      setDesktopWidth(sb.desktop_width ?? 250);
-      setMobileWidth(sb.mobile_width ?? 250);
+      setDesktopWidth(sb.desktop_width ?? "250px");
+      setMobileWidth(sb.mobile_width ?? "250px");
     }
   }, [settings.sticky_button]);
 
@@ -339,23 +339,21 @@ export default function StickyButtonSettingsPanel({
                   </Text>
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 6 }}>
-                  <NumberInput
-                    label="عرض الزر - حاسوب (px)"
+                  <TextInput
+                    label="عرض الزر - حاسوب"
                     value={desktopWidth}
-                    onChange={setDesktopWidth}
-                    min={100}
-                    max={800}
-                    description="عرض الزر على شاشات الحاسوب"
+                    onChange={(e) => setDesktopWidth(e.target.value)}
+                    placeholder="250px أو 90% أو calc(100% - 95px)"
+                    description="يدعم px, %, calc(), vw, rem, إلخ"
                   />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, md: 6 }}>
-                  <NumberInput
-                    label="عرض الزر - جوال (px)"
+                  <TextInput
+                    label="عرض الزر - جوال"
                     value={mobileWidth}
-                    onChange={setMobileWidth}
-                    min={100}
-                    max={500}
-                    description="عرض الزر على شاشات الجوال"
+                    onChange={(e) => setMobileWidth(e.target.value)}
+                    placeholder="250px أو 90% أو calc(100% - 50px)"
+                    description="يدعم px, %, calc(), vw, rem, إلخ"
                   />
                 </Grid.Col>
               </>

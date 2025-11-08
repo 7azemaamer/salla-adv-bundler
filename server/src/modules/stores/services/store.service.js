@@ -209,16 +209,13 @@ class StoreService {
    * - Base domain: demostore.salla.sa
    * ===============*/
   async getStoreByDomain(domain) {
-    // Clean domain (remove www, http, https, trailing slash)
     const cleanDomain = domain
       .replace(/^https?:\/\//, "")
       .replace(/^www\./, "")
       .replace(/\/$/, "");
 
-    // Try exact match first
     let store = await Store.findOne({ domain: cleanDomain });
 
-    // If not found, try to find by domain substring (for cases like demostore.salla.sa matching https://demostore.salla.sa/dev-xxx)
     if (!store && cleanDomain) {
       store = await Store.findOne({
         domain: {

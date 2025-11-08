@@ -1130,10 +1130,10 @@ class SnippetController {
         ? (stickyButton.mobile_right ?? 20) 
         : (stickyButton.desktop_right ?? 20);
       
-      // Get width values based on device
+      // Get width values based on device (supports CSS values like px, %, calc())
       const buttonWidth = isMobile
-        ? (stickyButton.mobile_width ?? 250)
-        : (stickyButton.desktop_width ?? 250);
+        ? (stickyButton.mobile_width ?? "250px")
+        : (stickyButton.desktop_width ?? "250px");
       
       // Get border radius
       const borderRadius = stickyButton.border_radius ?? 12;
@@ -1165,7 +1165,8 @@ class SnippetController {
         transformCss = '';
       } else if (widthType === 'custom') {
         const maxPadding = Math.max(leftValue, rightValue) * 2;
-        widthStyle = \`width: \${buttonWidth}px; max-width: min(\${buttonWidth}px, calc(100vw - \${maxPadding}px));\`;
+        // Use CSS value directly - supports px, %, calc(), etc.
+        widthStyle = \`width: \${buttonWidth}; max-width: calc(100vw - \${maxPadding}px);\`;
       } else {
         const maxPadding = Math.max(leftValue, rightValue) * 2;
         widthStyle = \`width: auto; max-width: calc(100vw - \${maxPadding}px);\`;
@@ -1254,10 +1255,10 @@ class SnippetController {
           ? (stickyButton.mobile_right ?? 20) 
           : (stickyButton.desktop_right ?? 20);
         
-        // Get new width based on device
+        // Get new width based on device (supports CSS values)
         const newButtonWidth = isMobile
-          ? (stickyButton.mobile_width ?? 250)
-          : (stickyButton.desktop_width ?? 250);
+          ? (stickyButton.mobile_width ?? "250px")
+          : (stickyButton.desktop_width ?? "250px");
 
         // Update button position
         button.style.bottom = \`\${newBottomValue}px\`;
@@ -1281,8 +1282,9 @@ class SnippetController {
           button.style.right = \`\${newRightValue}px\`;
         } else if (widthType === 'custom') {
           const maxPadding = Math.max(newLeftValue, newRightValue) * 2;
-          button.style.width = \`\${newButtonWidth}px\`;
-          button.style.maxWidth = \`min(\${newButtonWidth}px, calc(100vw - \${maxPadding}px))\`;
+          // Use CSS value directly - supports px, %, calc(), etc.
+          button.style.width = \`\${newButtonWidth}\`;
+          button.style.maxWidth = \`calc(100vw - \${maxPadding}px)\`;
         } else {
           const maxPadding = Math.max(newLeftValue, newRightValue) * 2;
           button.style.maxWidth = \`calc(100vw - \${maxPadding}px)\`;

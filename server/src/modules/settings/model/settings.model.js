@@ -72,17 +72,15 @@ const settingsSchema = new mongoose.Schema(
         enum: ["auto", "full", "custom"],
         default: "auto",
       },
-      // Desktop width (used when width_type is "custom")
+      // Desktop width (used when width_type is "custom") - Supports px, %, calc(), etc.
       desktop_width: {
-        type: Number,
-        default: 250,
-        min: 100,
+        type: String,
+        default: "250px",
       },
-      // Mobile width
+      // Mobile width - Supports px, %, calc(), etc.
       mobile_width: {
-        type: Number,
-        default: 250,
-        min: 100,
+        type: String,
+        default: "250px",
       },
       // Desktop positioning
       desktop_bottom: {

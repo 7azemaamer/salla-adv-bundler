@@ -411,14 +411,12 @@ export const getStoreReviews = asyncWrapper(async (req, res) => {
  * Get Payment Methods (Public endpoint for modal)
  * =============================================== */
 export const getPaymentMethods = asyncWrapper(async (req, res) => {
-  const { store_id } = req.params;
+  const { store_id } = req.params; // This is actually the domain
 
   try {
-    let store = await storeService.getStoreByDomain(store_id);
+    console.log("[Payment Methods] Looking up store by domain:", store_id);
 
-    if (!store) {
-      store = await storeService.getStoreByStoreId(store_id);
-    }
+    const store = await storeService.getStoreByDomain(store_id);
 
     if (!store) {
       return res.status(404).json({
@@ -426,6 +424,13 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
         message: "Store not found",
       });
     }
+
+    console.log(
+      "[Payment Methods] Store found:",
+      store.store_id,
+      "Domain:",
+      store.domain
+    );
 
     const CACHE_DURATION = 24 * 60 * 60 * 1000;
     const isCacheFresh =
@@ -445,15 +450,28 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
       });
     }
 
-    const accessToken = await getValidAccessToken(store_id);
+    // Use actual store_id from database, not the URL parameter
+    console.log(
+      "[Payment Methods] Getting access token for store_id:",
+      store.store_id
+    );
+    const accessToken = await getValidAccessToken(store.store_id);
 
     if (!accessToken) {
+      console.log(
+        "[Payment Methods] No valid access token found for store:",
+        store.store_id
+      );
       return res.status(200).json({
         success: true,
         data: store.payment_methods || [],
         message: "No access token configured, using cached data",
       });
     }
+
+    console.log(
+      "[Payment Methods] Access token found, fetching payment methods..."
+    );
 
     const methodsResult = await fetchPaymentMethods(accessToken);
 
