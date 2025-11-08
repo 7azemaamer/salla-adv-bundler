@@ -230,6 +230,9 @@ router.get("/modal.js", (req, res) => {
         'المنتجات المخفضة',
         'الفاتورة'
       ];
+      
+      // Default checkout button text (will be overwritten when bundle data loads)
+      this.checkoutButtonText = 'إتمام الطلب — {total_price}';
 
       this.initializeFeatureState();
     }
@@ -611,6 +614,9 @@ router.get("/modal.js", (req, res) => {
 
         // Store hide_coupon_section setting
         this.hideCouponSection = bundleConfig.settings?.hide_coupon_section || false;
+
+        // Store checkout button text for last step
+        this.checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب — {total_price}';
 
         this.createModal();
 
@@ -3372,7 +3378,23 @@ router.get("/modal.js", (req, res) => {
       if (nextBtn) {
         const canProceed = this.canProceedToNextStep();
         nextBtn.disabled = !canProceed;
-        nextBtn.textContent = 'التالي';
+        
+        // Check if this is the last step (review step)
+        if (this.currentStep === this.totalSteps) {
+          // Use the dynamic checkout button text
+          const totalPrice = this.calculateTotalPrice();
+          const formatPrice = (price) => {
+            return new Intl.NumberFormat('ar-SA', {
+              style: 'currency',
+              currency: 'SAR',
+              minimumFractionDigits: 2
+            }).format(price);
+          };
+          nextBtn.textContent = this.checkoutButtonText.replace('{total_price}', formatPrice(totalPrice));
+        } else {
+          nextBtn.textContent = 'التالي';
+        }
+        
         nextBtn.classList.add('primary');
       }
     }
