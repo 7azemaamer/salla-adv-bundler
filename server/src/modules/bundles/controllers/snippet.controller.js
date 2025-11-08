@@ -1155,6 +1155,9 @@ class SnippetController {
         positionStyle += ' left: 50%; right: auto;';
         transformValue = 'translateX(-50%)';
         transformCss = 'transform: translateX(-50%);';
+      } else if (hasCustomLeft && hasCustomRight) {
+        // Both left and right are custom - use both values
+        positionStyle += \` left: \${leftValue}px; right: \${rightValue}px;\`;
       } else if (position === 'bottom-left' || (position === 'bottom-center' && hasCustomLeft)) {
         // Use left positioning with custom value
         positionStyle += \` left: \${leftValue}px; right: auto;\`;
