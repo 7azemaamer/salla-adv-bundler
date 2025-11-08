@@ -140,10 +140,10 @@ export default function SettingsPage() {
                 zIndex: 100,
                 backgroundColor: "white",
                 borderBottom: "1px solid #dee2e6",
-                paddingBottom: "8px",
+                paddingBottom: "12px",
                 marginTop: "-16px",
                 paddingTop: "16px",
-                marginBottom: "16px",
+                marginBottom: "24px",
               }}
             >
               <Tabs.Tab
@@ -179,7 +179,7 @@ export default function SettingsPage() {
             </Tabs.List>
 
             {/* Tab 1: Display Settings */}
-            <Tabs.Panel value="display" pt="md">
+            <Tabs.Panel value="display" pt={0}>
               <DisplaySettingsPanel
                 settings={settings}
                 loading={loading}
@@ -193,7 +193,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 2: Sticky Button */}
-            <Tabs.Panel value="sticky-button" pt="md">
+            <Tabs.Panel value="sticky-button" pt={0}>
               <StickyButtonSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -202,7 +202,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 3: Free Shipping Banner */}
-            <Tabs.Panel value="shipping" pt="md">
+            <Tabs.Panel value="shipping" pt={0}>
               <FreeShippingSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -211,7 +211,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 4: Timer Settings */}
-            <Tabs.Panel value="timer" pt="md">
+            <Tabs.Panel value="timer" pt={0}>
               <TimerSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -220,7 +220,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 5: Review Count Settings */}
-            <Tabs.Panel value="reviews" pt="md">
+            <Tabs.Panel value="reviews" pt={0}>
               <ReviewCountSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -229,7 +229,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 6: System Settings */}
-            <Tabs.Panel value="system" pt="md">
+            <Tabs.Panel value="system" pt={0}>
               <SystemSettingsPanel />
             </Tabs.Panel>
           </Tabs>

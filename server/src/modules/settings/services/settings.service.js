@@ -101,6 +101,7 @@ class SettingsService {
         "hide_product_options",
         "hide_quantity_input",
         "hide_price_section",
+        "hide_coupon_section",
         "custom_hide_selectors",
         "sticky_button", // Nested object
         "free_shipping", // Nested object
