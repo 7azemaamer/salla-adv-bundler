@@ -850,7 +850,6 @@ export default function EditBundlePage() {
                         variant="light"
                         leftSection={<IconPlus size="0.8rem" />}
                         onClick={() => addOffer(tierIndex)}
-                        disabled={tier.offers.length >= 3}
                       >
                         إضافة منتج
                       </Button>

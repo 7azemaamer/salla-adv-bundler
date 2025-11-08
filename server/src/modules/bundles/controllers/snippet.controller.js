@@ -390,6 +390,7 @@ class SnippetController {
         hide_product_options: false,
         hide_quantity_input: false,
         hide_price_section: false,
+        hide_coupon_section: false,
         custom_hide_selectors: [],
         sticky_button_enabled: false,
         sticky_button_text: ' اطلب باقتك الآن',

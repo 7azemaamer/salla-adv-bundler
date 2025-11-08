@@ -73,6 +73,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         hide_product_options: settings.hide_product_options,
         hide_quantity_input: settings.hide_quantity_input,
         hide_price_section: settings.hide_price_section,
+        hide_coupon_section: settings.hide_coupon_section,
         custom_hide_selectors: settings.custom_hide_selectors || [],
         sticky_button: settings.sticky_button,
         free_shipping: settings.free_shipping,

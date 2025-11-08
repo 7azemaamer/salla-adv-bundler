@@ -143,6 +143,7 @@ export default function SettingsPage() {
                 paddingBottom: "8px",
                 marginTop: "-16px",
                 paddingTop: "16px",
+                marginBottom: "16px",
               }}
             >
               <Tabs.Tab
@@ -178,7 +179,7 @@ export default function SettingsPage() {
             </Tabs.List>
 
             {/* Tab 1: Display Settings */}
-            <Tabs.Panel value="display" pt="xl">
+            <Tabs.Panel value="display" pt="md">
               <DisplaySettingsPanel
                 settings={settings}
                 loading={loading}
@@ -192,7 +193,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 2: Sticky Button */}
-            <Tabs.Panel value="sticky-button" pt="xl">
+            <Tabs.Panel value="sticky-button" pt="md">
               <StickyButtonSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -201,7 +202,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 3: Free Shipping Banner */}
-            <Tabs.Panel value="shipping" pt="xl">
+            <Tabs.Panel value="shipping" pt="md">
               <FreeShippingSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -210,7 +211,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 4: Timer Settings */}
-            <Tabs.Panel value="timer" pt="xl">
+            <Tabs.Panel value="timer" pt="md">
               <TimerSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -219,7 +220,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 5: Review Count Settings */}
-            <Tabs.Panel value="reviews" pt="xl">
+            <Tabs.Panel value="reviews" pt="md">
               <ReviewCountSettingsPanel
                 settings={settings}
                 loading={loading}
@@ -228,7 +229,7 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 6: System Settings */}
-            <Tabs.Panel value="system" pt="xl">
+            <Tabs.Panel value="system" pt="md">
               <SystemSettingsPanel />
             </Tabs.Panel>
           </Tabs>

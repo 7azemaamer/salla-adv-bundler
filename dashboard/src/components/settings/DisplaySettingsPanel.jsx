@@ -229,6 +229,16 @@ export default function DisplaySettingsPanel({
         disabled={loading.updating}
         onShowDemo={onShowPriceModal}
         infoText="هذا الخيار يخفي قسم السعر الافتراضي (price-wrapper, total-price, before-price) الموجود داخل النموذج (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض باقات عليه. يتم عرض السعر من خلال نافذة العرض المركب بدلاً من ذلك."
+      />
+
+      {/* Hide Coupon Section Toggle */}
+      <SettingToggle
+        label="إخفاء قسم الكوبون"
+        description="إخفاء قسم الكوبون في نافذة الباقة (يطبق على النسخة المكتبية والجوال)"
+        checked={settings.hide_coupon_section}
+        onChange={() => onToggle("hide_coupon_section")}
+        disabled={loading.updating}
+        infoText="عند تفعيل هذا الخيار، سيتم إخفاء قسم إدخال كود الكوبون من نافذة الباقة على جميع الأجهزة. مفيد إذا كنت لا تستخدم أكواد الخصم في متجرك."
         withDivider={false}
       />
 

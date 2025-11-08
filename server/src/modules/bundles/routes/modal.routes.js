@@ -226,7 +226,7 @@ router.get("/modal.js", (req, res) => {
       this.stepLabels = [
         'اختر الباقة',
         'الخيارات',
-        'إختر هداياك',
+        'الهدايا المجانية',
         'المنتجات المخفضة',
         'الفاتورة'
       ];
@@ -608,6 +608,9 @@ router.get("/modal.js", (req, res) => {
             this.timerEndTime = Date.now() + (duration * 1000);
           }
         }
+
+        // Store hide_coupon_section setting
+        this.hideCouponSection = bundleConfig.settings?.hide_coupon_section || false;
 
         this.createModal();
 
@@ -1414,7 +1417,7 @@ router.get("/modal.js", (req, res) => {
       if (freeGifts.length > 0) {
         steps.push({
           number: stepNumber++,
-          label: 'إختر هداياك',
+          label: 'الهدايا المجانية',
           html: this.renderStep3FreeGifts(selectedTier, selectedBundleData),
           type: 'free_gifts'
         });
@@ -4210,6 +4213,11 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderDiscountCode() {
+      // Check if coupon section should be hidden
+      if (this.hideCouponSection) {
+        return '';
+      }
+      
       return \`
         <div class="salla-discount-section">
           <div class="salla-discount-header" onclick="window.sallaBundleModal.toggleDiscountSection()">

@@ -39,6 +39,11 @@ const settingsSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Hide coupon section in modal (both desktop and mobile)
+    hide_coupon_section: {
+      type: Boolean,
+      default: false,
+    },
     // Sticky floating button settings (nested object)
     sticky_button: {
       enabled: {
