@@ -281,29 +281,6 @@ export default function ProfilePage() {
           </Grid>
         </Card>
 
-        {/* Information Alert */}
-        <Alert
-          variant="light"
-          color="blue"
-          icon={<IconInfoCircle />}
-          title="معلومات هامة"
-        >
-          <Text size="sm">
-            يتم جلب معلومات الملف الشخصي من حسابك في منصة سلة. لتعديل معلومات
-            المتجر، يرجى تسجيل الدخول إلى{" "}
-            <Text
-              component="a"
-              href="https://s.salla.sa/apps"
-              target="_blank"
-              c="blue"
-              fw={500}
-            >
-              لوحة تحكم سلة
-            </Text>
-            .
-          </Text>
-        </Alert>
-
         {/* Account Actions */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Title order={4} mb="md">

@@ -1164,12 +1164,10 @@ class SnippetController {
         transformValue = '';
         transformCss = '';
       } else if (widthType === 'custom') {
-        const maxPadding = Math.max(leftValue, rightValue) * 2;
         // Use CSS value directly - supports px, %, calc(), etc.
-        widthStyle = \`width: \${buttonWidth}; max-width: calc(100vw - \${maxPadding}px);\`;
+        widthStyle = \`width: \${buttonWidth}; max-width: 100%;\`;
       } else {
-        const maxPadding = Math.max(leftValue, rightValue) * 2;
-        widthStyle = \`width: auto; max-width: calc(100vw - \${maxPadding}px);\`;
+        widthStyle = \`width: auto; max-width: 100%;\`;
       }
 
       // Get button colors
