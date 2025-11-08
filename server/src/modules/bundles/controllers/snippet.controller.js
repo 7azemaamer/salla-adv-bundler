@@ -1272,13 +1272,25 @@ class SnippetController {
         // Update button position
         button.style.bottom = \`\${newBottomValue}px\`;
         
-        if (position === 'bottom-center') {
+        // Check if user has set custom left/right values (different from default 20)
+        const hasCustomLeft = newLeftValue !== 20;
+        const hasCustomRight = newRightValue !== 20;
+        const hasCustomPositioning = hasCustomLeft || hasCustomRight;
+        
+        if (position === 'bottom-center' && !hasCustomPositioning) {
+          // Only use center positioning if no custom left/right values
           button.style.left = '50%';
           button.style.right = 'auto';
-        } else if (position === 'bottom-left') {
+        } else if (hasCustomLeft && hasCustomRight) {
+          // Both left and right are custom - use both values
+          button.style.left = \`\${newLeftValue}px\`;
+          button.style.right = \`\${newRightValue}px\`;
+        } else if (position === 'bottom-left' || (position === 'bottom-center' && hasCustomLeft)) {
+          // Use left positioning with custom value
           button.style.left = \`\${newLeftValue}px\`;
           button.style.right = 'auto';
         } else {
+          // Use right positioning with custom value
           button.style.right = \`\${newRightValue}px\`;
           button.style.left = 'auto';
         }
