@@ -136,7 +136,7 @@ export default function SettingsPage() {
               grow
               style={{
                 position: "sticky",
-                top: "70px",
+                top: "0px",
                 zIndex: 100,
                 backgroundColor: "white",
                 borderBottom: "1px solid #dee2e6",

@@ -78,6 +78,51 @@ const settingsSchema = new mongoose.Schema(
         min: 100,
         max: 600,
       },
+      // Desktop positioning
+      desktop_bottom: {
+        type: Number,
+        default: 20,
+        min: 0,
+        max: 200,
+      },
+      desktop_left: {
+        type: Number,
+        default: 20,
+        min: 0,
+        max: 500,
+      },
+      desktop_right: {
+        type: Number,
+        default: 20,
+        min: 0,
+        max: 500,
+      },
+      // Mobile positioning
+      mobile_bottom: {
+        type: Number,
+        default: 20,
+        min: 0,
+        max: 200,
+      },
+      mobile_left: {
+        type: Number,
+        default: 20,
+        min: 0,
+        max: 200,
+      },
+      mobile_right: {
+        type: Number,
+        default: 20,
+        min: 0,
+        max: 200,
+      },
+      // Border radius
+      border_radius: {
+        type: Number,
+        default: 12,
+        min: 0,
+        max: 50,
+      },
     },
     // Free shipping banner settings (nested object)
     free_shipping: {

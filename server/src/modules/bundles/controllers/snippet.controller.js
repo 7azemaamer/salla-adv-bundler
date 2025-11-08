@@ -1119,8 +1119,23 @@ class SnippetController {
       const position = stickyButton.position || 'bottom-center';
       const widthType = stickyButton.width_type || 'auto';
 
+      // Get positioning values based on device
+      const isMobile = window.innerWidth <= 768;
+      const bottomValue = isMobile 
+        ? (stickyButton.mobile_bottom ?? 20) 
+        : (stickyButton.desktop_bottom ?? 20);
+      const leftValue = isMobile 
+        ? (stickyButton.mobile_left ?? 20) 
+        : (stickyButton.desktop_left ?? 20);
+      const rightValue = isMobile 
+        ? (stickyButton.mobile_right ?? 20) 
+        : (stickyButton.desktop_right ?? 20);
+      
+      // Get border radius
+      const borderRadius = stickyButton.border_radius ?? 12;
+
       // Build position and width styles
-      let positionStyle = 'bottom: 20px;';
+      let positionStyle = \`bottom: \${bottomValue}px;\`;
       let transformValue = ''; // Transform value only (no 'transform:' prefix)
       let transformCss = ''; // Full CSS transform for inline styles
       let widthStyle = '';
@@ -1131,23 +1146,26 @@ class SnippetController {
         transformValue = 'translateX(-50%)';
         transformCss = 'transform: translateX(-50%);';
       } else if (position === 'bottom-left') {
-        positionStyle += ' left: 20px; right: auto;';
+        positionStyle += \` left: \${leftValue}px; right: auto;\`;
       } else { // bottom-right
-        positionStyle += ' right: 20px; left: auto;';
+        positionStyle += \` right: \${rightValue}px; left: auto;\`;
       }
       
       // Width handling
       if (widthType === 'full') {
-        widthStyle = 'width: calc(100% - 40px); max-width: none;';
+        const totalHorizontalPadding = leftValue + rightValue;
+        widthStyle = \`width: calc(100% - \${totalHorizontalPadding}px); max-width: none;\`;
         // For full width, override position to stretch across
-        positionStyle = 'bottom: 20px; left: 20px; right: 20px;';
+        positionStyle = \`bottom: \${bottomValue}px; left: \${leftValue}px; right: \${rightValue}px;\`;
         transformValue = '';
         transformCss = '';
       } else if (widthType === 'custom') {
         const customWidth = stickyButton.custom_width || 250;
-        widthStyle = \`width: \${customWidth}px; max-width: min(\${customWidth}px, calc(100vw - 40px));\`;
+        const maxPadding = Math.max(leftValue, rightValue) * 2;
+        widthStyle = \`width: \${customWidth}px; max-width: min(\${customWidth}px, calc(100vw - \${maxPadding}px));\`;
       } else {
-        widthStyle = 'width: auto; max-width: calc(100vw - 40px);';
+        const maxPadding = Math.max(leftValue, rightValue) * 2;
+        widthStyle = \`width: auto; max-width: calc(100vw - \${maxPadding}px);\`;
       }
 
       // Get button colors
@@ -1168,7 +1186,7 @@ class SnippetController {
         color: \${buttonTextColor};
         border: none;
         padding: 14px 28px;
-        border-radius: 50px;
+        border-radius: \${borderRadius}px;
         font-size: 15px;
         font-weight: 600;
         cursor: pointer;
@@ -1219,6 +1237,45 @@ class SnippetController {
       button.style.transform = \`translateY(100px) \${transformValue ? transformValue : ''}\`;
       button.style.pointerEvents = 'none';
       document.body.appendChild(button);
+
+      // Function to update button positioning on resize
+      const updateButtonPosition = () => {
+        const isMobile = window.innerWidth <= 768;
+        const newBottomValue = isMobile 
+          ? (stickyButton.mobile_bottom ?? 20) 
+          : (stickyButton.desktop_bottom ?? 20);
+        const newLeftValue = isMobile 
+          ? (stickyButton.mobile_left ?? 20) 
+          : (stickyButton.desktop_left ?? 20);
+        const newRightValue = isMobile 
+          ? (stickyButton.mobile_right ?? 20) 
+          : (stickyButton.desktop_right ?? 20);
+
+        // Update button position
+        button.style.bottom = \`\${newBottomValue}px\`;
+        
+        if (position === 'bottom-center') {
+          button.style.left = '50%';
+          button.style.right = 'auto';
+        } else if (position === 'bottom-left') {
+          button.style.left = \`\${newLeftValue}px\`;
+          button.style.right = 'auto';
+        } else {
+          button.style.right = \`\${newRightValue}px\`;
+          button.style.left = 'auto';
+        }
+
+        // Update width for full width mode
+        if (widthType === 'full') {
+          const totalHorizontalPadding = newLeftValue + newRightValue;
+          button.style.width = \`calc(100% - \${totalHorizontalPadding}px)\`;
+          button.style.left = \`\${newLeftValue}px\`;
+          button.style.right = \`\${newRightValue}px\`;
+        }
+      };
+
+      // Add resize listener
+      window.addEventListener('resize', updateButtonPosition);
 
       const setupStickyButtonVisibility = () => {
         const mainCTA = document.querySelector('.salla-bundle-btn, .salla-bundle-notice');

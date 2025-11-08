@@ -46,6 +46,25 @@ export default function StickyButtonSettingsPanel({
   const [buttonCustomWidth, setButtonCustomWidth] = useState(
     stickyButton.custom_width || 250
   );
+  const [desktopBottom, setDesktopBottom] = useState(
+    stickyButton.desktop_bottom ?? 20
+  );
+  const [desktopLeft, setDesktopLeft] = useState(
+    stickyButton.desktop_left ?? 20
+  );
+  const [desktopRight, setDesktopRight] = useState(
+    stickyButton.desktop_right ?? 20
+  );
+  const [mobileBottom, setMobileBottom] = useState(
+    stickyButton.mobile_bottom ?? 20
+  );
+  const [mobileLeft, setMobileLeft] = useState(stickyButton.mobile_left ?? 20);
+  const [mobileRight, setMobileRight] = useState(
+    stickyButton.mobile_right ?? 20
+  );
+  const [borderRadius, setBorderRadius] = useState(
+    stickyButton.border_radius ?? 12
+  );
 
   // Sync local state with fetched settings
   useEffect(() => {
@@ -57,6 +76,13 @@ export default function StickyButtonSettingsPanel({
       setButtonPosition(sb.position || "bottom-center");
       setButtonWidthType(sb.width_type || "auto");
       setButtonCustomWidth(sb.custom_width || 250);
+      setDesktopBottom(sb.desktop_bottom ?? 20);
+      setDesktopLeft(sb.desktop_left ?? 20);
+      setDesktopRight(sb.desktop_right ?? 20);
+      setMobileBottom(sb.mobile_bottom ?? 20);
+      setMobileLeft(sb.mobile_left ?? 20);
+      setMobileRight(sb.mobile_right ?? 20);
+      setBorderRadius(sb.border_radius ?? 12);
     }
   }, [settings.sticky_button]);
 
@@ -81,6 +107,13 @@ export default function StickyButtonSettingsPanel({
           position: buttonPosition,
           width_type: buttonWidthType,
           custom_width: buttonCustomWidth,
+          desktop_bottom: desktopBottom,
+          desktop_left: desktopLeft,
+          desktop_right: desktopRight,
+          mobile_bottom: mobileBottom,
+          mobile_left: mobileLeft,
+          mobile_right: mobileRight,
+          border_radius: borderRadius,
         },
       });
 
@@ -218,6 +251,93 @@ export default function StickyButtonSettingsPanel({
                 />
               </Grid.Col>
             )}
+          </Grid>
+
+          <Divider label="التموضع والشكل" labelPosition="center" mt="lg" />
+
+          <Grid>
+            <Grid.Col span={{ base: 12 }}>
+              <Text size="sm" fw={500} mb="xs">
+                الحاسوب (Desktop)
+              </Text>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <NumberInput
+                label="المسافة من الأسفل (px)"
+                value={desktopBottom}
+                onChange={setDesktopBottom}
+                min={0}
+                max={200}
+                description="المسافة من أسفل الشاشة"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <NumberInput
+                label="المسافة من اليسار (px)"
+                value={desktopLeft}
+                onChange={setDesktopLeft}
+                min={0}
+                max={500}
+                description="المسافة من الجانب الأيسر"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <NumberInput
+                label="المسافة من اليمين (px)"
+                value={desktopRight}
+                onChange={setDesktopRight}
+                min={0}
+                max={500}
+                description="المسافة من الجانب الأيمن"
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12 }}>
+              <Text size="sm" fw={500} mt="md" mb="xs">
+                الجوال (Mobile)
+              </Text>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <NumberInput
+                label="المسافة من الأسفل (px)"
+                value={mobileBottom}
+                onChange={setMobileBottom}
+                min={0}
+                max={200}
+                description="المسافة من أسفل الشاشة"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <NumberInput
+                label="المسافة من اليسار (px)"
+                value={mobileLeft}
+                onChange={setMobileLeft}
+                min={0}
+                max={200}
+                description="المسافة من الجانب الأيسر"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 4 }}>
+              <NumberInput
+                label="المسافة من اليمين (px)"
+                value={mobileRight}
+                onChange={setMobileRight}
+                min={0}
+                max={200}
+                description="المسافة من الجانب الأيمن"
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <NumberInput
+                label="استدارة الحواف (px)"
+                value={borderRadius}
+                onChange={setBorderRadius}
+                min={0}
+                max={50}
+                description="مقدار استدارة زوايا الزر"
+              />
+            </Grid.Col>
           </Grid>
 
           <Group justify="flex-end" mt="md">
