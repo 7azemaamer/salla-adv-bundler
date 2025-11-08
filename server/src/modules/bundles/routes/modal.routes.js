@@ -1575,6 +1575,7 @@ router.get("/modal.js", (req, res) => {
               \${freeGifts.map(offer => this.renderMobileFreeGiftCard(offer)).join('')}
             </div>
           </div>
+          \${this.renderReviews('free_gifts')}
           \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'free_gifts') : ''}
         </div>
       \`;
@@ -1654,6 +1655,7 @@ router.get("/modal.js", (req, res) => {
               \${discountedProducts.map(offer => this.renderMobileDiscountedCard(offer)).join('')}
             </div>
           </div>
+          \${this.renderReviews('discounted')}
           \${!isLastStep ? this.renderFreeShippingBanner(this.calculateCurrentTotal(), 'discounted') : ''}
         </div>
       \`;
@@ -3042,7 +3044,10 @@ router.get("/modal.js", (req, res) => {
                   }
                 }
 
-                return \`<option value="\${value.id}" \${isValueOutOfStock ? 'disabled' : ''}>\${value.name}\${isValueOutOfStock ? ' (نفد)' : ''}</option>\`;
+                // Hide out of stock options completely
+                if (isValueOutOfStock) return '';
+
+                return \`<option value="\${value.id}">\${value.name}</option>\`;
               }).join('') : ''}
             </select>
           </div>
@@ -3484,6 +3489,8 @@ router.get("/modal.js", (req, res) => {
       } else if (featureName === 'free_shipping' && settings.free_shipping) {
         showInStep = settings.free_shipping.show_in_step || 'review';
       }
+      
+      console.log(\`[shouldShowInStep] Feature: \${featureName}, Current Step: \${currentStepType}, Show in Step: \${showInStep}, Should Show: \${showInStep === currentStepType || showInStep === 'all'}\`);
       
       if (showInStep === 'all') return true;
       

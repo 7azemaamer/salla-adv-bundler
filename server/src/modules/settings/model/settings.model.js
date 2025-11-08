@@ -72,11 +72,17 @@ const settingsSchema = new mongoose.Schema(
         enum: ["auto", "full", "custom"],
         default: "auto",
       },
-      custom_width: {
+      // Desktop width (used when width_type is "custom")
+      desktop_width: {
         type: Number,
         default: 250,
         min: 100,
-        max: 600,
+      },
+      // Mobile width
+      mobile_width: {
+        type: Number,
+        default: 250,
+        min: 100,
       },
       // Desktop positioning
       desktop_bottom: {

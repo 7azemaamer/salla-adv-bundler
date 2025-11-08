@@ -397,8 +397,7 @@ class SnippetController {
         sticky_button_bg_color: '#10b981',
         sticky_button_text_color: '#ffffff',
         sticky_button_position: 'bottom-center',
-        sticky_button_width_type: 'auto',
-        sticky_button_custom_width: 250
+        sticky_button_width_type: 'auto'
       };
       this.bundleData = {
         cta_button_text: 'اختر الباقة',
@@ -1131,6 +1130,11 @@ class SnippetController {
         ? (stickyButton.mobile_right ?? 20) 
         : (stickyButton.desktop_right ?? 20);
       
+      // Get width values based on device
+      const buttonWidth = isMobile
+        ? (stickyButton.mobile_width ?? 250)
+        : (stickyButton.desktop_width ?? 250);
+      
       // Get border radius
       const borderRadius = stickyButton.border_radius ?? 12;
 
@@ -1160,9 +1164,8 @@ class SnippetController {
         transformValue = '';
         transformCss = '';
       } else if (widthType === 'custom') {
-        const customWidth = stickyButton.custom_width || 250;
         const maxPadding = Math.max(leftValue, rightValue) * 2;
-        widthStyle = \`width: \${customWidth}px; max-width: min(\${customWidth}px, calc(100vw - \${maxPadding}px));\`;
+        widthStyle = \`width: \${buttonWidth}px; max-width: min(\${buttonWidth}px, calc(100vw - \${maxPadding}px));\`;
       } else {
         const maxPadding = Math.max(leftValue, rightValue) * 2;
         widthStyle = \`width: auto; max-width: calc(100vw - \${maxPadding}px);\`;
@@ -1250,6 +1253,11 @@ class SnippetController {
         const newRightValue = isMobile 
           ? (stickyButton.mobile_right ?? 20) 
           : (stickyButton.desktop_right ?? 20);
+        
+        // Get new width based on device
+        const newButtonWidth = isMobile
+          ? (stickyButton.mobile_width ?? 250)
+          : (stickyButton.desktop_width ?? 250);
 
         // Update button position
         button.style.bottom = \`\${newBottomValue}px\`;
@@ -1265,12 +1273,19 @@ class SnippetController {
           button.style.left = 'auto';
         }
 
-        // Update width for full width mode
+        // Update width based on width type
         if (widthType === 'full') {
           const totalHorizontalPadding = newLeftValue + newRightValue;
           button.style.width = \`calc(100% - \${totalHorizontalPadding}px)\`;
           button.style.left = \`\${newLeftValue}px\`;
           button.style.right = \`\${newRightValue}px\`;
+        } else if (widthType === 'custom') {
+          const maxPadding = Math.max(newLeftValue, newRightValue) * 2;
+          button.style.width = \`\${newButtonWidth}px\`;
+          button.style.maxWidth = \`min(\${newButtonWidth}px, calc(100vw - \${maxPadding}px))\`;
+        } else {
+          const maxPadding = Math.max(newLeftValue, newRightValue) * 2;
+          button.style.maxWidth = \`calc(100vw - \${maxPadding}px)\`;
         }
       };
 

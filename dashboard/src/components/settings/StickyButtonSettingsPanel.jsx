@@ -43,9 +43,6 @@ export default function StickyButtonSettingsPanel({
   const [buttonWidthType, setButtonWidthType] = useState(
     stickyButton.width_type || "auto"
   );
-  const [buttonCustomWidth, setButtonCustomWidth] = useState(
-    stickyButton.custom_width || 250
-  );
   const [desktopBottom, setDesktopBottom] = useState(
     stickyButton.desktop_bottom ?? 20
   );
@@ -65,6 +62,12 @@ export default function StickyButtonSettingsPanel({
   const [borderRadius, setBorderRadius] = useState(
     stickyButton.border_radius ?? 12
   );
+  const [desktopWidth, setDesktopWidth] = useState(
+    stickyButton.desktop_width ?? 250
+  );
+  const [mobileWidth, setMobileWidth] = useState(
+    stickyButton.mobile_width ?? 250
+  );
 
   // Sync local state with fetched settings
   useEffect(() => {
@@ -75,7 +78,6 @@ export default function StickyButtonSettingsPanel({
       setButtonTextColor(sb.text_color || "#ffffff");
       setButtonPosition(sb.position || "bottom-center");
       setButtonWidthType(sb.width_type || "auto");
-      setButtonCustomWidth(sb.custom_width || 250);
       setDesktopBottom(sb.desktop_bottom ?? 20);
       setDesktopLeft(sb.desktop_left ?? 20);
       setDesktopRight(sb.desktop_right ?? 20);
@@ -83,6 +85,8 @@ export default function StickyButtonSettingsPanel({
       setMobileLeft(sb.mobile_left ?? 20);
       setMobileRight(sb.mobile_right ?? 20);
       setBorderRadius(sb.border_radius ?? 12);
+      setDesktopWidth(sb.desktop_width ?? 250);
+      setMobileWidth(sb.mobile_width ?? 250);
     }
   }, [settings.sticky_button]);
 
@@ -106,7 +110,6 @@ export default function StickyButtonSettingsPanel({
           text_color: buttonTextColor,
           position: buttonPosition,
           width_type: buttonWidthType,
-          custom_width: buttonCustomWidth,
           desktop_bottom: desktopBottom,
           desktop_left: desktopLeft,
           desktop_right: desktopRight,
@@ -114,6 +117,8 @@ export default function StickyButtonSettingsPanel({
           mobile_left: mobileLeft,
           mobile_right: mobileRight,
           border_radius: borderRadius,
+          desktop_width: desktopWidth,
+          mobile_width: mobileWidth,
         },
       });
 
@@ -238,19 +243,6 @@ export default function StickyButtonSettingsPanel({
                 }}
               />
             </Grid.Col>
-
-            {buttonWidthType === "custom" && (
-              <Grid.Col span={{ base: 12, md: 6 }}>
-                <NumberInput
-                  label="العرض المخصص (بكسل)"
-                  value={buttonCustomWidth}
-                  onChange={setButtonCustomWidth}
-                  min={150}
-                  max={600}
-                  description="عرض الزر بالبكسل"
-                />
-              </Grid.Col>
-            )}
           </Grid>
 
           <Divider label="التموضع والشكل" labelPosition="center" mt="lg" />
@@ -338,6 +330,36 @@ export default function StickyButtonSettingsPanel({
                 description="مقدار استدارة زوايا الزر"
               />
             </Grid.Col>
+
+            {buttonWidthType === "custom" && (
+              <>
+                <Grid.Col span={{ base: 12 }}>
+                  <Text size="sm" fw={500} mt="md" mb="xs">
+                    العرض (Width)
+                  </Text>
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, md: 6 }}>
+                  <NumberInput
+                    label="عرض الزر - حاسوب (px)"
+                    value={desktopWidth}
+                    onChange={setDesktopWidth}
+                    min={100}
+                    max={800}
+                    description="عرض الزر على شاشات الحاسوب"
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, md: 6 }}>
+                  <NumberInput
+                    label="عرض الزر - جوال (px)"
+                    value={mobileWidth}
+                    onChange={setMobileWidth}
+                    min={100}
+                    max={500}
+                    description="عرض الزر على شاشات الجوال"
+                  />
+                </Grid.Col>
+              </>
+            )}
           </Grid>
 
           <Group justify="flex-end" mt="md">
