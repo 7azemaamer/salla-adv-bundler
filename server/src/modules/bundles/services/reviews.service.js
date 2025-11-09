@@ -104,13 +104,10 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       is_published,
       per_page,
       page,
-      sort: "created_at", // Sort by creation date
-      order: "desc", // Latest first
     };
 
-    // Add product_id filter if provided
     if (product_id) {
-      params.products = product_id;
+      params.products = [product_id]; // Array of product IDs
     }
 
     console.log("[fetchStoreReviews]: Request params:", params);
