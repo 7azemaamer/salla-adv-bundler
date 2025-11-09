@@ -209,6 +209,39 @@ const BundleConfigSchema = new mongoose.Schema(
       trim: true,
       default: "#ffffff",
     },
+    // Review Selection
+    selected_review_ids: {
+      type: [Number],
+      default: [],
+    },
+    review_limit: {
+      type: Number,
+      default: 20,
+      min: 1,
+      max: 100,
+    },
+    review_fetch_limit: {
+      type: Number,
+      default: 20,
+      min: 1,
+      max: 100,
+    },
+    manual_reviews: {
+      type: [
+        {
+          id: Number,
+          customerName: String,
+          customerAvatar: String,
+          customerCity: String,
+          rating: { type: Number, min: 1, max: 5, default: 5 },
+          content: String,
+          timeAgo: String,
+          createdAt: { type: Date, default: Date.now },
+          isManual: { type: Boolean, default: true },
+        },
+      ],
+      default: [],
+    },
     config_hash: {
       type: String,
       required: true,

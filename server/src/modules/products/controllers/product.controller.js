@@ -159,6 +159,7 @@ export const searchProducts = asyncWrapper(async (req, res) => {
 export const getProductReviews = asyncWrapper(async (req, res) => {
   const { store_id } = req.user;
   const { product_id } = req.params;
+  const { limit } = req.query;
 
   try {
     const accessToken = await getValidAccessToken(store_id);
@@ -170,7 +171,13 @@ export const getProductReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    const result = await getCachedReviews(store_id, product_id, accessToken);
+    const fetchLimit = limit ? parseInt(limit) : 20;
+    const result = await getCachedReviews(
+      store_id,
+      product_id,
+      accessToken,
+      fetchLimit
+    );
 
     if (result.success) {
       return res.status(200).json({

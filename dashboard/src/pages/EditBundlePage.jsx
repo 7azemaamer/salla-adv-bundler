@@ -27,6 +27,7 @@ import {
   Modal,
   Loader,
   Avatar,
+  Checkbox,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import {
@@ -81,6 +82,14 @@ export default function EditBundlePage() {
     content: "",
   });
   const [savingReview, setSavingReview] = useState(false);
+  const [showAddManualReview, setShowAddManualReview] = useState(false);
+  const [newManualReview, setNewManualReview] = useState({
+    customerName: "",
+    customerAvatar: "",
+    rating: 5,
+    content: "",
+    timeAgo: "قبل يومين",
+  });
 
   const form = useForm({
     initialValues: {
@@ -98,6 +107,10 @@ export default function EditBundlePage() {
       checkout_button_text: "إتمام الطلب — {total_price}",
       checkout_button_bg_color: "#0066ff",
       checkout_button_text_color: "#ffffff",
+      selected_review_ids: [],
+      review_limit: 20,
+      review_fetch_limit: 20,
+      manual_reviews: [],
       bundles: [
         {
           tier: 1,
@@ -247,6 +260,10 @@ export default function EditBundlePage() {
           currentBundle.checkout_button_bg_color || "#0066ff",
         checkout_button_text_color:
           currentBundle.checkout_button_text_color || "#ffffff",
+        selected_review_ids: currentBundle.selected_review_ids || [],
+        review_limit: currentBundle.review_limit || 20,
+        review_fetch_limit: currentBundle.review_fetch_limit || 20,
+        manual_reviews: currentBundle.manual_reviews || [],
         bundles: formattedBundles,
       };
 
@@ -495,10 +512,22 @@ export default function EditBundlePage() {
         .toString()
         .replace(/^p/, "");
 
-      const response = await axios.get(`/products/${productId}/reviews`);
+      const fetchLimit = form.values.review_fetch_limit || 20;
+      const response = await axios.get(
+        `/products/${productId}/reviews?limit=${fetchLimit}`
+      );
 
       if (response.data.success) {
-        setProductReviews(response.data.data || []);
+        const fetchedReviews = response.data.data || [];
+        const manualReviews = form.values.manual_reviews || [];
+
+        // Merge manual reviews (with isManual flag) with fetched reviews
+        const allReviews = [
+          ...manualReviews.map((r) => ({ ...r, isManual: true })),
+          ...fetchedReviews,
+        ];
+
+        setProductReviews(allReviews);
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -1571,19 +1600,215 @@ export default function EditBundlePage() {
                       تقييمات المنتج ({productReviews.length})
                     </Title>
                   </Group>
-                  <Button
-                    size="xs"
-                    variant="light"
-                    onClick={fetchProductReviews}
-                    loading={loadingReviews}
-                    leftSection={<IconRefresh size="0.9rem" />}
-                  >
-                    تحديث
-                  </Button>
+                  <Group gap="sm">
+                    <Button
+                      size="xs"
+                      variant={
+                        form.values.selected_review_ids.length === 0
+                          ? "filled"
+                          : "light"
+                      }
+                      onClick={() => {
+                        form.setFieldValue("selected_review_ids", []);
+                      }}
+                    >
+                      عرض الكل
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant={
+                        form.values.selected_review_ids.length > 0
+                          ? "filled"
+                          : "light"
+                      }
+                      onClick={() => {
+                        const allIds = productReviews.map((r) => r.id);
+                        form.setFieldValue("selected_review_ids", allIds);
+                      }}
+                    >
+                      تحديد الكل
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      onClick={fetchProductReviews}
+                      loading={loadingReviews}
+                      leftSection={<IconRefresh size="0.9rem" />}
+                    >
+                      تحديث
+                    </Button>
+                  </Group>
                 </Group>
 
+                <Group mb="md" gap="md" align="flex-start">
+                  <NumberInput
+                    label="حد الجلب"
+                    description="عدد التقييمات المجلوبة من سلة"
+                    value={form.values.review_fetch_limit}
+                    onChange={(value) =>
+                      form.setFieldValue("review_fetch_limit", value)
+                    }
+                    min={1}
+                    max={100}
+                    style={{ width: 200 }}
+                    leftSection={<IconRefresh size="1rem" />}
+                  />
+                  <NumberInput
+                    label="حد العرض"
+                    description="عدد التقييمات المعروضة في المودال"
+                    value={form.values.review_limit}
+                    onChange={(value) =>
+                      form.setFieldValue("review_limit", value)
+                    }
+                    min={1}
+                    max={100}
+                    style={{ width: 200 }}
+                    leftSection={<IconStar size="1rem" />}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <Text size="sm" fw={600} mb={4}>
+                      الملخص
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {form.values.manual_reviews.length} يدوي •{" "}
+                      {productReviews.filter((r) => !r.isManual).length} من سلة
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {form.values.selected_review_ids.length === 0
+                        ? `سيتم عرض آخر ${form.values.review_limit} تقييم`
+                        : `${Math.min(
+                            form.values.selected_review_ids.length,
+                            form.values.review_limit
+                          )} تقييم محدد`}
+                    </Text>
+                  </div>
+                </Group>
+
+                <Button
+                  leftSection={<IconPlus size="1rem" />}
+                  variant="light"
+                  size="sm"
+                  mb="md"
+                  onClick={() => setShowAddManualReview(!showAddManualReview)}
+                >
+                  {showAddManualReview ? "إلغاء" : "إضافة تقييم يدوي"}
+                </Button>
+
+                {showAddManualReview && (
+                  <Paper p="md" withBorder mb="md" bg="blue.0">
+                    <Stack gap="sm">
+                      <Text size="sm" fw={600}>
+                        تقييم يدوي جديد (محفوظ منفصل)
+                      </Text>
+                      <TextInput
+                        label="اسم العميل"
+                        value={newManualReview.customerName}
+                        onChange={(e) =>
+                          setNewManualReview({
+                            ...newManualReview,
+                            customerName: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                      <Group grow>
+                        <TextInput
+                          label="التاريخ النسبي"
+                          value={newManualReview.timeAgo}
+                          onChange={(e) =>
+                            setNewManualReview({
+                              ...newManualReview,
+                              timeAgo: e.target.value,
+                            })
+                          }
+                          placeholder="قبل يومين"
+                        />
+                        <div>
+                          <Text size="sm" mb={4}>
+                            التقييم
+                          </Text>
+                          <Rating
+                            value={newManualReview.rating}
+                            onChange={(value) =>
+                              setNewManualReview({
+                                ...newManualReview,
+                                rating: value,
+                              })
+                            }
+                          />
+                        </div>
+                      </Group>
+                      <Textarea
+                        label="المحتوى"
+                        value={newManualReview.content}
+                        onChange={(e) =>
+                          setNewManualReview({
+                            ...newManualReview,
+                            content: e.target.value,
+                          })
+                        }
+                        minRows={3}
+                        required
+                      />
+                      <Button
+                        onClick={() => {
+                          if (
+                            !newManualReview.customerName ||
+                            !newManualReview.content
+                          ) {
+                            notifications.show({
+                              title: "خطأ",
+                              message: "الرجاء ملء جميع الحقول",
+                              color: "red",
+                            });
+                            return;
+                          }
+
+                          const manualReview = {
+                            id: Date.now(), // Unique ID
+                            ...newManualReview,
+                            customerAvatar:
+                              newManualReview.customerAvatar ||
+                              "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png",
+                            createdAt: new Date().toISOString(),
+                            isManual: true,
+                          };
+
+                          form.setFieldValue("manual_reviews", [
+                            ...form.values.manual_reviews,
+                            manualReview,
+                          ]);
+
+                          setProductReviews([manualReview, ...productReviews]);
+
+                          setNewManualReview({
+                            customerName: "",
+                            customerAvatar: "",
+                            rating: 5,
+                            content: "",
+                            timeAgo: "قبل يومين",
+                          });
+
+                          setShowAddManualReview(false);
+
+                          notifications.show({
+                            title: "تم الإضافة",
+                            message: "تم إضافة التقييم اليدوي بنجاح",
+                            color: "green",
+                          });
+                        }}
+                        fullWidth
+                      >
+                        إضافة التقييم
+                      </Button>
+                    </Stack>
+                  </Paper>
+                )}
+
                 <Text size="sm" c="dimmed" mb="md">
-                  التقييمات المخزنة للمنتج المستهدف - يمكنك عرضها وتحريرها
+                  {form.values.selected_review_ids.length === 0
+                    ? "يتم عرض جميع التقييمات (مرتبة حسب الأحدث)"
+                    : "اضغط على التقييمات لتحديدها/إلغاء تحديدها"}
                 </Text>
 
                 <Grid>
@@ -1597,9 +1822,17 @@ export default function EditBundlePage() {
                         padding="md"
                         style={{
                           background:
-                            "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
-                          transition: "transform 0.2s, box-shadow 0.2s",
+                            form.values.selected_review_ids.length > 0 &&
+                            form.values.selected_review_ids.includes(review.id)
+                              ? "linear-gradient(135deg, #e7f5ff 0%, #d0ebff 100%)"
+                              : "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+                          transition: "all 0.2s",
                           cursor: "pointer",
+                          border:
+                            form.values.selected_review_ids.length > 0 &&
+                            form.values.selected_review_ids.includes(review.id)
+                              ? "2px solid #228be6"
+                              : undefined,
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = "translateY(-2px)";
@@ -1610,11 +1843,44 @@ export default function EditBundlePage() {
                           e.currentTarget.style.transform = "";
                           e.currentTarget.style.boxShadow = "";
                         }}
-                        onClick={() => setEditingReview(review)}
+                        onClick={() => {
+                          const currentIds = form.values.selected_review_ids;
+                          if (currentIds.length === 0) {
+                            // If in "show all" mode, switch to selection mode
+                            form.setFieldValue("selected_review_ids", [
+                              review.id,
+                            ]);
+                          } else if (currentIds.includes(review.id)) {
+                            // Remove from selection
+                            form.setFieldValue(
+                              "selected_review_ids",
+                              currentIds.filter((id) => id !== review.id)
+                            );
+                          } else {
+                            // Add to selection
+                            form.setFieldValue("selected_review_ids", [
+                              ...currentIds,
+                              review.id,
+                            ]);
+                          }
+                        }}
                       >
                         <Stack gap="xs">
                           <Group justify="space-between" wrap="nowrap">
                             <Group gap="xs">
+                              {form.values.selected_review_ids.length > 0 && (
+                                <Checkbox
+                                  checked={form.values.selected_review_ids.includes(
+                                    review.id
+                                  )}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                />
+                              )}
                               {review.customerAvatar ? (
                                 <Avatar
                                   src={review.customerAvatar}
@@ -1637,17 +1903,55 @@ export default function EditBundlePage() {
                                 />
                               </div>
                             </Group>
-                            <ActionIcon
-                              size="sm"
-                              variant="light"
-                              color="blue"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingReview(review);
-                              }}
-                            >
-                              <IconEdit size="0.9rem" />
-                            </ActionIcon>
+                            <Group gap="xs">
+                              {review.isManual && (
+                                <Badge size="xs" color="blue" variant="light">
+                                  يدوي
+                                </Badge>
+                              )}
+                              {review.isManual ? (
+                                <ActionIcon
+                                  size="sm"
+                                  variant="light"
+                                  color="red"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const updatedManual =
+                                      form.values.manual_reviews.filter(
+                                        (r) => r.id !== review.id
+                                      );
+                                    form.setFieldValue(
+                                      "manual_reviews",
+                                      updatedManual
+                                    );
+                                    setProductReviews(
+                                      productReviews.filter(
+                                        (r) => r.id !== review.id
+                                      )
+                                    );
+                                    notifications.show({
+                                      title: "تم الحذف",
+                                      message: "تم حذف التقييم اليدوي",
+                                      color: "orange",
+                                    });
+                                  }}
+                                >
+                                  <IconTrash size="0.9rem" />
+                                </ActionIcon>
+                              ) : (
+                                <ActionIcon
+                                  size="sm"
+                                  variant="light"
+                                  color="blue"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingReview(review);
+                                  }}
+                                >
+                                  <IconEdit size="0.9rem" />
+                                </ActionIcon>
+                              )}
+                            </Group>
                           </Group>
 
                           <Text

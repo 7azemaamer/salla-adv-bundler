@@ -587,6 +587,29 @@ router.get("/modal.js", (req, res) => {
           await this.fetchReviews();
         }
 
+        // Merge manual reviews with fetched reviews
+        const manualReviews = bundleConfig.manual_reviews || [];
+        if (manualReviews.length > 0) {
+          // Add manual reviews at the beginning
+          this.reviews = [...manualReviews, ...(this.reviews || [])];
+        }
+
+        // Apply review selection and limit
+        if (Array.isArray(this.reviews) && this.reviews.length > 0) {
+          const selectedIds = bundleConfig.selected_review_ids || [];
+          const reviewLimit = bundleConfig.review_limit || 20;
+          
+          if (selectedIds.length > 0) {
+            // Filter to show only selected reviews
+            this.reviews = this.reviews.filter(review => selectedIds.includes(review.id));
+            // Apply limit to selected reviews (if selected 9 but limit is 5, show first 5)
+            this.reviews = this.reviews.slice(0, reviewLimit);
+          } else {
+            // No selection - show all reviews up to limit
+            this.reviews = this.reviews.slice(0, reviewLimit);
+          }
+        }
+
         if (bundleConfig.settings && bundleConfig.settings.timer) {
           this.timerSettings = {
             enabled: bundleConfig.settings.timer.enabled,
@@ -3953,6 +3976,9 @@ router.get("/modal.js", (req, res) => {
 
     renderReviews(currentStepType = 'bundles') {
        if (!this.reviews || this.reviews.length === 0) return '';
+       // Check if review count feature is enabled
+       const reviewSettings = this.bundleConfig?.settings?.review_count;
+       if (reviewSettings && reviewSettings.enabled === false) return '';
        if (!this.shouldShowInStep('reviews', currentStepType)) return '';
        
        const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);

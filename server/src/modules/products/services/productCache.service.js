@@ -35,7 +35,12 @@ const calculateTimeAgo = (dateString) => {
  * Get cached reviews for a product
  * If cache expired or doesn't exist, fetch from Salla API and cache it
  */
-export const getCachedReviews = async (store_id, product_id, accessToken) => {
+export const getCachedReviews = async (
+  store_id,
+  product_id,
+  accessToken,
+  fetchLimit = 20
+) => {
   try {
     const cachedData = await ProductCache.findOne({ store_id, product_id });
 
@@ -54,7 +59,7 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
     const reviewsResult = await fetchStoreReviews(accessToken, {
       type: "rating",
       is_published: true,
-      per_page: 20,
+      per_page: Math.min(fetchLimit, 100), // Ensure max 100
       product_id: product_id,
     });
 
