@@ -84,7 +84,7 @@ const DUMMY_REVIEWS = [
 ];
 
 /**
- * Fetch reviews from Salla API
+ * Fetch reviews from Salla API with multi-page support
  * @param {string} accessToken - Salla merchant access token
  * @param {object} options - Query options
  * @returns {Promise<object>} Reviews data
@@ -92,9 +92,150 @@ const DUMMY_REVIEWS = [
 export const fetchStoreReviews = async (accessToken, options = {}) => {
   try {
     const {
-      type = "rating", // rating, ask, shipping, testimonial
+      type = "rating",
       is_published = true,
-      per_page = 10,
+      product_id = null,
+      limit = 15, // Total reviews to fetch (will fetch multiple pages if needed)
+    } = options;
+
+    // Calculate date range (last 1 year)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() - 1);
+
+    const params = {
+      type,
+      is_published,
+      start_date: startDate.toISOString().split("T")[0], // YYYY-MM-DD
+      end_date: endDate.toISOString().split("T")[0],
+      page: 1,
+    };
+
+    if (product_id) {
+      params.products = [product_id];
+    }
+
+    // Salla API returns 15 reviews per page (fixed)
+    const reviewsPerPage = 15;
+    const pagesToFetch = Math.ceil(limit / reviewsPerPage);
+
+    let allReviews = [];
+    let currentPage = 1;
+
+    console.log(
+      `[fetchStoreReviews]: Fetching ${limit} reviews (${pagesToFetch} pages max)`
+    );
+
+    // Fetch multiple pages if needed
+    while (allReviews.length < limit && currentPage <= pagesToFetch) {
+      params.page = currentPage;
+
+      console.log(
+        `[fetchStoreReviews]: Fetching page ${currentPage}...`,
+        params
+      );
+
+      const response = await axios.get(
+        "https://api.salla.dev/admin/v2/reviews",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+          },
+          params,
+        }
+      );
+
+      const pageReviews = response.data?.data || [];
+      const pagination = response.data?.pagination;
+
+      console.log(
+        `[fetchStoreReviews]: Page ${currentPage} returned ${pageReviews.length} reviews`
+      );
+
+      if (pageReviews.length === 0) {
+        console.log(`[fetchStoreReviews]: No more reviews available`);
+        break;
+      }
+
+      allReviews = allReviews.concat(pageReviews);
+
+      // Check if we've reached the last page
+      if (
+        !pagination?.links?.next ||
+        currentPage >= (pagination?.totalPages || 1)
+      ) {
+        console.log(`[fetchStoreReviews]: Reached last available page`);
+        break;
+      }
+
+      currentPage++;
+    }
+
+    // Trim to exact limit requested
+    const finalReviews = allReviews.slice(0, limit);
+
+    console.log(
+      `[fetchStoreReviews]: Total fetched: ${finalReviews.length} reviews`
+    );
+
+    if (finalReviews.length === 0) {
+      return {
+        success: true,
+        data: DUMMY_REVIEWS,
+        pagination: {
+          count: DUMMY_REVIEWS.length,
+          total: DUMMY_REVIEWS.length,
+          perPage: 15,
+          currentPage: 1,
+          totalPages: 1,
+          links: {},
+        },
+        isDummy: true,
+      };
+    }
+
+    return {
+      success: true,
+      data: finalReviews,
+      pagination: {
+        count: finalReviews.length,
+        total: finalReviews.length,
+        perPage: 15,
+        currentPage: 1,
+        totalPages: 1,
+      },
+      isDummy: false,
+    };
+  } catch (error) {
+    console.error("[fetchStoreReviews]: Error:", error.message);
+    return {
+      success: true,
+      data: DUMMY_REVIEWS,
+      pagination: {
+        count: DUMMY_REVIEWS.length,
+        total: DUMMY_REVIEWS.length,
+        perPage: 15,
+        currentPage: 1,
+        totalPages: 1,
+        links: {},
+      },
+      isDummy: true,
+    };
+  }
+};
+
+/**
+ * Legacy single-page fetch (kept for backward compatibility)
+ */
+export const fetchStoreReviewsSinglePage = async (
+  accessToken,
+  options = {}
+) => {
+  try {
+    const {
+      type = "rating",
+      is_published = true,
       page = 1,
       product_id = null,
     } = options;
@@ -102,15 +243,12 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
     const params = {
       type,
       is_published,
-      per_page,
       page,
     };
 
     if (product_id) {
-      params.products = [product_id]; // Array of product IDs
+      params.products = [product_id];
     }
-
-    console.log("[fetchStoreReviews]: Request params:", params);
 
     const response = await axios.get("https://api.salla.dev/admin/v2/reviews", {
       headers: {
@@ -120,15 +258,7 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       params,
     });
 
-    console.log(
-      "[fetchStoreReviews]: Response data count:",
-      response.data?.data?.length || 0
-    );
-    console.log("[fetchStoreReviews]: Pagination:", response.data?.pagination);
-
     if (response.data && response.data.data) {
-      // Return all reviews without filtering by rating
-      // This ensures we get the full count requested in per_page
       const reviews = response.data.data;
 
       if (reviews.length === 0) {
@@ -138,7 +268,7 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
           pagination: {
             count: DUMMY_REVIEWS.length,
             total: DUMMY_REVIEWS.length,
-            perPage: 20,
+            perPage: 15,
             currentPage: 1,
             totalPages: 1,
             links: {},
@@ -162,7 +292,7 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       pagination: {
         count: DUMMY_REVIEWS.length,
         total: DUMMY_REVIEWS.length,
-        perPage: 20,
+        perPage: 15,
         currentPage: 1,
         totalPages: 1,
         links: {},
@@ -175,14 +305,13 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       error.response?.data || error.message
     );
 
-    // Return dummy reviews on error
     return {
       success: true,
       data: DUMMY_REVIEWS,
       pagination: {
         count: DUMMY_REVIEWS.length,
         total: DUMMY_REVIEWS.length,
-        perPage: 20,
+        perPage: 15,
         currentPage: 1,
         totalPages: 1,
         links: {},

@@ -59,7 +59,7 @@ export const getCachedReviews = async (
     const reviewsResult = await fetchStoreReviews(accessToken, {
       type: "rating",
       is_published: true,
-      per_page: Math.min(fetchLimit, 100), // Ensure max 100
+      limit: fetchLimit, // Will fetch multiple pages if needed
       product_id: product_id,
     });
 
@@ -201,20 +201,19 @@ export const forceFetchReviews = async (
       `[ForceFetch]: Requesting ${fetchLimit} reviews for product ${product_id}`
     );
 
-    // Fetch directly from Salla API
+    // Fetch directly from Salla API (multi-page fetch with date filter)
     const reviewsResult = await fetchStoreReviews(accessToken, {
       type: "rating",
       is_published: true,
-      per_page: Math.min(fetchLimit, 100),
+      limit: fetchLimit, // Will fetch multiple pages if needed
       product_id: product_id,
     });
 
     console.log(
-      `[ForceFetch]: Salla API returned ${
+      `[ForceFetch]: Fetched ${
         reviewsResult.data?.length || 0
-      } reviews`
+      } reviews (requested: ${fetchLimit})`
     );
-    console.log(`[ForceFetch]: Pagination:`, reviewsResult.pagination);
 
     const formattedReviews = reviewsResult.data.map((review) => ({
       id: review.id || null,
