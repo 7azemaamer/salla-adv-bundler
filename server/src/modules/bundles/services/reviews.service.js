@@ -122,11 +122,11 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
     });
 
     if (response.data && response.data.data) {
-      const highRatedReviews = response.data.data.filter((review) => {
-        return review.rating >= 4;
-      });
+      // Return all reviews without filtering by rating
+      // This ensures we get the full count requested in per_page
+      const reviews = response.data.data;
 
-      if (highRatedReviews.length === 0) {
+      if (reviews.length === 0) {
         return {
           success: true,
           data: DUMMY_REVIEWS,
@@ -144,7 +144,7 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
 
       return {
         success: true,
-        data: highRatedReviews,
+        data: reviews,
         pagination: response.data.pagination || null,
         isDummy: false,
       };
