@@ -4,6 +4,7 @@ import BundleConfig from "../model/bundleConfig.model.js";
 import {
   invalidateProductCache,
   getCachedReviews,
+  forceFetchReviews,
 } from "../../products/services/productCache.service.js";
 import { getValidAccessToken } from "../../../utils/tokenHelper.js";
 
@@ -275,9 +276,8 @@ export const refetchProductReviews = asyncWrapper(async (req, res) => {
     const productId = bundle.target_product_id.toString().replace(/^p/, "");
     const fetchLimit = bundle.review_fetch_limit || 20;
 
-    await invalidateProductCache(store_id, productId);
-
-    const result = await getCachedReviews(
+    // Force fetch from Salla API (bypasses cache)
+    const result = await forceFetchReviews(
       store_id,
       productId,
       accessToken,
@@ -285,17 +285,16 @@ export const refetchProductReviews = asyncWrapper(async (req, res) => {
     );
 
     if (result.success) {
-      // Manual reviews are preserved in bundle.manual_reviews, not in cache
-      // The cache only stores Salla API reviews
       return res.status(200).json({
         success: true,
-        message: `تم تحديث ${result.data.length} تقييم بنجاح (التقييمات اليدوية محفوظة)`,
+        message: `تم جلب ${result.data.length} تقييم من API سلة بنجاح (التقييمات اليدوية محفوظة)`,
         data: {
           reviews_count: result.data.length,
           manual_reviews_count: bundle.manual_reviews?.length || 0,
           product_id: bundle.target_product_id,
           product_name: bundle.target_product_name,
           last_fetched: result.lastFetched,
+          source: result.source || "salla_api",
         },
       });
     } else {

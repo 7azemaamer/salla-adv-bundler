@@ -2259,12 +2259,12 @@ export default function EditBundlePage() {
                   <Button
                     type="button"
                     variant="light"
-                    color="blue"
+                    color="orange"
                     onClick={handleRefetchReviews}
                     loading={isRefetchingReviews}
-                    leftSection={<IconStar size="1rem" />}
+                    leftSection={<IconRefresh size="1rem" />}
                   >
-                    تحديث تقييمات المنتج
+                    إعادة جلب من API سلة
                   </Button>
                   <Button
                     type="submit"

@@ -186,6 +186,86 @@ export const updateCachedReview = async (
   }
 };
 
+/**
+ * Force fetch reviews from Salla API (bypasses cache completely)
+ * Used for manual refetch operations
+ */
+export const forceFetchReviews = async (
+  store_id,
+  product_id,
+  accessToken,
+  fetchLimit = 20
+) => {
+  try {
+    // Fetch directly from Salla API
+    const reviewsResult = await fetchStoreReviews(accessToken, {
+      type: "rating",
+      is_published: true,
+      per_page: Math.min(fetchLimit, 100),
+      product_id: product_id,
+    });
+
+    const formattedReviews = reviewsResult.data.map((review) => ({
+      id: review.id || null,
+      rating: review.rating || 5,
+      content: review.comment || review.content || "",
+      customerName: review.author?.name || review.customer?.name || "عميل",
+      customerAvatar: review.author?.avatar || review.customer?.avatar || null,
+      customerCity: review.customer?.city || null,
+      createdAt: review.created_at || new Date().toISOString(),
+      timeAgo: calculateTimeAgo(review.created_at),
+    }));
+
+    // Update cache with fresh data
+    const cachedData = await ProductCache.findOne({ store_id, product_id });
+    const cacheData = {
+      store_id,
+      product_id,
+      cached_reviews: formattedReviews,
+      last_fetched: new Date(),
+      cache_expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      fetch_count: cachedData ? cachedData.fetch_count + 1 : 1,
+    };
+
+    await ProductCache.findOneAndUpdate({ store_id, product_id }, cacheData, {
+      upsert: true,
+      new: true,
+    });
+
+    return {
+      success: true,
+      data: formattedReviews,
+      fromCache: false,
+      lastFetched: new Date(),
+      source: "salla_api",
+    };
+  } catch (error) {
+    console.error(
+      "[ProductCache]: Error force fetching reviews:",
+      error.message
+    );
+
+    // Try to return cached data as fallback
+    const cachedData = await ProductCache.findOne({ store_id, product_id });
+    if (cachedData && cachedData.cached_reviews.length > 0) {
+      return {
+        success: true,
+        data: cachedData.cached_reviews,
+        fromCache: true,
+        lastFetched: cachedData.last_fetched,
+        expired: true,
+        error: error.message,
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      error: error.message,
+    };
+  }
+};
+
 export const invalidateProductCache = async (store_id, product_id) => {
   try {
     await ProductCache.findOneAndUpdate(
