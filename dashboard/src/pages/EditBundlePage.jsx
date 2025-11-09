@@ -867,9 +867,9 @@ export default function EditBundlePage() {
                       </Grid.Col>
                       <Grid.Col span={12}>
                         <Textarea
-                          label="ملخص العرض (اختياري)"
+                          label="وصف العرض (اختياري)"
                           placeholder="مثال: زجاجة × 2 — حقيبة 1000مل مجاناً — كتاب مجاناً"
-                          description="يظهر في النسخة المحمولة. إذا تركته فارغاً سيتم إنشاء ملخص تلقائي"
+                          description="يظهر في نسخة الجوال . إذا تركته فارغاً سيتم إنشاء وصف تلقائي"
                           autosize
                           minRows={2}
                           maxRows={3}
