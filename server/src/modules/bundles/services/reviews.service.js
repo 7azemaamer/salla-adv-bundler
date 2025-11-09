@@ -113,6 +113,8 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       params.products = product_id;
     }
 
+    console.log("[fetchStoreReviews]: Request params:", params);
+
     const response = await axios.get("https://api.salla.dev/admin/v2/reviews", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -120,6 +122,12 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       },
       params,
     });
+
+    console.log(
+      "[fetchStoreReviews]: Response data count:",
+      response.data?.data?.length || 0
+    );
+    console.log("[fetchStoreReviews]: Pagination:", response.data?.pagination);
 
     if (response.data && response.data.data) {
       // Return all reviews without filtering by rating

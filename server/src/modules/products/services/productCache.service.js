@@ -197,6 +197,10 @@ export const forceFetchReviews = async (
   fetchLimit = 20
 ) => {
   try {
+    console.log(
+      `[ForceFetch]: Requesting ${fetchLimit} reviews for product ${product_id}`
+    );
+
     // Fetch directly from Salla API
     const reviewsResult = await fetchStoreReviews(accessToken, {
       type: "rating",
@@ -204,6 +208,13 @@ export const forceFetchReviews = async (
       per_page: Math.min(fetchLimit, 100),
       product_id: product_id,
     });
+
+    console.log(
+      `[ForceFetch]: Salla API returned ${
+        reviewsResult.data?.length || 0
+      } reviews`
+    );
+    console.log(`[ForceFetch]: Pagination:`, reviewsResult.pagination);
 
     const formattedReviews = reviewsResult.data.map((review) => ({
       id: review.id || null,
