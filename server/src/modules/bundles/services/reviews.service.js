@@ -123,7 +123,7 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
           pagination: {
             count: DUMMY_REVIEWS.length,
             total: DUMMY_REVIEWS.length,
-            perPage: 15,
+            perPage: 20,
             currentPage: 1,
             totalPages: 1,
             links: {},
@@ -147,7 +147,7 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       pagination: {
         count: DUMMY_REVIEWS.length,
         total: DUMMY_REVIEWS.length,
-        perPage: 15,
+        perPage: 20,
         currentPage: 1,
         totalPages: 1,
         links: {},
@@ -167,7 +167,7 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       pagination: {
         count: DUMMY_REVIEWS.length,
         total: DUMMY_REVIEWS.length,
-        perPage: 15,
+        perPage: 20,
         currentPage: 1,
         totalPages: 1,
         links: {},

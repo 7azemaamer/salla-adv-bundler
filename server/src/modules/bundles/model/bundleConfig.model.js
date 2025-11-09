@@ -61,6 +61,11 @@ const BundleConfigSchema = new mongoose.Schema(
             return `العرض ${this.tier}`;
           },
         },
+        tier_summary_text: {
+          type: String,
+          trim: true,
+          maxLength: 100,
+        },
         tier_highlight_text: {
           type: String,
           trim: true,

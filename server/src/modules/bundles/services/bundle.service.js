@@ -64,6 +64,7 @@ class BundleService {
     const bundle = await BundleConfig.create({
       store_id,
       name: bundleData.name,
+      description: bundleData.description || "",
       target_product_id: bundleData.target_product_id,
       target_product_name: productData.targetProduct.name,
       target_product_data: productData.targetProduct,
@@ -72,6 +73,17 @@ class BundleService {
       expiry_date: bundleData.expiry_date
         ? new Date(bundleData.expiry_date)
         : null,
+      modal_title: bundleData.modal_title || "اختر باقتك",
+      modal_subtitle: bundleData.modal_subtitle || "",
+      cta_button_text: bundleData.cta_button_text || "اختر الباقة",
+      cta_button_bg_color: bundleData.cta_button_bg_color || "#0066ff",
+      cta_button_text_color: bundleData.cta_button_text_color || "#ffffff",
+      checkout_button_text:
+        bundleData.checkout_button_text || "إتمام الطلب — {total_price}",
+      checkout_button_bg_color:
+        bundleData.checkout_button_bg_color || "#0066ff",
+      checkout_button_text_color:
+        bundleData.checkout_button_text_color || "#ffffff",
       config_hash: configHash,
       status: "draft",
       created_by: bundleData.created_by || "system",
@@ -317,12 +329,6 @@ class BundleService {
     const offer_ids = offers.map((offer) => offer.offer_id);
 
     if (offer_ids.length > 0) {
-      // DELETE offers from Salla (not just deactivate)
-      // This allows reactivation with the same offer names
-      console.log(
-        `[Bundle]: Deleting ${offer_ids.length} offers from Salla for bundle ${bundle_id}`
-      );
-
       const deletionResults = await specialOffersService.deleteOffers(
         bundle.store_id,
         offer_ids
@@ -333,10 +339,6 @@ class BundleService {
         bundle_id,
         status: "active",
       });
-
-      console.log(
-        `[Bundle]: Deleted ${offer_ids.length} offers for bundle ${bundle_id}`
-      );
     }
 
     // Update bundle status
@@ -372,10 +374,6 @@ class BundleService {
 
       // Delete local offer records
       await BundleOffer.deleteMany({ bundle_id });
-
-      console.log(
-        `[Bundle]: Deleted ${offer_ids.length} offers for bundle ${bundle_id}`
-      );
     }
 
     // Delete bundle configuration
@@ -551,6 +549,7 @@ class BundleService {
           buy_quantity: tier.buy_quantity,
           // Tier UI Customization fields
           tier_title: tier.tier_title,
+          tier_summary_text: tier.tier_summary_text,
           tier_highlight_text: tier.tier_highlight_text,
           tier_bg_color: tier.tier_bg_color,
           tier_text_color: tier.tier_text_color,
@@ -716,7 +715,6 @@ class BundleService {
     for (const bundle of expiredBundles) {
       try {
         await this.deactivateBundle(bundle._id);
-        console.log(`[Bundle]: Auto-deactivated expired bundle ${bundle._id}`);
       } catch (error) {
         console.error(
           `[Bundle]: Failed to auto-deactivate bundle ${bundle._id}:`,

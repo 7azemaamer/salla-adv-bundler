@@ -23,6 +23,10 @@ import {
   LoadingOverlay,
   ColorInput,
   Switch,
+  Rating,
+  Modal,
+  Loader,
+  Avatar,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import {
@@ -40,10 +44,12 @@ import {
   IconPalette,
   IconStar,
   IconRefresh,
+  IconUserCircle,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import useBundleStore from "../stores/useBundleStore";
+import axios from "axios";
 
 export default function EditBundlePage() {
   const navigate = useNavigate();
@@ -54,6 +60,7 @@ export default function EditBundlePage() {
     fetchProducts,
     generateOffers,
     refetchProductReviews,
+    updateProductReview,
     currentBundle,
     products,
     loading,
@@ -64,6 +71,16 @@ export default function EditBundlePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isReactivating, setIsReactivating] = useState(false);
   const [isRefetchingReviews, setIsRefetchingReviews] = useState(false);
+  const [productReviews, setProductReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [editingReview, setEditingReview] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedReviewData, setEditedReviewData] = useState({
+    customerName: "",
+    rating: 5,
+    content: "",
+  });
+  const [savingReview, setSavingReview] = useState(false);
 
   const form = useForm({
     initialValues: {
@@ -86,6 +103,7 @@ export default function EditBundlePage() {
           tier: 1,
           buy_quantity: 1,
           tier_title: "باقة البداية",
+          tier_summary_text: "",
           tier_highlight_text: "",
           tier_bg_color: "#f8f9fa",
           tier_text_color: "#212529",
@@ -149,6 +167,7 @@ export default function EditBundlePage() {
               tier: bundle.tier,
               buy_quantity: bundle.buy_quantity,
               tier_title: bundle.tier_title || `العرض ${bundle.tier}`,
+              tier_summary_text: bundle.tier_summary_text || "",
               tier_highlight_text: bundle.tier_highlight_text || "",
               tier_bg_color: bundle.tier_bg_color || "#f8f9fa",
               tier_text_color: bundle.tier_text_color || "#212529",
@@ -185,6 +204,7 @@ export default function EditBundlePage() {
                 tier: 1,
                 buy_quantity: 1,
                 tier_title: "باقة البداية",
+                tier_summary_text: "",
                 tier_highlight_text: "",
                 tier_bg_color: "#f8f9fa",
                 tier_text_color: "#212529",
@@ -315,6 +335,7 @@ export default function EditBundlePage() {
           : tierNum === 3
           ? "باقة العائلة"
           : `العرض ${tierNum}`,
+      tier_summary_text: "",
       tier_highlight_text:
         tierNum === 2 ? "وفر أكثر" : tierNum === 3 ? "أفضل قيمة" : "",
       tier_bg_color: colorScheme.bg,
@@ -383,6 +404,10 @@ export default function EditBundlePage() {
         updated_by: "dashboard",
       };
 
+      console.log("Submitting bundle data:", bundleData);
+      console.log("Description:", bundleData.description);
+      console.log("Bundles:", bundleData.bundles);
+
       await updateBundle(bundleId, bundleData);
 
       notifications.show({
@@ -446,6 +471,9 @@ export default function EditBundlePage() {
         icon: <IconCheck size="1rem" />,
         autoClose: 5000,
       });
+
+      // Fetch reviews after successful update
+      await fetchProductReviews();
     } catch (error) {
       notifications.show({
         title: "خطأ في تحديث التقييمات",
@@ -457,6 +485,35 @@ export default function EditBundlePage() {
       setIsRefetchingReviews(false);
     }
   };
+
+  const fetchProductReviews = async () => {
+    if (!currentBundle?.target_product_id) return;
+
+    try {
+      setLoadingReviews(true);
+      const productId = currentBundle.target_product_id
+        .toString()
+        .replace(/^p/, "");
+
+      const response = await axios.get(`/products/${productId}/reviews`);
+
+      if (response.data.success) {
+        setProductReviews(response.data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  // Fetch reviews when bundle is loaded
+  useEffect(() => {
+    if (currentBundle && active === 3) {
+      fetchProductReviews();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBundle, active]);
 
   const nextStep = () => {
     if (active === 0) {
@@ -537,7 +594,7 @@ export default function EditBundlePage() {
               />
               <Stepper.Step
                 label="إعداد العروض"
-                description="تحديد مستويات الباقة والهدايا"
+                description="تحديد عروضالباقة والهدايا"
                 icon={<IconGift size="1.1rem" />}
               />
               <Stepper.Step
@@ -581,81 +638,135 @@ export default function EditBundlePage() {
                     <Text size="sm" fw={500} mb="xs">
                       المنتج المستهدف <span className="text-red-500">*</span>
                     </Text>
-                    <TextInput
-                      placeholder="البحث في المنتجات..."
-                      leftSection={<IconSearch size="0.9rem" />}
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      mb="sm"
-                    />
 
-                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
-                      {loading.products ? (
-                        <div className="p-4 text-center text-gray-500">
-                          جاري تحميل المنتجات...
-                        </div>
-                      ) : filteredProducts.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">
-                          لا توجد منتجات
-                        </div>
-                      ) : (
-                        filteredProducts.map((product) => (
-                          <div
-                            key={product.id}
-                            className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                              form.values.target_product_id ===
-                              String(product.id)
-                                ? "bg-blue-50 border-blue-200"
-                                : ""
-                            }`}
-                            onClick={() => {
-                              form.setFieldValue(
-                                "target_product_id",
-                                String(product.id)
-                              );
-                              form.setFieldValue(
-                                "target_product_name",
-                                product.name
-                              );
-                            }}
-                          >
-                            <Group gap="sm">
-                              {product.image && (
-                                <Image
-                                  src={product.image}
-                                  alt={product.name}
-                                  w={40}
-                                  h={40}
-                                  radius="sm"
-                                />
-                              )}
-                              <div className="flex-1">
-                                <Text size="sm" fw={500}>
-                                  {product.name}
-                                </Text>
-                                <Group gap="xs">
-                                  {product.sku && (
-                                    <Badge size="xs" variant="light">
-                                      SKU: {product.sku}
-                                    </Badge>
+                    {!form.values.target_product_id ? (
+                      <>
+                        <TextInput
+                          placeholder="البحث في المنتجات..."
+                          leftSection={<IconSearch size="0.9rem" />}
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          mb="sm"
+                        />
+
+                        <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                          {loading.products ? (
+                            <div className="p-4 text-center text-gray-500">
+                              جاري تحميل المنتجات...
+                            </div>
+                          ) : filteredProducts.length === 0 ? (
+                            <div className="p-4 text-center text-gray-500">
+                              لا توجد منتجات
+                            </div>
+                          ) : (
+                            filteredProducts.map((product) => (
+                              <div
+                                key={product.id}
+                                className="p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                                onClick={() => {
+                                  form.setFieldValue(
+                                    "target_product_id",
+                                    String(product.id)
+                                  );
+                                  form.setFieldValue(
+                                    "target_product_name",
+                                    product.name
+                                  );
+                                  setProductSearch("");
+                                }}
+                              >
+                                <Group gap="sm">
+                                  {product.image && (
+                                    <Image
+                                      src={product.image}
+                                      alt={product.name}
+                                      w={40}
+                                      h={40}
+                                      radius="sm"
+                                    />
                                   )}
-                                  <Text size="xs" c="dimmed">
-                                    {product.price} {product.currency || "SAR"}
-                                  </Text>
+                                  <div className="flex-1">
+                                    <Text size="sm" fw={500}>
+                                      {product.name}
+                                    </Text>
+                                    <Group gap="xs">
+                                      {product.sku && (
+                                        <Badge size="xs" variant="light">
+                                          SKU: {product.sku}
+                                        </Badge>
+                                      )}
+                                      <Text size="xs" c="dimmed">
+                                        {product.price}{" "}
+                                        {product.currency || "SAR"}
+                                      </Text>
+                                    </Group>
+                                  </div>
                                 </Group>
                               </div>
-                              {form.values.target_product_id ===
-                                String(product.id) && (
-                                <IconCheck
-                                  size="1rem"
-                                  className="text-blue-600"
-                                />
-                              )}
-                            </Group>
-                          </div>
-                        ))
-                      )}
-                    </div>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <Paper
+                        p="md"
+                        withBorder
+                        className="bg-blue-50 border-blue-200"
+                      >
+                        <Group justify="space-between">
+                          <Group gap="sm">
+                            {products.find(
+                              (p) =>
+                                String(p.id) === form.values.target_product_id
+                            )?.image && (
+                              <Image
+                                src={
+                                  products.find(
+                                    (p) =>
+                                      String(p.id) ===
+                                      form.values.target_product_id
+                                  )?.image
+                                }
+                                alt={form.values.target_product_name}
+                                w={45}
+                                h={45}
+                                radius="sm"
+                              />
+                            )}
+                            <div>
+                              <Text size="sm" fw={500}>
+                                {form.values.target_product_name}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                {
+                                  products.find(
+                                    (p) =>
+                                      String(p.id) ===
+                                      form.values.target_product_id
+                                  )?.price
+                                }{" "}
+                                {products.find(
+                                  (p) =>
+                                    String(p.id) ===
+                                    form.values.target_product_id
+                                )?.currency || "SAR"}
+                              </Text>
+                            </div>
+                          </Group>
+                          <ActionIcon
+                            color="red"
+                            variant="light"
+                            onClick={() => {
+                              form.setFieldValue("target_product_id", "");
+                              form.setFieldValue("target_product_name", "");
+                            }}
+                          >
+                            <IconX size="1rem" />
+                          </ActionIcon>
+                        </Group>
+                      </Paper>
+                    )}
+
                     {form.errors.target_product_id && (
                       <Text size="xs" c="red" mt="xs">
                         {form.errors.target_product_id}
@@ -671,7 +782,7 @@ export default function EditBundlePage() {
               <Stack gap="md">
                 <Group justify="space-between">
                   <Title order={3} className="text-gray-700">
-                    إعداد مستويات الباقة
+                    إعداد عروضالباقة
                   </Title>
                   <Button
                     leftSection={<IconPlus size="0.9rem" />}
@@ -679,7 +790,7 @@ export default function EditBundlePage() {
                     onClick={addTier}
                     disabled={form.values.bundles.length >= 5}
                   >
-                    إضافة مستوى
+                    إضافة عرض
                   </Button>
                 </Group>
 
@@ -751,6 +862,19 @@ export default function EditBundlePage() {
                           max={10}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.buy_quantity`
+                          )}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={12}>
+                        <Textarea
+                          label="ملخص العرض (اختياري)"
+                          placeholder="مثال: زجاجة × 2 — حقيبة 1000مل مجاناً — كتاب مجاناً"
+                          description="يظهر في النسخة المحمولة. إذا تركته فارغاً سيتم إنشاء ملخص تلقائي"
+                          autosize
+                          minRows={2}
+                          maxRows={3}
+                          {...form.getInputProps(
+                            `bundles.${tierIndex}.tier_summary_text`
                           )}
                         />
                       </Grid.Col>
@@ -844,7 +968,7 @@ export default function EditBundlePage() {
                     <Divider my="md" />
 
                     <Group justify="space-between" mb="sm">
-                      <Text fw={500}>العروض والهدايا</Text>
+                      <Text fw={500}>منتجات الخصم او هدايا العرض</Text>
                       <Button
                         size="xs"
                         variant="light"
@@ -876,69 +1000,127 @@ export default function EditBundlePage() {
                         <Stack gap="sm">
                           <div>
                             <Text size="sm" fw={500} mb="xs">
-                              اختيار المنتج للعرض
+                              اختيار المنتج (العرض)
                             </Text>
-                            <TextInput
-                              placeholder="البحث في المنتجات..."
-                              leftSection={<IconSearch size="0.8rem" />}
-                              value={offerSearch}
-                              onChange={(e) => setOfferSearch(e.target.value)}
-                              size="sm"
-                              mb="xs"
-                            />
 
-                            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
-                              {getSortedOfferProducts(offer.product_id).map(
-                                (product) => (
-                                  <div
-                                    key={product.id}
-                                    className={`p-2 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                                      offer.product_id === String(product.id)
-                                        ? "bg-green-50 border-green-200"
-                                        : ""
-                                    }`}
+                            {!offer.product_id ? (
+                              <>
+                                <TextInput
+                                  placeholder="البحث في المنتجات..."
+                                  leftSection={<IconSearch size="0.8rem" />}
+                                  value={offerSearch}
+                                  onChange={(e) =>
+                                    setOfferSearch(e.target.value)
+                                  }
+                                  size="sm"
+                                  mb="xs"
+                                />
+
+                                <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
+                                  {getSortedOfferProducts(offer.product_id).map(
+                                    (product) => (
+                                      <div
+                                        key={product.id}
+                                        className="p-2 border-b border-gray-100 cursor-pointer hover:bg-gray-50"
+                                        onClick={() => {
+                                          form.setFieldValue(
+                                            `bundles.${tierIndex}.offers.${offerIndex}.product_id`,
+                                            String(product.id)
+                                          );
+                                          form.setFieldValue(
+                                            `bundles.${tierIndex}.offers.${offerIndex}.product_name`,
+                                            product.name
+                                          );
+                                          setOfferSearch("");
+                                        }}
+                                      >
+                                        <Group gap="xs">
+                                          {product.image && (
+                                            <Image
+                                              src={product.image}
+                                              alt={product.name}
+                                              w={30}
+                                              h={30}
+                                              radius="sm"
+                                            />
+                                          )}
+                                          <div className="flex-1">
+                                            <Text size="xs" fw={500}>
+                                              {product.name}
+                                            </Text>
+                                            <Text size="xs" c="dimmed">
+                                              {product.price}{" "}
+                                              {product.currency || "SAR"}
+                                            </Text>
+                                          </div>
+                                        </Group>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              </>
+                            ) : (
+                              <Paper
+                                p="sm"
+                                withBorder
+                                className="bg-green-50 border-green-200"
+                              >
+                                <Group justify="space-between">
+                                  <Group gap="xs">
+                                    {products.find(
+                                      (p) => String(p.id) === offer.product_id
+                                    )?.image && (
+                                      <Image
+                                        src={
+                                          products.find(
+                                            (p) =>
+                                              String(p.id) === offer.product_id
+                                          )?.image
+                                        }
+                                        alt={offer.product_name}
+                                        w={35}
+                                        h={35}
+                                        radius="sm"
+                                      />
+                                    )}
+                                    <div>
+                                      <Text size="sm" fw={500}>
+                                        {offer.product_name}
+                                      </Text>
+                                      <Text size="xs" c="dimmed">
+                                        {
+                                          products.find(
+                                            (p) =>
+                                              String(p.id) === offer.product_id
+                                          )?.price
+                                        }{" "}
+                                        {products.find(
+                                          (p) =>
+                                            String(p.id) === offer.product_id
+                                        )?.currency || "SAR"}
+                                      </Text>
+                                    </div>
+                                  </Group>
+                                  <ActionIcon
+                                    color="red"
+                                    variant="light"
+                                    size="sm"
                                     onClick={() => {
                                       form.setFieldValue(
                                         `bundles.${tierIndex}.offers.${offerIndex}.product_id`,
-                                        String(product.id)
+                                        ""
                                       );
                                       form.setFieldValue(
                                         `bundles.${tierIndex}.offers.${offerIndex}.product_name`,
-                                        product.name
+                                        ""
                                       );
                                     }}
                                   >
-                                    <Group gap="xs">
-                                      {product.image && (
-                                        <Image
-                                          src={product.image}
-                                          alt={product.name}
-                                          w={30}
-                                          h={30}
-                                          radius="sm"
-                                        />
-                                      )}
-                                      <div className="flex-1">
-                                        <Text size="xs" fw={500}>
-                                          {product.name}
-                                        </Text>
-                                        <Text size="xs" c="dimmed">
-                                          {product.price}{" "}
-                                          {product.currency || "SAR"}
-                                        </Text>
-                                      </div>
-                                      {offer.product_id ===
-                                        String(product.id) && (
-                                        <IconCheck
-                                          size="0.8rem"
-                                          className="text-green-600"
-                                        />
-                                      )}
-                                    </Group>
-                                  </div>
-                                )
-                              )}
-                            </div>
+                                    <IconX size="0.9rem" />
+                                  </ActionIcon>
+                                </Group>
+                              </Paper>
+                            )}
                           </div>
 
                           <Grid>
@@ -1298,7 +1480,8 @@ export default function EditBundlePage() {
                                 color: tier.tier_text_color || "#212529",
                               }}
                             >
-                              العروض والهدايا ({tier.offers.length}):
+                              منتجات الخصم او هدايا العرض ({tier.offers.length}
+                              ):
                             </Text>
                             <Stack gap="xs">
                               {tier.offers.map((offer, offerIndex) => {
@@ -1377,6 +1560,346 @@ export default function EditBundlePage() {
                 })}
               </Stack>
             )}
+
+            {/* Product Reviews Section - Show in Step 4 */}
+            {active === 3 && productReviews.length > 0 && (
+              <Paper p="md" withBorder mt="xl">
+                <Group justify="space-between" mb="md">
+                  <Group gap="xs">
+                    <IconStar size="1.2rem" style={{ color: "#fbbf24" }} />
+                    <Title order={4}>
+                      تقييمات المنتج ({productReviews.length})
+                    </Title>
+                  </Group>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    onClick={fetchProductReviews}
+                    loading={loadingReviews}
+                    leftSection={<IconRefresh size="0.9rem" />}
+                  >
+                    تحديث
+                  </Button>
+                </Group>
+
+                <Text size="sm" c="dimmed" mb="md">
+                  التقييمات المخزنة للمنتج المستهدف - يمكنك عرضها وتحريرها
+                </Text>
+
+                <Grid>
+                  {productReviews.map((review, index) => (
+                    <Grid.Col
+                      key={review.id || index}
+                      span={{ base: 12, md: 6 }}
+                    >
+                      <Card
+                        withBorder
+                        padding="md"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+                          transition: "transform 0.2s, box-shadow 0.2s",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                          e.currentTarget.style.boxShadow =
+                            "0 4px 12px rgba(0,0,0,0.12)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "";
+                          e.currentTarget.style.boxShadow = "";
+                        }}
+                        onClick={() => setEditingReview(review)}
+                      >
+                        <Stack gap="xs">
+                          <Group justify="space-between" wrap="nowrap">
+                            <Group gap="xs">
+                              {review.customerAvatar ? (
+                                <Avatar
+                                  src={review.customerAvatar}
+                                  size="md"
+                                  radius="xl"
+                                />
+                              ) : (
+                                <Avatar size="md" radius="xl">
+                                  <IconUserCircle size="1.5rem" />
+                                </Avatar>
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <Text size="sm" fw={600} truncate>
+                                  {review.customerName || "عميل"}
+                                </Text>
+                                <Rating
+                                  value={review.rating || 5}
+                                  size="xs"
+                                  readOnly
+                                />
+                              </div>
+                            </Group>
+                            <ActionIcon
+                              size="sm"
+                              variant="light"
+                              color="blue"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingReview(review);
+                              }}
+                            >
+                              <IconEdit size="0.9rem" />
+                            </ActionIcon>
+                          </Group>
+
+                          <Text
+                            size="sm"
+                            c="dimmed"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {review.content || "لا يوجد محتوى"}
+                          </Text>
+
+                          {review.timeAgo && (
+                            <Text size="xs" c="dimmed">
+                              {review.timeAgo}
+                            </Text>
+                          )}
+                        </Stack>
+                      </Card>
+                    </Grid.Col>
+                  ))}
+                </Grid>
+              </Paper>
+            )}
+
+            {loadingReviews && active === 3 && (
+              <Paper p="xl" withBorder mt="xl">
+                <Group justify="center">
+                  <Loader size="sm" />
+                  <Text size="sm" c="dimmed">
+                    جاري تحميل التقييمات...
+                  </Text>
+                </Group>
+              </Paper>
+            )}
+
+            {/* Edit Review Modal */}
+            <Modal
+              opened={editingReview !== null}
+              onClose={() => {
+                setEditingReview(null);
+                setIsEditMode(false);
+              }}
+              title={
+                <Group gap="xs">
+                  <IconStar style={{ color: "#fbbf24" }} />
+                  <Text fw={600}>
+                    {isEditMode ? "تحرير التقييم" : "عرض التقييم"}
+                  </Text>
+                </Group>
+              }
+              size="lg"
+            >
+              {editingReview && (
+                <Stack gap="md">
+                  {!isEditMode ? (
+                    <>
+                      <Group gap="xs">
+                        {editingReview.customerAvatar ? (
+                          <Avatar
+                            src={editingReview.customerAvatar}
+                            size="lg"
+                            radius="xl"
+                          />
+                        ) : (
+                          <Avatar size="lg" radius="xl">
+                            <IconUserCircle size="2rem" />
+                          </Avatar>
+                        )}
+                        <div>
+                          <Text fw={600}>
+                            {editingReview.customerName || "عميل"}
+                          </Text>
+                          <Rating value={editingReview.rating || 5} readOnly />
+                        </div>
+                      </Group>
+
+                      <Divider />
+
+                      <div>
+                        <Text size="sm" fw={500} mb="xs">
+                          محتوى التقييم:
+                        </Text>
+                        <Paper p="md" withBorder bg="gray.0">
+                          <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                            {editingReview.content || "لا يوجد محتوى"}
+                          </Text>
+                        </Paper>
+                      </div>
+
+                      {editingReview.timeAgo && (
+                        <Group gap="xs">
+                          <Text size="sm" fw={500}>
+                            التاريخ:
+                          </Text>
+                          <Text size="sm" c="dimmed">
+                            {editingReview.timeAgo}
+                          </Text>
+                        </Group>
+                      )}
+
+                      <Alert color="blue" icon={<IconStar />}>
+                        هذه التقييمات مخزنة في قاعدة البيانات ويتم عرضها في
+                        نافذة الباقة. يمكنك تعديل اسم العميل، التقييم، أو
+                        المحتوى.
+                      </Alert>
+
+                      <Group justify="apart">
+                        <Button
+                          variant="light"
+                          onClick={() => {
+                            setIsEditMode(true);
+                            setEditedReviewData({
+                              customerName: editingReview.customerName || "",
+                              rating: editingReview.rating || 5,
+                              content: editingReview.content || "",
+                            });
+                          }}
+                          leftSection={<IconEdit size="1rem" />}
+                        >
+                          تعديل
+                        </Button>
+                        <Button
+                          onClick={() => setEditingReview(null)}
+                          leftSection={<IconCheck size="1rem" />}
+                        >
+                          إغلاق
+                        </Button>
+                      </Group>
+                    </>
+                  ) : (
+                    <>
+                      <TextInput
+                        label="اسم العميل"
+                        placeholder="اسم العميل"
+                        value={editedReviewData.customerName}
+                        onChange={(e) =>
+                          setEditedReviewData({
+                            ...editedReviewData,
+                            customerName: e.target.value,
+                          })
+                        }
+                        dir="rtl"
+                        style={{ textAlign: "right" }}
+                      />
+
+                      <div>
+                        <Text size="sm" fw={500} mb="xs">
+                          التقييم
+                        </Text>
+                        <Rating
+                          value={editedReviewData.rating}
+                          onChange={(value) =>
+                            setEditedReviewData({
+                              ...editedReviewData,
+                              rating: value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <Textarea
+                        label="محتوى التقييم"
+                        placeholder="اكتب محتوى التقييم..."
+                        value={editedReviewData.content}
+                        onChange={(e) =>
+                          setEditedReviewData({
+                            ...editedReviewData,
+                            content: e.target.value,
+                          })
+                        }
+                        autosize
+                        minRows={4}
+                        maxRows={8}
+                        dir="rtl"
+                        style={{ textAlign: "right" }}
+                      />
+
+                      <Group justify="apart">
+                        <Button
+                          variant="light"
+                          onClick={() => setIsEditMode(false)}
+                        >
+                          إلغاء
+                        </Button>
+                        <Button
+                          loading={savingReview}
+                          onClick={async () => {
+                            try {
+                              setSavingReview(true);
+                              const result = await updateProductReview(
+                                form.values.target_product_id,
+                                editingReview.id,
+                                editedReviewData
+                              );
+
+                              if (result.success) {
+                                // Update local state
+                                setProductReviews((prev) =>
+                                  prev.map((r) =>
+                                    r.id === editingReview.id
+                                      ? {
+                                          ...r,
+                                          ...editedReviewData,
+                                        }
+                                      : r
+                                  )
+                                );
+
+                                notifications.show({
+                                  title: "تم التحديث بنجاح",
+                                  message: "تم تحديث التقييم بنجاح",
+                                  color: "green",
+                                });
+
+                                setEditingReview(null);
+                                setIsEditMode(false);
+                              } else {
+                                notifications.show({
+                                  title: "خطأ في التحديث",
+                                  message:
+                                    result.message ||
+                                    "حدث خطأ أثناء تحديث التقييم",
+                                  color: "red",
+                                });
+                              }
+                            } catch (error) {
+                              notifications.show({
+                                title: "خطأ في التحديث",
+                                message:
+                                  error.message ||
+                                  "حدث خطأ أثناء تحديث التقييم",
+                                color: "red",
+                              });
+                            } finally {
+                              setSavingReview(false);
+                            }
+                          }}
+                          leftSection={<IconCheck size="1rem" />}
+                        >
+                          حفظ التعديلات
+                        </Button>
+                      </Group>
+                    </>
+                  )}
+                </Stack>
+              )}
+            </Modal>
 
             {/* Navigation Buttons */}
             <Group justify="space-between" mt="xl">

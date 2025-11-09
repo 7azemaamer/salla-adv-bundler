@@ -90,9 +90,6 @@ export const refetchPaymentMethods = asyncWrapper(async (req, res) => {
       store.payment_methods_updated_at = new Date();
       await store.save();
 
-      console.log(
-        `[Settings]: Manually refetched ${methodsResult.data.length} payment methods for store ${store_id}`
-      );
     }
 
     res.status(200).json({

@@ -21,15 +21,6 @@ class StoreService {
         }
       );
       storeInfo = response.data.data;
-      console.log(
-        `[Store Service]: COMPLETE SALLA API RESPONSE FOR STORE ${store_id}`
-      );
-
-      console.log(
-        `[Store Service]: Fetched store info for ${store_id} - Name: ${
-          storeInfo?.name || "EMPTY"
-        }`
-      );
     } catch (error) {
       console.error(
         `[Store Service]: Failed to fetch store info for ${store_id}:`,

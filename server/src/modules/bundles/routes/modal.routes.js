@@ -543,7 +543,6 @@ router.get("/modal.js", (req, res) => {
             }
             
             SallaBundleModal.dataCache.bundleData[this.productId] = this.bundleData;
-            console.log('[Modal] Bundle data fetched and cached');
           } catch (jsonError) {
             console.error('[Salla Bundle Modal] JSON parse error:', jsonError);
             console.error('[Salla Bundle Modal] Response text:', responseText);
@@ -676,12 +675,6 @@ router.get("/modal.js", (req, res) => {
         productParam;
 
       try {
-        console.log(
-          '[Modal] Fetching reviews for ' +
-            (normalizedProductId || 'store-level') +
-            ' from ' +
-            url
-        );
 
         const response = await fetch(url, {
           headers: { 'ngrok-skip-browser-warning': 'true' },
@@ -1097,7 +1090,8 @@ router.get("/modal.js", (req, res) => {
           textColor: tier.tier_text_color || '#212529',
           highlightBgColor: tier.tier_highlight_bg_color || '#ffc107',
           highlightTextColor: tier.tier_highlight_text_color || '#000000',
-          isDefault: tier.is_default || false
+          isDefault: tier.is_default || false,
+          customSummary: tier.tier_summary_text || ''
         };
       });
 
@@ -1383,7 +1377,8 @@ router.get("/modal.js", (req, res) => {
           textColor: tier.tier_text_color || '#212529',
           highlightBgColor: tier.tier_highlight_bg_color || '#ffc107',
           highlightTextColor: tier.tier_highlight_text_color || '#000000',
-          isDefault: tier.is_default || false
+          isDefault: tier.is_default || false,
+          customSummary: tier.tier_summary_text || ''
         };
       });
       
@@ -1479,7 +1474,7 @@ router.get("/modal.js", (req, res) => {
             <div class="salla-bundle-grid">
               \${bundleDisplayData.map((bundle, index) => {
                 const isSelected = this.selectedBundle === bundle.id;
-                const summaryText = bundle.items.slice(0, 2).join(' + ') + (bundle.items.length > 2 ? \` +\${bundle.items.length - 2}\` : '');
+                const summaryText = bundle.customSummary || (bundle.items.slice(0, 2).join(' + ') + (bundle.items.length > 2 ? \` +\${bundle.items.length - 2}\` : ''));
 
                 return \`
                   <div class="salla-bundle-card \${isSelected ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
@@ -1487,7 +1482,10 @@ router.get("/modal.js", (req, res) => {
                        onclick="window.sallaBundleModal.selectBundle('\${bundle.id}')">
                     <div class="salla-bundle-radio"></div>
                     <div class="salla-bundle-card-compact">
-                      <div class="salla-bundle-card-title" style="color: \${bundle.textColor}; font-size: 15px; font-weight: 600; margin-bottom: 4px;">\${bundle.name}</div>
+                      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <div class="salla-bundle-card-title" style="color: \${bundle.textColor}; font-size: 15px; font-weight: 600;">\${bundle.name}</div>
+                        \${bundle.badge ? \`<span class="salla-bundle-badge" style="background: \${bundle.hasUnavailableProducts ? '#fee2e2' : bundle.highlightBgColor}; color: \${bundle.hasUnavailableProducts ? '#dc2626' : bundle.highlightTextColor}; border-color: \${bundle.hasUnavailableProducts ? '#fecaca' : bundle.highlightBgColor};">\${bundle.badge}</span>\` : ''}
+                      </div>
                       <div class="salla-bundle-card-summary" style="font-size: 12px; color: var(--text-2); margin-bottom: 6px;">\${summaryText}</div>
                       <div class="salla-bundle-card-pricing">
                         <span>\${formatPrice(bundle.price)}</span>
@@ -2071,20 +2069,15 @@ router.get("/modal.js", (req, res) => {
           const existingItems = existingCart?.data?.cart?.items || [];
           
           if (existingItems.length > 0) {
-            console.log(\`[Bundle Checkout] Silently clearing \${existingItems.length} existing cart items...\`);
             const clearOperations = existingItems.map(item => 
               window.salla.cart.deleteItem({ id: item.id }).catch(err => {
                 console.error('[Bundle Checkout] Failed to delete item:', item.id, err);
               })
             );
             await Promise.allSettled(clearOperations);
-            console.log('[Bundle Checkout] Cart cleared successfully');
-          } else {
-            console.log('[Bundle Checkout] Cart was already empty');
-          }
+          } 
         } catch (clearError) {
           console.error('[Bundle Checkout] Cart clearing failed:', clearError);
-          // Continue anyway - not critical if cart clearing fails
         }
 
           this.showLoadingIndicator('جاري إضافة المنتجات...');
@@ -2119,7 +2112,6 @@ router.get("/modal.js", (req, res) => {
 
             try {
               await window.salla.cart.addItem(targetCartItem);
-              console.log('[Bundle Checkout] Target product added:', targetCartItem);
               addedProducts.push({
                 name: bundleConfig.target_product_data.name,
                 type: 'target',
@@ -2164,7 +2156,6 @@ router.get("/modal.js", (req, res) => {
 
 
                 await window.salla.cart.addItem(addToCartParams);
-                console.log('[Bundle Checkout] Offer product added:', addToCartParams);
 
                 successfulOffers.push(offer);
                 addedProducts.push({
@@ -3492,9 +3483,7 @@ router.get("/modal.js", (req, res) => {
       } else if (featureName === 'free_shipping' && settings.free_shipping) {
         showInStep = settings.free_shipping.show_in_step || 'review';
       }
-      
-      console.log(\`[shouldShowInStep] Feature: \${featureName}, Current Step: \${currentStepType}, Show in Step: \${showInStep}, Should Show: \${showInStep === currentStepType || showInStep === 'all'}\`);
-      
+            
       if (showInStep === 'all') return true;
       
       return showInStep === currentStepType;
@@ -4403,7 +4392,6 @@ router.get("/modal.js", (req, res) => {
         
         try {
           const couponResponse = await window.salla.cart.addCoupon(code);
-          console.log('[Coupon] Applied successfully:', couponResponse);
           
           this.discountCode = code;
           

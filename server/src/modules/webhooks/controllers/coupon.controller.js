@@ -7,12 +7,6 @@ import { asyncWrapper } from "../../../utils/errorHandler.js";
 export const handleCouponApplied = asyncWrapper(async (req, res) => {
   const { event, merchant, created_at, data } = req.body;
 
-  console.log("\n" + "=".repeat(80));
-  console.log(`🎟️ COUPON APPLIED WEBHOOK`);
-  console.log("=".repeat(80));
-  console.log(`Merchant: ${merchant}`);
-  console.log(`Event: ${event}`);
-  console.log(`Created: ${created_at}`);
 
   if (data && data.cart) {
     const { cart } = data;
@@ -57,13 +51,6 @@ export const handleCouponApplied = asyncWrapper(async (req, res) => {
   }
 
   console.log("=".repeat(80) + "\n");
-
-  // Note: The coupon discount is already applied by Salla to the cart total.
-  // Our bundle modal will fetch the current cart state via Salla's API
-  // when the customer opens it, so the coupon discount will be reflected automatically.
-
-  // Optional: Store coupon application for analytics/tracking
-  // You can implement a CouponApplication model here if needed for reporting
 
   res.status(200).json({
     success: true,

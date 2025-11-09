@@ -329,6 +329,37 @@ const useBundleStore = create((set, get) => ({
     });
   },
 
+  // Product Review Actions
+  updateProductReview: async (productId, reviewId, reviewData) => {
+    try {
+      const response = await axios.put(
+        `/products/${productId}/reviews/${reviewId}`,
+        reviewData
+      );
+
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data.data,
+        };
+      }
+
+      return {
+        success: false,
+        message: response.data.message || "Failed to update review",
+      };
+    } catch (error) {
+      console.error("Update product review error:", error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to update review",
+      };
+    }
+  },
+
   // Reset state
   reset: () =>
     set({

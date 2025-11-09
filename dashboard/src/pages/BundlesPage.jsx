@@ -205,7 +205,7 @@ function BundleCard({
           <Group gap="xs">
             <IconTarget size="0.9rem" className="text-gray-500" />
             <Text size="sm" c="dimmed">
-              {bundle.bundles?.length || 0} مستوى
+              {bundle.bundles?.length || 0} عرض
             </Text>
           </Group>
         </Grid.Col>

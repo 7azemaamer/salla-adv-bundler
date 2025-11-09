@@ -1,5 +1,7 @@
 import { asyncWrapper } from "../../../utils/errorHandler.js";
 import productService from "../services/product.service.js";
+import { getCachedReviews } from "../services/productCache.service.js";
+import { getValidAccessToken } from "../../../utils/tokenHelper.js";
 
 /* ===============================================
  * Get products for bundle creation
@@ -147,6 +149,89 @@ export const searchProducts = asyncWrapper(async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to search products",
+    });
+  }
+});
+
+/* ===============================================
+ * Get cached product reviews
+ * =============================================== */
+export const getProductReviews = asyncWrapper(async (req, res) => {
+  const { store_id } = req.user;
+  const { product_id } = req.params;
+
+  try {
+    const accessToken = await getValidAccessToken(store_id);
+
+    if (!accessToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Access token not available",
+      });
+    }
+
+    const result = await getCachedReviews(store_id, product_id, accessToken);
+
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        data: result.data || [],
+        lastFetched: result.lastFetched,
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: "No reviews found",
+        data: [],
+      });
+    }
+  } catch (error) {
+    console.error("Get product reviews error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch reviews",
+      data: [],
+    });
+  }
+});
+
+/* ===============================================
+ * Update cached product review
+ * =============================================== */
+export const updateProductReview = asyncWrapper(async (req, res) => {
+  const { store_id } = req.user;
+  const { product_id, review_id } = req.params;
+  const { customerName, rating, content } = req.body;
+
+  try {
+    // Import here to avoid circular dependency
+    const { updateCachedReview } = await import(
+      "../services/productCache.service.js"
+    );
+
+    const result = await updateCachedReview(store_id, product_id, review_id, {
+      customerName,
+      rating,
+      content,
+    });
+
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        message: "Review updated successfully",
+        data: result.data,
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+  } catch (error) {
+    console.error("Update product review error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update review",
     });
   }
 });

@@ -294,7 +294,7 @@ export default function CreateBundlePage() {
               />
               <Stepper.Step
                 label="إعداد العروض"
-                description="تحديد مستويات الباقة والهدايا"
+                description="تحديد عروضالباقة والهدايا"
                 icon={<IconGift size="1.1rem" />}
               />
               <Stepper.Step
@@ -426,7 +426,7 @@ export default function CreateBundlePage() {
               <Stack gap="md">
                 <Group justify="space-between">
                   <Title order={3} className="text-gray-700">
-                    إعداد مستويات الباقة
+                    إعداد عروضالباقة
                   </Title>
                   <Button
                     leftSection={<IconPlus size="0.9rem" />}
@@ -434,7 +434,7 @@ export default function CreateBundlePage() {
                     onClick={addTier}
                     disabled={form.values.bundles.length >= 5}
                   >
-                    إضافة مستوى
+                    إضافة عرض
                   </Button>
                 </Group>
 
@@ -600,7 +600,7 @@ export default function CreateBundlePage() {
                     <Divider my="md" />
 
                     <Group justify="space-between" mb="sm">
-                      <Text fw={500}>العروض والهدايا</Text>
+                      <Text fw={500}>منتجات الخصم او هدايا العرض</Text>
                       <Button
                         size="xs"
                         variant="light"
@@ -632,7 +632,7 @@ export default function CreateBundlePage() {
                         <Stack gap="sm">
                           <div>
                             <Text size="sm" fw={500} mb="xs">
-                              اختيار المنتج للعرض
+                              اختيار المنتج (العرض)
                             </Text>
                             <TextInput
                               placeholder="البحث في المنتجات..."
@@ -1030,7 +1030,8 @@ export default function CreateBundlePage() {
                                 color: tier.tier_text_color || "#212529",
                               }}
                             >
-                              العروض والهدايا ({tier.offers.length}):
+                              منتجات الخصم او هدايا العرض ({tier.offers.length}
+                              ):
                             </Text>
                             <Stack gap="xs">
                               {tier.offers.map((offer, offerIndex) => {

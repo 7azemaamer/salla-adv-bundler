@@ -24,13 +24,9 @@ const buildOptions = {
 if (isWatch) {
   const ctx = await esbuild.context(buildOptions);
   await ctx.watch();
-  console.log('👀 Watching for changes...');
 } else {
   try {
     await esbuild.build(buildOptions);
-    console.log('✅ Modal bundle built successfully!');
-    console.log(`   Output: ${buildOptions.outfile}`);
-    console.log(`   Mode: ${isProduction ? 'production' : 'development'}`);
   } catch (error) {
     console.error('❌ Build failed:', error);
     process.exit(1);

@@ -1,5 +1,3 @@
-import BundleService from "../services/bundle.service.js";
-
 /* ===============
  * Salla App Snippet Controller
  * Generates the JavaScript snippet to be injected via Salla App Snippets
@@ -16,13 +14,12 @@ class SnippetController {
 
       res.set({
         "Content-Type": "application/javascript",
-        "Cache-Control": "no-cache, no-store, must-revalidate", // Disable caching during development
+        "Cache-Control": "no-cache, no-store, must-revalidate", 
         Pragma: "no-cache",
         Expires: "0",
         "Access-Control-Allow-Origin": "*",
       });
 
-      // This is the snippet that Salla will inject automatically
       const snippet = `
 // Salla Bundle System App Snippet
 // This script is automatically injected by the Salla App
@@ -210,7 +207,7 @@ class SnippetController {
           }, 2000);
         }
       } catch (err) {
-        console.log('[Salla Bundle] Toast hiding failed:', err);
+        console.warn('[Salla Bundle] Toast hiding failed:', err);
       }
     }
 
@@ -219,7 +216,6 @@ class SnippetController {
       hideAllToasts();
       
       if (!window.salla?.cart) {
-        console.log('[Salla Bundle] Salla SDK not ready, will retry...');
         setTimeout(clearCartSilently, 500);
         return;
       }
@@ -228,16 +224,15 @@ class SnippetController {
         .then((response) => {
           const items = response?.data?.cart?.items || [];
           if (!items.length) {
-            console.log('[Salla Bundle] Cart is already empty');
             return;
           }
           const deletions = items.map((item) => salla.cart.deleteItem({ id: item.id }));
           return Promise.allSettled(deletions).then(() => {
-            console.log('[Salla Bundle] Cart cleared successfully');
+            console.info('[Salla Bundle] Cart cleared successfully');
           });
         })
         .catch((err) => {
-          console.log('[Salla Bundle] Clear cart failed:', err);
+          console.error('[Salla Bundle] Clear cart failed:', err);
         });
     }
 

@@ -14,7 +14,7 @@ export default function SettingsHeader() {
         </Title>
       </Group>
       <Text className="text-gray-600">
-        إدارة إعدادات التطبيق والتحكم في سلوك العروض
+        إدارة إعدادات التطبيق والتحكم في سلوك الباقات
       </Text>
     </div>
   );

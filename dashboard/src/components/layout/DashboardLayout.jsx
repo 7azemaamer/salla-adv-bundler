@@ -39,7 +39,7 @@ const navItems = [
   },
   {
     icon: IconPackage,
-    label: "العروض",
+    label: "الباقات",
     path: "/dashboard/bundles",
     color: "green",
   },

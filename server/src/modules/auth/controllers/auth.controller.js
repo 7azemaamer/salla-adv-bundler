@@ -155,10 +155,6 @@ export const completeSetup = asyncWrapper(async (req, res) => {
     { expiresIn: "30d" } // Long-lived token
   );
 
-  console.log(
-    `[Setup Complete]: Store ${store.store_id} (${email}) completed first-time setup`
-  );
-
   res.json({
     success: true,
     token: jwtToken,
@@ -211,9 +207,6 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
     store.access_token_expires_at &&
     store.access_token_expires_at < new Date()
   ) {
-    console.log(
-      `[Login]: Access token expired for store ${store.store_id}, refreshing...`
-    );
 
     if (!store.refresh_token) {
       return res.status(403).json({
@@ -249,9 +242,7 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
       store.access_token_expires_at = new Date(Date.now() + expires_in * 1000);
       await store.save();
 
-      console.log(
-        `[Login]: Successfully refreshed token for store ${store.store_id}`
-      );
+
     } catch (error) {
       console.error(
         `[Login]: Failed to refresh token for store ${store.store_id}:`,
@@ -278,9 +269,6 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
     { expiresIn: "30d" }
   );
 
-  console.log(
-    `[Login]: Store ${store.store_id} (${email}) logged in successfully`
-  );
 
   res.json({
     success: true,
@@ -331,17 +319,7 @@ export const forgotPassword = asyncWrapper(async (req, res) => {
   store.reset_code_expires = new Date(Date.now() + 15 * 60 * 1000);
   await store.save();
 
-  // TODO: Send email with reset code
-  // For now, log it to console
-  console.log("\n" + "=".repeat(80));
-  console.log("🔐 PASSWORD RESET CODE (SMTP NOT CONFIGURED)");
-  console.log("=".repeat(80));
-  console.log(`Store: ${store.name} (${store.store_id})`);
-  console.log(`Email: ${email}`);
-  console.log(`\n🔢 RESET CODE:`);
-  console.log(`   ${resetCode}`);
-  console.log(`\n⏰ Expires in 15 minutes`);
-  console.log("=".repeat(80) + "\n");
+
 
   res.json({
     success: true,

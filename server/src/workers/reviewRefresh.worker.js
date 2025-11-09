@@ -44,7 +44,7 @@ export const startReviewRefreshWorker = () => {
           const reviewsResult = await fetchStoreReviews(accessToken, {
             type: "rating",
             is_published: true,
-            per_page: 15,
+            per_page: 20,
             product_id: product_id,
           });
 

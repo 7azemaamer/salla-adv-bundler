@@ -40,10 +40,6 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
     const cachedData = await ProductCache.findOne({ store_id, product_id });
 
     if (cachedData && cachedData.cache_expiry > new Date()) {
-      console.log(
-        `[ProductCache]: Using cached reviews for product ${product_id}`
-      );
-
       cachedData.fetch_count += 1;
       await cachedData.save();
 
@@ -58,7 +54,7 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
     const reviewsResult = await fetchStoreReviews(accessToken, {
       type: "rating",
       is_published: true,
-      per_page: 15,
+      per_page: 20,
       product_id: product_id,
     });
 
@@ -87,10 +83,6 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
       new: true,
     });
 
-    console.log(
-      `[ProductCache]: Cached ${formattedReviews.length} reviews for product ${product_id}`
-    );
-
     return {
       success: true,
       data: formattedReviews,
@@ -105,7 +97,6 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
 
     const cachedData = await ProductCache.findOne({ store_id, product_id });
     if (cachedData && cachedData.cached_reviews.length > 0) {
-      console.log(`[ProductCache]: Returning expired cache due to error`);
       return {
         success: true,
         data: cachedData.cached_reviews,
@@ -123,13 +114,76 @@ export const getCachedReviews = async (store_id, product_id, accessToken) => {
   }
 };
 
+/**
+ * Update a specific cached review
+ */
+export const updateCachedReview = async (
+  store_id,
+  product_id,
+  review_id,
+  updates
+) => {
+  try {
+    const cachedData = await ProductCache.findOne({ store_id, product_id });
+
+    if (!cachedData) {
+      return {
+        success: false,
+        message: "Product cache not found",
+      };
+    }
+
+    // Convert review_id to number for consistent comparison
+    const numericReviewId = Number(review_id);
+    const reviewIndex = cachedData.cached_reviews.findIndex(
+      (r) => r.id === numericReviewId
+    );
+
+    if (reviewIndex === -1) {
+      return {
+        success: false,
+        message: "Review not found",
+      };
+    }
+
+    // Update the review fields
+    if (updates.customerName !== undefined) {
+      cachedData.cached_reviews[reviewIndex].customerName =
+        updates.customerName;
+    }
+    if (updates.rating !== undefined) {
+      cachedData.cached_reviews[reviewIndex].rating = updates.rating;
+    }
+    if (updates.content !== undefined) {
+      cachedData.cached_reviews[reviewIndex].content = updates.content;
+    }
+
+    // Mark as modified to ensure save works with nested arrays
+    cachedData.markModified("cached_reviews");
+    await cachedData.save();
+
+    return {
+      success: true,
+      data: cachedData.cached_reviews[reviewIndex],
+    };
+  } catch (error) {
+    console.error(
+      "[ProductCache]: Error updating cached review:",
+      error.message
+    );
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+};
+
 export const invalidateProductCache = async (store_id, product_id) => {
   try {
     await ProductCache.findOneAndUpdate(
       { store_id, product_id },
       { cache_expiry: new Date(0) } // Set expiry to past
     );
-    console.log(`[ProductCache]: Invalidated cache for product ${product_id}`);
     return true;
   } catch (error) {
     console.error("[ProductCache]: Error invalidating cache:", error.message);
@@ -145,9 +199,6 @@ export const cleanupExpiredCache = async () => {
     const result = await ProductCache.deleteMany({
       cache_expiry: { $lt: new Date() },
     });
-    console.log(
-      `[ProductCache]: Cleaned up ${result.deletedCount} expired cache entries`
-    );
     return result.deletedCount;
   } catch (error) {
     console.error("[ProductCache]: Error cleaning up cache:", error.message);

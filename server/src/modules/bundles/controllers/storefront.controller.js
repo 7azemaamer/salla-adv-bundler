@@ -419,7 +419,6 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
     const store = await storeService.getStoreByDomain(store_id);
 
     if (!store) {
-      console.log("[Payment Methods] ❌ Store not found for domain:", store_id);
       return res.status(404).json({
         success: false,
         message: "Store not found",
@@ -444,18 +443,10 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
       });
     }
 
-    // Use actual store_id from database, not the URL parameter
-    console.log(
-      "[Payment Methods] Getting access token for store_id:",
-      store.store_id
-    );
+
     const accessToken = await getValidAccessToken(store.store_id);
 
     if (!accessToken) {
-      console.log(
-        "[Payment Methods] No valid access token found for store:",
-        store.store_id
-      );
       return res.status(200).json({
         success: true,
         data: store.payment_methods || [],

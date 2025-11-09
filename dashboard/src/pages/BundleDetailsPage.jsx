@@ -445,7 +445,7 @@ export default function BundleDetailsPage() {
                       عدد العروض
                     </Text>
                     <Text size="sm" fw={500}>
-                      {currentBundle.bundles?.length || 0} مستوى
+                      {currentBundle.bundles?.length || 0} عرض
                     </Text>
                   </div>
                 </Group>
@@ -456,7 +456,7 @@ export default function BundleDetailsPage() {
           <Grid.Col span={{ base: 12, md: 6 }}>
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Title order={3} className="text-gray-800" mb="md">
-                مستويات العرض المركب
+                عروضالعرض المركب
               </Title>
 
               <Stack gap="md">
