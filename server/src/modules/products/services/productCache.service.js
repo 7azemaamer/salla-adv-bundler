@@ -162,6 +162,9 @@ export const updateCachedReview = async (
     if (updates.content !== undefined) {
       cachedData.cached_reviews[reviewIndex].content = updates.content;
     }
+    if (updates.timeAgo !== undefined) {
+      cachedData.cached_reviews[reviewIndex].timeAgo = updates.timeAgo;
+    }
 
     // Mark as modified to ensure save works with nested arrays
     cachedData.markModified("cached_reviews");

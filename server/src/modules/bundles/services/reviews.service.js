@@ -96,19 +96,29 @@ export const fetchStoreReviews = async (accessToken, options = {}) => {
       is_published = true,
       per_page = 10,
       page = 1,
+      product_id = null,
     } = options;
+
+    const params = {
+      type,
+      is_published,
+      per_page,
+      page,
+      sort: "created_at", // Sort by creation date
+      order: "desc", // Latest first
+    };
+
+    // Add product_id filter if provided
+    if (product_id) {
+      params.products = product_id;
+    }
 
     const response = await axios.get("https://api.salla.dev/admin/v2/reviews", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: "application/json",
       },
-      params: {
-        type,
-        is_published,
-        per_page,
-        page,
-      },
+      params,
     });
 
     if (response.data && response.data.data) {

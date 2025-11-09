@@ -80,6 +80,7 @@ export default function EditBundlePage() {
     customerName: "",
     rating: 5,
     content: "",
+    timeAgo: "",
   });
   const [savingReview, setSavingReview] = useState(false);
   const [showAddManualReview, setShowAddManualReview] = useState(false);
@@ -2072,6 +2073,7 @@ export default function EditBundlePage() {
                               customerName: editingReview.customerName || "",
                               rating: editingReview.rating || 5,
                               content: editingReview.content || "",
+                              timeAgo: editingReview.timeAgo || "منذ يومين",
                             });
                           }}
                           leftSection={<IconEdit size="1rem" />}
@@ -2130,6 +2132,20 @@ export default function EditBundlePage() {
                         autosize
                         minRows={4}
                         maxRows={8}
+                        dir="rtl"
+                        style={{ textAlign: "right" }}
+                      />
+
+                      <TextInput
+                        label="التاريخ (مثال: منذ يومين، منذ 3 أسابيع)"
+                        placeholder="منذ يومين"
+                        value={editedReviewData.timeAgo}
+                        onChange={(e) =>
+                          setEditedReviewData({
+                            ...editedReviewData,
+                            timeAgo: e.target.value,
+                          })
+                        }
                         dir="rtl"
                         style={{ textAlign: "right" }}
                       />
