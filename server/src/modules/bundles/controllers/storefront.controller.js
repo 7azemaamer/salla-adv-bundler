@@ -84,7 +84,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         announcement: settings.announcement,
         cache_version: Math.max(
           settings.cache_version || 0,
-          bundleConfig.cache_version || 0
+          bundle.cache_version || 0
         ), // Use latest version
       },
     },
