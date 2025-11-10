@@ -1799,9 +1799,6 @@ router.get("/modal.js", (req, res) => {
               <!-- كود الخصم - Discount Code Section -->
               \${this.renderDiscountCode()}
               
-              <!-- Announcement Banner -->
-              \${this.renderAnnouncement()}
-              
               <!-- Timer at the end after discount code -->
               \${this.renderTimer('review') ? \`
                 <div style="margin-top: 16px; display: flex; justify-content: center;">
@@ -1809,6 +1806,8 @@ router.get("/modal.js", (req, res) => {
                 </div>
               \` : ''}
             </div>
+            <!-- Announcement Banner -->
+              \${this.renderAnnouncement()}
           </div>
           \${this.renderReviews('review')}
           \${this.renderFreeShippingBanner(totalPrice, 'review')}
@@ -3593,12 +3592,10 @@ router.get("/modal.js", (req, res) => {
     renderAnnouncement() {
       const bundleConfig = this.bundleData?.data || this.bundleData;
       if (!bundleConfig?.settings?.announcement?.enabled) {
-        console.log('[Announcement] Not enabled or not found:', bundleConfig?.settings?.announcement);
         return '';
       }
       
       const announcement = bundleConfig.settings.announcement;
-      console.log('[Announcement] Rendering with data:', announcement);
       
       // Professional SVG icons map
       const iconMap = {
