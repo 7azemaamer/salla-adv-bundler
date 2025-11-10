@@ -14,7 +14,7 @@ class SnippetController {
 
       res.set({
         "Content-Type": "application/javascript",
-        "Cache-Control": "no-cache, no-store, must-revalidate", 
+        "Cache-Control": "no-cache, no-store, must-revalidate",
         Pragma: "no-cache",
         Expires: "0",
         "Access-Control-Allow-Origin": "*",
@@ -1765,7 +1765,7 @@ class SnippetController {
         }
         
         // Use cache_version from bundle data for automatic cache busting
-        let cacheVersion = '3.0.0'; // Fallback version
+        let cacheVersion = '3.1.0'; 
         try {
           const cachedBundleData = window.__SALLA_BUNDLE_CACHE__?.[\`product_\${this.productId}\`];
           if (cachedBundleData?.settings?.cache_version) {

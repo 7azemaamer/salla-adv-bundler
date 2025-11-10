@@ -3150,55 +3150,7 @@ router.get("/modal.js", (req, res) => {
       }
     }
 
-    async trackTierSelection(tierId) {
-      // Track which tier user selected (for tier popularity analytics)
-      try {
-        const bundleConfig = this.bundleData.data || this.bundleData;
-        const bundleId = bundleConfig._id || bundleConfig.id;
-        
-        if (!bundleId || !tierId) return;
-
-        const url = \`\${this.apiUrl}/storefront/bundles/\${bundleId}/track/tier-selection?store=\${this.storeDomain}\`;
-        
-        fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
-          },
-          body: JSON.stringify({ tier_id: tierId })
-        }).catch(err => {
-          console.error('[Analytics] Tier selection tracking failed:', err);
-        });
-      } catch (error) {
-        console.error('[Analytics] Tier selection tracking error:', error);
-      }
-    }
-
-    async trackTierCheckout(tierId) {
-      // Track which tier user proceeded to checkout with
-      try {
-        const bundleConfig = this.bundleData.data || this.bundleData;
-        const bundleId = bundleConfig._id || bundleConfig.id;
-        
-        if (!bundleId || !tierId) return;
-
-        const url = \`\${this.apiUrl}/storefront/bundles/\${bundleId}/track/tier-checkout?store=\${this.storeDomain}\`;
-        
-        fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
-          },
-          body: JSON.stringify({ tier_id: tierId })
-        }).catch(err => {
-          console.error('[Analytics] Tier checkout tracking failed:', err);
-        });
-      } catch (error) {
-        console.error('[Analytics] Tier checkout tracking error:', error);
-      }
-    }
+    // Old tier tracking methods removed - now combined with trackBundleClick()
 
     trackBundleSelection(bundleData) {
       if (typeof gtag === 'function') {
