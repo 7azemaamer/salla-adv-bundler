@@ -64,13 +64,13 @@ export default function BundleDetailsPage() {
     try {
       await generateOffers(bundleId);
       notifications.show({
-        title: "تم تفعيل العرض المركب",
-        message: "تم إنشاء العروض الخاصة وتفعيل العرض المركب بنجاح",
+        title: "تم تفعيل الباقة",
+        message: "تم إنشاء العروض الخاصة وتفعيل الباقة بنجاح",
         color: "green",
       });
     } catch (error) {
       notifications.show({
-        title: "خطأ في تفعيل العرض المركب",
+        title: "خطأ في تفعيل الباقة",
         message: error.message,
         color: "red",
       });
@@ -81,8 +81,8 @@ export default function BundleDetailsPage() {
     try {
       await deactivateBundle(bundleId);
       notifications.show({
-        title: "تم إلغاء تفعيل العرض المركب",
-        message: "تم إلغاء تفعيل العرض المركب بنجاح",
+        title: "تم إلغاء تفعيل الباقة",
+        message: "تم إلغاء تفعيل الباقة بنجاح",
         color: "blue",
       });
     } catch (error) {
@@ -98,14 +98,14 @@ export default function BundleDetailsPage() {
     try {
       await deleteBundle(bundleId);
       notifications.show({
-        title: "تم حذف العرض المركب",
-        message: "تم حذف العرض المركب بنجاح",
+        title: "تم حذف الباقة",
+        message: "تم حذف الباقة بنجاح",
         color: "green",
       });
       navigate("/dashboard/bundles");
     } catch (error) {
       notifications.show({
-        title: "خطأ في حذف العرض المركب",
+        title: "خطأ في حذف الباقة",
         message: error.message,
         color: "red",
       });
@@ -134,7 +134,7 @@ export default function BundleDetailsPage() {
     return (
       <Container size="xl">
         <Alert color="red" title="خطأ في تحميل البيانات">
-          {error || "لم يتم العثور على العرض المركب"}
+          {error || "لم يتم العثور على الباقة"}
         </Alert>
       </Container>
     );
@@ -233,7 +233,7 @@ export default function BundleDetailsPage() {
                     navigate(`/dashboard/bundles/${bundleId}/edit`)
                   }
                 >
-                  تعديل العرض المركب
+                  تعديل الباقة
                 </Menu.Item>
                 {/* 
                 <Menu.Item
@@ -258,7 +258,7 @@ export default function BundleDetailsPage() {
                     color="green"
                     onClick={handleGenerateOffers}
                   >
-                    تفعيل العرض المركب
+                    تفعيل الباقة
                   </Menu.Item>
                 )}
 
@@ -278,7 +278,7 @@ export default function BundleDetailsPage() {
                     color="green"
                     onClick={handleGenerateOffers}
                   >
-                    إعادة تفعيل العرض المركب
+                    إعادة تفعيل الباقة
                   </Menu.Item>
                 )}
 
@@ -289,7 +289,7 @@ export default function BundleDetailsPage() {
                   color="red"
                   onClick={handleDelete}
                 >
-                  حذف العرض المركب
+                  حذف الباقة
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -325,7 +325,7 @@ export default function BundleDetailsPage() {
         {/* Performance Overview */}
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Title order={3} className="text-gray-800" mb="md">
-            أداء العرض المركب
+            أداء الباقة
           </Title>
 
           <Grid>
@@ -381,13 +381,13 @@ export default function BundleDetailsPage() {
         </Card>
 
         {/* Tier Analytics */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Title order={3} className="text-gray-800" mb="md">
+        <Card shadow="sm" padding="md" radius="md" withBorder>
+          <Title order={3} className="text-gray-800" mb="sm">
             تحليلات العروض (الباقات)
           </Title>
 
           {currentBundle.bundles && currentBundle.bundles.length > 0 ? (
-            <Stack gap="md">
+            <Stack gap="xs">
               {currentBundle.bundles.map((tier, index) => {
                 const selections = tier.tier_selections || 0;
                 const checkouts = tier.tier_checkouts || 0;
@@ -397,17 +397,17 @@ export default function BundleDetailsPage() {
                     : 0;
 
                 return (
-                  <Paper key={index} p="md" withBorder>
-                    <Group justify="space-between" mb="sm">
+                  <Paper key={index} p="sm" withBorder>
+                    <Group justify="space-between" mb="xs">
                       <Group gap="xs">
-                        <Text fw={600} size="lg">
+                        <Text fw={600} size="md">
                           {tier.tier_title || `العرض ${tier.tier}`}
                         </Text>
-                        <Badge size="sm" variant="light" color="blue">
+                        <Badge size="xs" variant="light" color="blue">
                           اشترِ {tier.buy_quantity}
                         </Badge>
                         {tier.is_default && (
-                          <Badge size="sm" variant="light" color="yellow">
+                          <Badge size="xs" variant="light" color="yellow">
                             افتراضي
                           </Badge>
                         )}
@@ -416,31 +416,31 @@ export default function BundleDetailsPage() {
 
                     <Grid>
                       <Grid.Col span={4}>
-                        <Stack gap={4}>
+                        <Stack gap={2}>
                           <Text size="xs" c="dimmed">
                             النقرات
                           </Text>
-                          <Text size="xl" fw={700} c="blue">
+                          <Text size="lg" fw={700} c="blue">
                             {selections}
                           </Text>
                         </Stack>
                       </Grid.Col>
                       <Grid.Col span={4}>
-                        <Stack gap={4}>
+                        <Stack gap={2}>
                           <Text size="xs" c="dimmed">
                             إتمام الطلب
                           </Text>
-                          <Text size="xl" fw={700} c="green">
+                          <Text size="lg" fw={700} c="green">
                             {checkouts}
                           </Text>
                         </Stack>
                       </Grid.Col>
                       <Grid.Col span={4}>
-                        <Stack gap={4}>
+                        <Stack gap={2}>
                           <Text size="xs" c="dimmed">
                             معدل التحويل
                           </Text>
-                          <Text size="xl" fw={700} c="violet">
+                          <Text size="lg" fw={700} c="violet">
                             {conversionRate}%
                           </Text>
                         </Stack>
@@ -449,13 +449,13 @@ export default function BundleDetailsPage() {
 
                     {selections > 0 && (
                       <>
-                        <Text size="xs" c="dimmed" mt="sm" mb={4}>
+                        <Text size="xs" c="dimmed" mt="xs" mb={2}>
                           معدل إتمام الطلب
                         </Text>
                         <Progress
                           value={parseFloat(conversionRate)}
                           color="violet"
-                          size="md"
+                          size="sm"
                         />
                       </>
                     )}
@@ -463,15 +463,15 @@ export default function BundleDetailsPage() {
                 );
               })}
 
-              <Alert color="blue" variant="light" title="ملاحظة">
-                <Text size="sm">
+              <Alert color="blue" variant="light" title="ملاحظة" p="xs">
+                <Text size="xs">
                   <strong>النقرات:</strong> عدد المرات التي اختار فيها العملاء
                   هذا العرض
                   <br />
-                  <strong>إتمام الطلب:</strong> عدد المرات التي أتم فيها العملاء
-                  الطلب مع هذا العرض
+                  <strong>إتمام الطلب:</strong> عدد المرات التي توجه فيها
+                  العملاء إلى صفحة الدفع مع هذا العرض (نقرات على زر الدفع)
                   <br />
-                  <strong>معدل التحويل:</strong> نسبة العملاء الذين أتموا الطلب
+                  <strong>معدل التحويل:</strong> نسبة العملاء الذين توجهوا للدفع
                   من إجمالي من اختاروا هذا العرض
                 </Text>
               </Alert>
@@ -488,7 +488,7 @@ export default function BundleDetailsPage() {
           <Grid.Col span={{ base: 12, md: 6 }}>
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Title order={3} className="text-gray-800" mb="md">
-                معلومات العرض المركب
+                معلومات الباقة
               </Title>
 
               <Stack gap="md">
@@ -561,7 +561,7 @@ export default function BundleDetailsPage() {
           <Grid.Col span={{ base: 12, md: 6 }}>
             <Card shadow="sm" padding="lg" radius="md" withBorder>
               <Title order={3} className="text-gray-800" mb="md">
-                عروضالعرض المركب
+                عروض الباقة
               </Title>
 
               <Stack gap="md">
@@ -614,14 +614,14 @@ export default function BundleDetailsPage() {
         {/* Status-specific alerts */}
         {currentBundle.status === "draft" && (
           <Alert color="yellow" title="باقة غير مفعلة">
-            هذه العرض المركب ما زالت في وضع المسودة. اضغط على "تفعيل العرض
+            هذه الباقة ما زالت في وضع المسودة. اضغط على "تفعيل
             المركب" لإنشاء العروض الخاصة وتفعيلها.
           </Alert>
         )}
 
         {currentBundle.status === "expired" && (
           <Alert color="red" title="باقة منتهية الصلاحية">
-            انتهت صلاحية هذه العرض المركب. يمكنك تعديل تاريخ الانتهاء أو إنشاء
+            انتهت صلاحية هذه الباقة. يمكنك تعديل تاريخ الانتهاء أو إنشاء
             باقة جديدة.
           </Alert>
         )}

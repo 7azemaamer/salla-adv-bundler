@@ -28,7 +28,7 @@ import useSettingsStore from "../../stores/useSettingsStore";
 export default function AnnouncementSettingsPanel({
   settings,
   loading,
-//   onToggle,
+  //   onToggle,
 }) {
   const announcement = settings.announcement || {};
   const { updateSettings } = useSettingsStore();
@@ -123,7 +123,7 @@ export default function AnnouncementSettingsPanel({
             onChange={(event) =>
               setAnnouncementEnabled(event.currentTarget.checked)
             }
-            disabled={loading}
+            disabled={loading.updating || loading.fetching}
           />
 
           {announcementEnabled && (
@@ -137,7 +137,7 @@ export default function AnnouncementSettingsPanel({
                 onChange={(event) =>
                   setAnnouncementTitle(event.currentTarget.value)
                 }
-                disabled={loading}
+                disabled={loading.updating}
               />
 
               <Textarea
@@ -148,7 +148,7 @@ export default function AnnouncementSettingsPanel({
                   setAnnouncementContent(event.currentTarget.value)
                 }
                 minRows={3}
-                disabled={loading}
+                disabled={loading.updating}
                 required
               />
 
@@ -157,7 +157,7 @@ export default function AnnouncementSettingsPanel({
                 data={iconOptions}
                 value={announcementIcon}
                 onChange={(value) => setAnnouncementIcon(value)}
-                disabled={loading}
+                disabled={loading.updating}
               />
 
               <Group grow>
@@ -165,7 +165,7 @@ export default function AnnouncementSettingsPanel({
                   label="لون الخلفية"
                   value={announcementBgColor}
                   onChange={setAnnouncementBgColor}
-                  disabled={loading}
+                  disabled={loading.updating}
                   format="hex"
                   swatches={presetColors.map((c) => c.bg)}
                 />
@@ -174,7 +174,7 @@ export default function AnnouncementSettingsPanel({
                   label="لون النص"
                   value={announcementTextColor}
                   onChange={setAnnouncementTextColor}
-                  disabled={loading}
+                  disabled={loading.updating}
                   format="hex"
                   swatches={presetColors.map((c) => c.text)}
                 />
@@ -259,7 +259,7 @@ export default function AnnouncementSettingsPanel({
           <Group justify="flex-start" mt="md">
             <Button
               onClick={handleSaveAnnouncement}
-              loading={loading}
+              loading={loading.updating}
               leftSection={<IconCheck size="1rem" />}
             >
               حفظ الإعدادات
