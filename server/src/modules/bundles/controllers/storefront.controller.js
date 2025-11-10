@@ -133,7 +133,7 @@ export const getBundleConfig = asyncWrapper(async (req, res) => {
  * =============================================== */
 export const trackBundleInteraction = asyncWrapper(async (req, res) => {
   const { bundle_id } = req.params;
-  const { action, revenue } = req.body;
+  const { action, revenue, tier_id } = req.body;
 
   if (!action || !["view", "click", "conversion"].includes(action)) {
     return res.status(400).json({
@@ -148,6 +148,10 @@ export const trackBundleInteraction = asyncWrapper(async (req, res) => {
       break;
     case "click":
       await bundleService.trackBundleClick(bundle_id);
+      // Also track tier checkout if tier_id is provided
+      if (tier_id) {
+        await bundleService.trackTierCheckout(bundle_id, tier_id);
+      }
       break;
     case "conversion":
       await bundleService.trackBundleConversion(bundle_id, revenue || 0);

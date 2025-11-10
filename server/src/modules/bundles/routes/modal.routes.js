@@ -1997,11 +1997,6 @@ router.get("/modal.js", (req, res) => {
       this.selectedBundle = bundleId;
 
       this.triggerFeedback('click');
-      
-      // Track tier selection (only if user actively clicked, not default)
-      if (!wasDefaultSelection && bundleId) {
-        this.trackTierSelection(bundleId);
-      }
 
       if (this.paymentSliderAnimationFrame) {
         cancelAnimationFrame(this.paymentSliderAnimationFrame);
@@ -2125,13 +2120,9 @@ router.get("/modal.js", (req, res) => {
         }
 
 
-        // Track bundle click for analytics (CTR calculation)
-        this.trackBundleClick();
-        
-        // Track which tier user is checking out with
-        if (this.selectedBundle) {
-          this.trackTierCheckout(this.selectedBundle);
-        }
+        // Track bundle click and tier checkout in one request
+        const tierNumber = this.selectedBundle ? parseInt(this.selectedBundle.replace('tier-', '')) : null;
+        this.trackBundleClick(tierNumber);
         
         this.trackBundleSelection(selectedBundleData);
 
@@ -3125,8 +3116,9 @@ router.get("/modal.js", (req, res) => {
       return \`<div class="salla-variant-compact">\${selectorsHtml}</div>\`;
     }
 
-    async trackBundleClick() {
+    async trackBundleClick(tierId = null) {
       // Track bundle click for CTR (Click-Through Rate) analytics
+      // Also tracks which tier was selected when clicking checkout
       try {
         const bundleConfig = this.bundleData.data || this.bundleData;
         const bundleId = bundleConfig._id || bundleConfig.id;
@@ -3136,14 +3128,20 @@ router.get("/modal.js", (req, res) => {
           return;
         }
 
-        const url = \`\${this.apiUrl}/storefront/bundles/\${bundleId}/track/click?store=\${this.storeDomain}\`;
+        const url = \`\${this.apiUrl}/storefront/bundles/\${bundleId}/track?store=\${this.storeDomain}\`;
+        
+        const payload = { action: 'click' };
+        if (tierId) {
+          payload.tier_id = tierId;
+        }
         
         fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'ngrok-skip-browser-warning': 'true'
-          }
+          },
+          body: JSON.stringify(payload)
         }).catch(err => {
           console.error('[Analytics] Click tracking failed:', err);
         });
@@ -3643,9 +3641,13 @@ router.get("/modal.js", (req, res) => {
     renderAnnouncement() {
       const bundleData = this.bundleData;
       // Get announcement from global settings
-      if (!bundleData?.settings?.announcement?.enabled) return '';
+      if (!bundleData?.settings?.announcement?.enabled) {
+        console.log('[Announcement] Not enabled or not found:', bundleData?.settings?.announcement);
+        return '';
+      }
       
       const announcement = bundleData.settings.announcement;
+      console.log('[Announcement] Rendering with data:', announcement);
       
       // Professional SVG icons map
       const iconMap = {
@@ -3661,7 +3663,7 @@ router.get("/modal.js", (req, res) => {
       const icon = iconMap[announcement.icon] || iconMap['info'];
       
       // Check if mobile for different layout
-      const isMobile = this.isMobile;
+      const isMobile = window.innerWidth <= 640;
       
       if (isMobile) {
         // Minimal vertical layout for mobile
