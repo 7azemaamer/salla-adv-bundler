@@ -1764,7 +1764,6 @@ class SnippetController {
           params.append('customer_id', CONFIG.customerId);
         }
         
-        // Use cache_version from bundle data for automatic cache busting
         let cacheVersion = '3.1.0'; 
         try {
           const cachedBundleData = window.__SALLA_BUNDLE_CACHE__?.[\`product_\${this.productId}\`];

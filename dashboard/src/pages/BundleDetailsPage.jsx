@@ -389,11 +389,11 @@ export default function BundleDetailsPage() {
           {currentBundle.bundles && currentBundle.bundles.length > 0 ? (
             <Stack gap="xs">
               {currentBundle.bundles.map((tier, index) => {
-                const selections = tier.tier_selections || 0;
                 const checkouts = tier.tier_checkouts || 0;
+                const bundleViews = currentBundle.total_views || 0;
                 const conversionRate =
-                  selections > 0
-                    ? ((checkouts / selections) * 100).toFixed(1)
+                  bundleViews > 0
+                    ? ((checkouts / bundleViews) * 100).toFixed(1)
                     : 0;
 
                 return (
@@ -414,43 +414,29 @@ export default function BundleDetailsPage() {
                       </Group>
                     </Group>
 
-                    <Grid>
-                      <Grid.Col span={4}>
-                        <Stack gap={2}>
-                          <Text size="xs" c="dimmed">
-                            النقرات
-                          </Text>
-                          <Text size="lg" fw={700} c="blue">
-                            {selections}
-                          </Text>
-                        </Stack>
-                      </Grid.Col>
-                      <Grid.Col span={4}>
-                        <Stack gap={2}>
-                          <Text size="xs" c="dimmed">
-                            إتمام الطلب
-                          </Text>
-                          <Text size="lg" fw={700} c="green">
-                            {checkouts}
-                          </Text>
-                        </Stack>
-                      </Grid.Col>
-                      <Grid.Col span={4}>
-                        <Stack gap={2}>
-                          <Text size="xs" c="dimmed">
-                            معدل التحويل
-                          </Text>
-                          <Text size="lg" fw={700} c="violet">
-                            {conversionRate}%
-                          </Text>
-                        </Stack>
-                      </Grid.Col>
-                    </Grid>
+                    <Group justify="space-between" grow>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          نقرات الدفع
+                        </Text>
+                        <Text size="lg" fw={700} c="blue">
+                          {checkouts}
+                        </Text>
+                      </Stack>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          معدل التحويل من المشاهدات
+                        </Text>
+                        <Text size="lg" fw={700} c="violet">
+                          {conversionRate}%
+                        </Text>
+                      </Stack>
+                    </Group>
 
-                    {selections > 0 && (
+                    {bundleViews > 0 && (
                       <>
                         <Text size="xs" c="dimmed" mt="xs" mb={2}>
-                          معدل إتمام الطلب
+                          معدل نقرات الدفع من إجمالي المشاهدات ({bundleViews})
                         </Text>
                         <Progress
                           value={parseFloat(conversionRate)}
@@ -465,14 +451,11 @@ export default function BundleDetailsPage() {
 
               <Alert color="blue" variant="light" title="ملاحظة" p="xs">
                 <Text size="xs">
-                  <strong>النقرات:</strong> عدد المرات التي اختار فيها العملاء
-                  هذا العرض
+                  <strong>نقرات الدفع:</strong> عدد المرات التي نقر فيها العملاء
+                  على زر الدفع مع هذا العرض المحدد
                   <br />
-                  <strong>إتمام الطلب:</strong> عدد المرات التي توجه فيها
-                  العملاء إلى صفحة الدفع مع هذا العرض (نقرات على زر الدفع)
-                  <br />
-                  <strong>معدل التحويل:</strong> نسبة العملاء الذين توجهوا للدفع
-                  من إجمالي من اختاروا هذا العرض
+                  <strong>معدل التحويل من المشاهدات:</strong> نسبة العملاء الذين
+                  نقروا على الدفع مع هذا العرض من إجمالي مشاهدات الباقة
                 </Text>
               </Alert>
             </Stack>
@@ -614,15 +597,15 @@ export default function BundleDetailsPage() {
         {/* Status-specific alerts */}
         {currentBundle.status === "draft" && (
           <Alert color="yellow" title="باقة غير مفعلة">
-            هذه الباقة ما زالت في وضع المسودة. اضغط على "تفعيل
-            المركب" لإنشاء العروض الخاصة وتفعيلها.
+            هذه الباقة ما زالت في وضع المسودة. اضغط على "تفعيل المركب" لإنشاء
+            العروض الخاصة وتفعيلها.
           </Alert>
         )}
 
         {currentBundle.status === "expired" && (
           <Alert color="red" title="باقة منتهية الصلاحية">
-            انتهت صلاحية هذه الباقة. يمكنك تعديل تاريخ الانتهاء أو إنشاء
-            باقة جديدة.
+            انتهت صلاحية هذه الباقة. يمكنك تعديل تاريخ الانتهاء أو إنشاء باقة
+            جديدة.
           </Alert>
         )}
       </Stack>

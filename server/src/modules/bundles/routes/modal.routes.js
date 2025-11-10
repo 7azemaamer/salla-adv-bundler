@@ -3591,14 +3591,13 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderAnnouncement() {
-      const bundleData = this.bundleData;
-      // Get announcement from global settings
-      if (!bundleData?.settings?.announcement?.enabled) {
-        console.log('[Announcement] Not enabled or not found:', bundleData?.settings?.announcement);
+      const bundleConfig = this.bundleData?.data || this.bundleData;
+      if (!bundleConfig?.settings?.announcement?.enabled) {
+        console.log('[Announcement] Not enabled or not found:', bundleConfig?.settings?.announcement);
         return '';
       }
       
-      const announcement = bundleData.settings.announcement;
+      const announcement = bundleConfig.settings.announcement;
       console.log('[Announcement] Rendering with data:', announcement);
       
       // Professional SVG icons map
