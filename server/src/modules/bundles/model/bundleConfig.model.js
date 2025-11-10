@@ -95,6 +95,15 @@ const BundleConfigSchema = new mongoose.Schema(
           type: Boolean,
           default: false,
         },
+        // Tier-level analytics
+        tier_selections: {
+          type: Number,
+          default: 0,
+        },
+        tier_checkouts: {
+          type: Number,
+          default: 0,
+        },
         offers: [
           {
             product_id: {

@@ -1988,9 +1988,15 @@ router.get("/modal.js", (req, res) => {
     }
 
     selectBundle(bundleId) {
+      const wasDefaultSelection = this.selectedBundle === null;
       this.selectedBundle = bundleId;
 
       this.triggerFeedback('click');
+      
+      // Track tier selection (only if user actively clicked, not default)
+      if (!wasDefaultSelection && bundleId) {
+        this.trackTierSelection(bundleId);
+      }
 
       if (this.paymentSliderAnimationFrame) {
         cancelAnimationFrame(this.paymentSliderAnimationFrame);
@@ -2114,6 +2120,14 @@ router.get("/modal.js", (req, res) => {
         }
 
 
+        // Track bundle click for analytics (CTR calculation)
+        this.trackBundleClick();
+        
+        // Track which tier user is checking out with
+        if (this.selectedBundle) {
+          this.trackTierCheckout(this.selectedBundle);
+        }
+        
         this.trackBundleSelection(selectedBundleData);
 
         // Set flag to prevent cart clearing during checkout
@@ -3104,6 +3118,83 @@ router.get("/modal.js", (req, res) => {
       }).join('');
 
       return \`<div class="salla-variant-compact">\${selectorsHtml}</div>\`;
+    }
+
+    async trackBundleClick() {
+      // Track bundle click for CTR (Click-Through Rate) analytics
+      try {
+        const bundleConfig = this.bundleData.data || this.bundleData;
+        const bundleId = bundleConfig._id || bundleConfig.id;
+        
+        if (!bundleId) {
+          console.warn('[Analytics] Bundle ID not found for click tracking');
+          return;
+        }
+
+        const url = \`\${this.apiUrl}/storefront/bundles/\${bundleId}/track/click?store=\${this.storeDomain}\`;
+        
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        }).catch(err => {
+          console.error('[Analytics] Click tracking failed:', err);
+        });
+      } catch (error) {
+        console.error('[Analytics] Click tracking error:', error);
+      }
+    }
+
+    async trackTierSelection(tierId) {
+      // Track which tier user selected (for tier popularity analytics)
+      try {
+        const bundleConfig = this.bundleData.data || this.bundleData;
+        const bundleId = bundleConfig._id || bundleConfig.id;
+        
+        if (!bundleId || !tierId) return;
+
+        const url = \`\${this.apiUrl}/storefront/bundles/\${bundleId}/track/tier-selection?store=\${this.storeDomain}\`;
+        
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ tier_id: tierId })
+        }).catch(err => {
+          console.error('[Analytics] Tier selection tracking failed:', err);
+        });
+      } catch (error) {
+        console.error('[Analytics] Tier selection tracking error:', error);
+      }
+    }
+
+    async trackTierCheckout(tierId) {
+      // Track which tier user proceeded to checkout with
+      try {
+        const bundleConfig = this.bundleData.data || this.bundleData;
+        const bundleId = bundleConfig._id || bundleConfig.id;
+        
+        if (!bundleId || !tierId) return;
+
+        const url = \`\${this.apiUrl}/storefront/bundles/\${bundleId}/track/tier-checkout?store=\${this.storeDomain}\`;
+        
+        fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
+          body: JSON.stringify({ tier_id: tierId })
+        }).catch(err => {
+          console.error('[Analytics] Tier checkout tracking failed:', err);
+        });
+      } catch (error) {
+        console.error('[Analytics] Tier checkout tracking error:', error);
+      }
     }
 
     trackBundleSelection(bundleData) {

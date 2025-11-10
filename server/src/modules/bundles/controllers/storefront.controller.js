@@ -157,6 +157,50 @@ export const trackBundleInteraction = asyncWrapper(async (req, res) => {
 });
 
 /* ===============================================
+ * Track tier selection (public endpoint)
+ * =============================================== */
+export const trackTierSelection = asyncWrapper(async (req, res) => {
+  const { bundle_id } = req.params;
+  const { tier_id } = req.body;
+
+  if (!tier_id) {
+    return res.status(400).json({
+      success: false,
+      message: "tier_id is required",
+    });
+  }
+
+  await bundleService.trackTierSelection(bundle_id, tier_id);
+
+  res.status(200).json({
+    success: true,
+    message: "Tier selection tracked successfully",
+  });
+});
+
+/* ===============================================
+ * Track tier checkout (public endpoint)
+ * =============================================== */
+export const trackTierCheckout = asyncWrapper(async (req, res) => {
+  const { bundle_id } = req.params;
+  const { tier_id } = req.body;
+
+  if (!tier_id) {
+    return res.status(400).json({
+      success: false,
+      message: "tier_id is required",
+    });
+  }
+
+  await bundleService.trackTierCheckout(bundle_id, tier_id);
+
+  res.status(200).json({
+    success: true,
+    message: "Tier checkout tracked successfully",
+  });
+});
+
+/* ===============================================
  * Get Store Reviews (Public endpoint for modal)
  * =============================================== */
 export const getStoreReviews = asyncWrapper(async (req, res) => {

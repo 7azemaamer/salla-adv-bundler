@@ -112,7 +112,8 @@ export default function BundleDetailsPage() {
     }
   };
 
-  if (loading.bundles) {
+  // Show loading skeleton while fetching data
+  if (loading.bundles || (!currentBundle && !error)) {
     return (
       <Container size="xl">
         <Stack gap="lg">
@@ -128,6 +129,7 @@ export default function BundleDetailsPage() {
     );
   }
 
+  // Show error only after loading is complete
   if (error || !currentBundle) {
     return (
       <Container size="xl">
@@ -376,6 +378,109 @@ export default function BundleDetailsPage() {
               </Stack>
             </Grid.Col>
           </Grid>
+        </Card>
+
+        {/* Tier Analytics */}
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Title order={3} className="text-gray-800" mb="md">
+            تحليلات العروض (الباقات)
+          </Title>
+
+          {currentBundle.bundles && currentBundle.bundles.length > 0 ? (
+            <Stack gap="md">
+              {currentBundle.bundles.map((tier, index) => {
+                const selections = tier.tier_selections || 0;
+                const checkouts = tier.tier_checkouts || 0;
+                const conversionRate =
+                  selections > 0
+                    ? ((checkouts / selections) * 100).toFixed(1)
+                    : 0;
+
+                return (
+                  <Paper key={index} p="md" withBorder>
+                    <Group justify="space-between" mb="sm">
+                      <Group gap="xs">
+                        <Text fw={600} size="lg">
+                          {tier.tier_title || `العرض ${tier.tier}`}
+                        </Text>
+                        <Badge size="sm" variant="light" color="blue">
+                          اشترِ {tier.buy_quantity}
+                        </Badge>
+                        {tier.is_default && (
+                          <Badge size="sm" variant="light" color="yellow">
+                            افتراضي
+                          </Badge>
+                        )}
+                      </Group>
+                    </Group>
+
+                    <Grid>
+                      <Grid.Col span={4}>
+                        <Stack gap={4}>
+                          <Text size="xs" c="dimmed">
+                            النقرات
+                          </Text>
+                          <Text size="xl" fw={700} c="blue">
+                            {selections}
+                          </Text>
+                        </Stack>
+                      </Grid.Col>
+                      <Grid.Col span={4}>
+                        <Stack gap={4}>
+                          <Text size="xs" c="dimmed">
+                            إتمام الطلب
+                          </Text>
+                          <Text size="xl" fw={700} c="green">
+                            {checkouts}
+                          </Text>
+                        </Stack>
+                      </Grid.Col>
+                      <Grid.Col span={4}>
+                        <Stack gap={4}>
+                          <Text size="xs" c="dimmed">
+                            معدل التحويل
+                          </Text>
+                          <Text size="xl" fw={700} c="violet">
+                            {conversionRate}%
+                          </Text>
+                        </Stack>
+                      </Grid.Col>
+                    </Grid>
+
+                    {selections > 0 && (
+                      <>
+                        <Text size="xs" c="dimmed" mt="sm" mb={4}>
+                          معدل إتمام الطلب
+                        </Text>
+                        <Progress
+                          value={parseFloat(conversionRate)}
+                          color="violet"
+                          size="md"
+                        />
+                      </>
+                    )}
+                  </Paper>
+                );
+              })}
+
+              <Alert color="blue" variant="light" title="ملاحظة">
+                <Text size="sm">
+                  <strong>النقرات:</strong> عدد المرات التي اختار فيها العملاء
+                  هذا العرض
+                  <br />
+                  <strong>إتمام الطلب:</strong> عدد المرات التي أتم فيها العملاء
+                  الطلب مع هذا العرض
+                  <br />
+                  <strong>معدل التحويل:</strong> نسبة العملاء الذين أتموا الطلب
+                  من إجمالي من اختاروا هذا العرض
+                </Text>
+              </Alert>
+            </Stack>
+          ) : (
+            <Text c="dimmed" size="sm">
+              لا توجد بيانات تحليلية متاحة بعد
+            </Text>
+          )}
         </Card>
 
         {/* Bundle Configuration */}

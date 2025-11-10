@@ -701,6 +701,22 @@ class BundleService {
     });
   }
 
+  async trackTierSelection(bundle_id, tier_id) {
+    // Increment tier_selections for the specific tier
+    await BundleConfig.findOneAndUpdate(
+      { _id: bundle_id, "bundles.tier": tier_id },
+      { $inc: { "bundles.$.tier_selections": 1 } }
+    );
+  }
+
+  async trackTierCheckout(bundle_id, tier_id) {
+    // Increment tier_checkouts for the specific tier
+    await BundleConfig.findOneAndUpdate(
+      { _id: bundle_id, "bundles.tier": tier_id },
+      { $inc: { "bundles.$.tier_checkouts": 1 } }
+    );
+  }
+
   /* ===============
    * Clean up expired bundles
    * ===============*/
