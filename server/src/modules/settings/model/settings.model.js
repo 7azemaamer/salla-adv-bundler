@@ -178,7 +178,7 @@ const settingsSchema = new mongoose.Schema(
       },
       icon: {
         type: String,
-        default: "🚚",
+        default: "truck",
       },
       progress_color: {
         type: String,
@@ -429,6 +429,34 @@ const settingsSchema = new mongoose.Schema(
     show_payment_methods: {
       type: Boolean,
       default: true, // Show payment methods bar by default
+    },
+    // Announcement banner settings
+    announcement: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      title: {
+        type: String,
+        default: "",
+      },
+      content: {
+        type: String,
+        default: "إعلان مهم للعملاء",
+      },
+      icon: {
+        type: String,
+        enum: ["info", "warning", "success", "star", "gift", "bell", "fire"],
+        default: "info",
+      },
+      bg_color: {
+        type: String,
+        default: "#e0f2fe",
+      },
+      text_color: {
+        type: String,
+        default: "#0c4a6e",
+      },
     },
     // Future settings can be added here
     // e.g., custom_colors, etc.

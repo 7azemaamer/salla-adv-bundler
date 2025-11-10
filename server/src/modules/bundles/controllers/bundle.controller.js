@@ -140,6 +140,7 @@ export const updateBundle = asyncWrapper(async (req, res) => {
     "review_limit",
     "review_fetch_limit",
     "manual_reviews",
+    "announcement",
   ];
   const updates = {};
 

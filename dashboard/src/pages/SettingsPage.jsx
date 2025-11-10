@@ -16,6 +16,7 @@ import {
   IconClick,
   IconStar,
   IconSettings,
+  IconBell,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../stores/useSettingsStore";
@@ -25,6 +26,7 @@ import FreeShippingSettingsPanel from "../components/settings/FreeShippingSettin
 import TimerSettingsPanel from "../components/settings/TimerSettingsPanel";
 import StickyButtonSettingsPanel from "../components/settings/StickyButtonSettingsPanel";
 import ReviewCountSettingsPanel from "../components/settings/ReviewCountSettingsPanel";
+import AnnouncementSettingsPanel from "../components/settings/AnnouncementSettingsPanel";
 import SystemSettingsPanel from "../components/settings/SystemSettingsPanel";
 import DemoImageModal from "../components/settings/DemoImageModal";
 
@@ -171,6 +173,12 @@ export default function SettingsPage() {
                 التقييمات
               </Tabs.Tab>
               <Tabs.Tab
+                value="announcement"
+                leftSection={<IconBell size="1rem" />}
+              >
+                الإعلانات
+              </Tabs.Tab>
+              <Tabs.Tab
                 value="system"
                 leftSection={<IconSettings size="1rem" />}
               >
@@ -228,7 +236,16 @@ export default function SettingsPage() {
               />
             </Tabs.Panel>
 
-            {/* Tab 6: System Settings */}
+            {/* Tab 6: Announcement Settings */}
+            <Tabs.Panel value="announcement" pt={0}>
+              <AnnouncementSettingsPanel
+                settings={settings}
+                loading={loading}
+                onToggle={handleToggleChange}
+              />
+            </Tabs.Panel>
+
+            {/* Tab 7: System Settings */}
             <Tabs.Panel value="system" pt={0}>
               <SystemSettingsPanel />
             </Tabs.Panel>

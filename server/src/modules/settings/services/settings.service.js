@@ -35,7 +35,7 @@ class SettingsService {
             progress_text: "أضف {amount} ريال للحصول على شحن مجاني",
             bg_color: "#10b981",
             text_color: "#ffffff",
-            icon: "🚚",
+            icon: "truck",
             progress_color: "#ffffff",
             progress_bg_color: "rgba(255, 255, 255, 0.3)",
           },

@@ -1288,6 +1288,34 @@ router.get("/modal.js", (req, res) => {
 
 
 
+      // Announcement Banner
+      let announcementHtml = '';
+      if (bundleConfig.settings?.announcement?.enabled) {
+        const announcement = bundleConfig.settings.announcement;
+        
+        // Professional SVG icons map
+        const iconMap = {
+          info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
+          warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+          success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+          star: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
+          gift: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>',
+          bell: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>',
+          fire: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>'
+        };
+        const icon = iconMap[announcement.icon] || iconMap['info'];
+        
+        announcementHtml = \`
+          <div class="salla-announcement-banner" style="background-color: \${announcement.bg_color}; color: \${announcement.text_color}; padding: 12px 16px; border-radius: 8px; margin: 12px 0; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <span class="salla-announcement-icon" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">\${icon}</span>
+            <div class="salla-announcement-content" style="flex: 1;">
+              \${announcement.title ? \`<div class="salla-announcement-title" style="font-weight: 600; margin-bottom: 4px; font-size: 14px;">\${announcement.title}</div>\` : ''}
+              <div class="salla-announcement-text" style="font-size: 13px; line-height: 1.5;">\${announcement.content || ''}</div>
+            </div>
+          </div>
+        \`;
+      }
+
       let summaryHtml = \`
         <button class="salla-summary-toggle" onclick="if(window.sallaBundleModal) window.sallaBundleModal.toggleSummary();">
           <span class="salla-summary-toggle-icon">▼</span>
@@ -1296,6 +1324,7 @@ router.get("/modal.js", (req, res) => {
         <div class="salla-summary-details">
           \${summaryDetailsHtml}
         </div>
+        \${announcementHtml}
         <button class="salla-checkout-button"
                 style="background-color: \${bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff'};"
                 onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
@@ -1764,6 +1793,9 @@ router.get("/modal.js", (req, res) => {
               
               <!-- كود الخصم - Discount Code Section -->
               \${this.renderDiscountCode()}
+              
+              <!-- Announcement Banner -->
+              \${this.renderAnnouncement()}
               
               <!-- Timer at the end after discount code -->
               \${this.renderTimer('review') ? \`
@@ -3510,6 +3542,37 @@ router.get("/modal.js", (req, res) => {
       if (showInStep === 'all') return true;
       
       return showInStep === currentStepType;
+    }
+
+    renderAnnouncement() {
+      const bundleConfig = this.bundleConfig;
+      // Get announcement from global settings
+      if (!bundleConfig.settings?.announcement?.enabled) return '';
+      
+      const announcement = bundleConfig.settings.announcement;
+      
+      // Professional SVG icons map
+      const iconMap = {
+        info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
+        warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+        success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+        star: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>',
+        gift: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>',
+        bell: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>',
+        fire: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>'
+      };
+      
+      const icon = iconMap[announcement.icon] || iconMap['info'];
+      
+      return \`
+        <div class="salla-announcement-banner" style="background-color: \${announcement.bg_color}; color: \${announcement.text_color}; padding: 12px 16px; border-radius: 8px; margin: 12px 0; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+          <span class="salla-announcement-icon" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">\${icon}</span>
+          <div class="salla-announcement-content" style="flex: 1;">
+            <div class="salla-announcement-title" style="font-weight: 600; margin-bottom: 4px; font-size: 14px;">\${announcement.title || ''}</div>
+            <div class="salla-announcement-text" style="font-size: 13px; line-height: 1.5;">\${announcement.content || ''}</div>
+          </div>
+        </div>
+      \`;
     }
 
     renderTimer(currentStepType = 'bundles') {

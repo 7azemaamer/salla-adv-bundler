@@ -83,12 +83,7 @@ const DUMMY_REVIEWS = [
   },
 ];
 
-/**
- * Fetch reviews from Salla API with multi-page support
- * @param {string} accessToken - Salla merchant access token
- * @param {object} options - Query options
- * @returns {Promise<object>} Reviews data
- */
+
 export const fetchStoreReviews = async (accessToken, options = {}) => {
   try {
     const {

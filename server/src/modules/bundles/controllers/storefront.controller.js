@@ -81,6 +81,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         review_count: settings.review_count,
         review_display: settings.review_display,
         show_payment_methods: settings.show_payment_methods !== false, // Default to true
+        announcement: settings.announcement,
       },
     },
   });
@@ -442,7 +443,6 @@ export const getPaymentMethods = asyncWrapper(async (req, res) => {
         cached: true,
       });
     }
-
 
     const accessToken = await getValidAccessToken(store.store_id);
 

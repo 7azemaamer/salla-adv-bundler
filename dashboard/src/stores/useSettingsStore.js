@@ -30,7 +30,7 @@ const useSettingsStore = create((set, get) => ({
       motivation_75_100: " ممتاز! خطوة أخيرة فقط!",
       bg_color: "#10b981",
       text_color: "#ffffff",
-      icon: "🚚",
+      icon: "truck",
       progress_color: "#ffffff",
       progress_bg_color: "rgba(255, 255, 255, 0.3)",
     },
@@ -69,6 +69,14 @@ const useSettingsStore = create((set, get) => ({
       hide_ratings: false,
       hide_names: false,
       hide_avatars: false,
+    },
+    announcement: {
+      enabled: false,
+      title: "",
+      content: "إعلان مهم للعملاء",
+      icon: "info",
+      bg_color: "#e0f2fe",
+      text_color: "#0c4a6e",
     },
   },
   loading: {
