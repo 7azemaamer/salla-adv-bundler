@@ -3660,11 +3660,37 @@ router.get("/modal.js", (req, res) => {
       
       const icon = iconMap[announcement.icon] || iconMap['info'];
       
+      // Check if mobile for different layout
+      const isMobile = this.isMobile;
+      
+      if (isMobile) {
+        // Minimal vertical layout for mobile
+        return \`
+          <div class="salla-announcement-banner salla-announcement-mobile" style="
+            background-color: \${announcement.bg_color}; 
+            color: \${announcement.text_color}; 
+            padding: 10px 12px; 
+            border-radius: 6px; 
+            margin: 10px 0; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+            <span class="salla-announcement-icon" style="display: flex; align-items: center; justify-content: center; opacity: 0.9;">\${icon}</span>
+            \${announcement.title ? \`<div class="salla-announcement-title" style="font-weight: 600; font-size: 13px; line-height: 1.3;">\${announcement.title}</div>\` : ''}
+            <div class="salla-announcement-text" style="font-size: 12px; line-height: 1.4; opacity: 0.95;">\${announcement.content || ''}</div>
+          </div>
+        \`;
+      }
+      
+      // Desktop horizontal layout
       return \`
         <div class="salla-announcement-banner" style="background-color: \${announcement.bg_color}; color: \${announcement.text_color}; padding: 12px 16px; border-radius: 8px; margin: 12px 0; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
           <span class="salla-announcement-icon" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">\${icon}</span>
           <div class="salla-announcement-content" style="flex: 1;">
-            <div class="salla-announcement-title" style="font-weight: 600; margin-bottom: 4px; font-size: 14px;">\${announcement.title || ''}</div>
+            \${announcement.title ? \`<div class="salla-announcement-title" style="font-weight: 600; margin-bottom: 4px; font-size: 14px;">\${announcement.title}</div>\` : ''}
             <div class="salla-announcement-text" style="font-size: 13px; line-height: 1.5;">\${announcement.content || ''}</div>
           </div>
         </div>
