@@ -110,6 +110,7 @@ class SettingsService {
         "review_date_randomizer", // Nested object - review date presets
         "review_display", // Nested object - review display toggles
         "custom_reviews", // Array of custom review objects
+        "announcement", // Nested object - announcement banner settings
       ];
 
       const filteredUpdates = {};
