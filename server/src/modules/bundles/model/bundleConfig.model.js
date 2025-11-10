@@ -293,6 +293,10 @@ const BundleConfigSchema = new mongoose.Schema(
       type: String,
       default: "system",
     },
+    cache_version: {
+      type: Number,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
@@ -342,9 +346,12 @@ BundleConfigSchema.statics.findActiveByStore = function (store_id) {
   });
 };
 
-// Pre-save middleware to update status based on dates
+// Pre-save middleware to update status based on dates and cache version
 BundleConfigSchema.pre("save", function (next) {
   const now = new Date();
+
+  // Update cache version for cache busting
+  this.cache_version = Date.now();
 
   // Auto-expire bundles
   if (this.expiry_date && this.expiry_date < now && this.status === "active") {
@@ -352,6 +359,12 @@ BundleConfigSchema.pre("save", function (next) {
     this.deactivated_at = now;
   }
 
+  next();
+});
+
+// Update cache_version on findOneAndUpdate
+BundleConfigSchema.pre("findOneAndUpdate", function (next) {
+  this.set({ cache_version: Date.now() });
   next();
 });
 

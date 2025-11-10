@@ -82,6 +82,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         review_display: settings.review_display,
         show_payment_methods: settings.show_payment_methods !== false, // Default to true
         announcement: settings.announcement,
+        cache_version: Math.max(settings.cache_version || 0, bundleConfig.cache_version || 0), // Use latest version
       },
     },
   });

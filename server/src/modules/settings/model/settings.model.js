@@ -458,6 +458,11 @@ const settingsSchema = new mongoose.Schema(
         default: "#0c4a6e",
       },
     },
+    // Cache version for client-side cache busting
+    cache_version: {
+      type: Number,
+      default: Date.now,
+    },
     // Future settings can be added here
     // e.g., custom_colors, etc.
   },
@@ -465,6 +470,18 @@ const settingsSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Update cache_version on every save
+settingsSchema.pre("save", function (next) {
+  this.cache_version = Date.now();
+  next();
+});
+
+// Update cache_version on findOneAndUpdate
+settingsSchema.pre("findOneAndUpdate", function (next) {
+  this.set({ cache_version: Date.now() });
+  next();
+});
 
 const Settings = mongoose.model("Settings", settingsSchema);
 

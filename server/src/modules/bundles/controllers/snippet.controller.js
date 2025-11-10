@@ -1764,9 +1764,19 @@ class SnippetController {
           params.append('customer_id', CONFIG.customerId);
         }
         
-        // Add version for cache busting (increment this manually when updating modal)
-        params.append('ver', '3.0.0'); // MAJOR UPDATE: Progress bar with animations!
-        params.append('t', Date.now()); // Timestamp for Cloudflare cache bypass
+        // Use cache_version from bundle data for automatic cache busting
+        let cacheVersion = '3.0.0'; // Fallback version
+        try {
+          const cachedBundleData = window.__SALLA_BUNDLE_CACHE__?.[\`product_\${this.productId}\`];
+          if (cachedBundleData?.settings?.cache_version) {
+            cacheVersion = cachedBundleData.settings.cache_version;
+          }
+        } catch (e) {
+          // Use fallback version
+        }
+        
+        params.append('ver', cacheVersion); // Dynamic cache version
+        params.append('t', Date.now()); // Timestamp for additional cache bypass
         
         const scriptUrl = \`\${CONFIG.apiUrl}/modal/modal.js?\${params}\`;
         

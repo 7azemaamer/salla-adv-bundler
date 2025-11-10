@@ -3,12 +3,17 @@ import { Router } from "express";
 const router = Router();
 
 router.get("/modal.js", (req, res) => {
+  // Enable caching with version parameter for cache busting
+  // The 'ver' and 't' query parameters ensure fresh content when updated
+  const cacheControl = req.query.ver
+    ? "public, max-age=86400, stale-while-revalidate=604800" // Cache for 24h if version provided
+    : "no-cache, no-store, must-revalidate"; // No cache if no version
+
   res.set({
     "Content-Type": "application/javascript",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    Pragma: "no-cache",
-    Expires: "0",
+    "Cache-Control": cacheControl,
     "Access-Control-Allow-Origin": "*",
+    Vary: "Accept-Encoding",
   });
 
   const modalScript = `
@@ -3636,11 +3641,11 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderAnnouncement() {
-      const bundleConfig = this.bundleConfig;
+      const bundleData = this.bundleData;
       // Get announcement from global settings
-      if (!bundleConfig.settings?.announcement?.enabled) return '';
+      if (!bundleData?.settings?.announcement?.enabled) return '';
       
-      const announcement = bundleConfig.settings.announcement;
+      const announcement = bundleData.settings.announcement;
       
       // Professional SVG icons map
       const iconMap = {
@@ -4131,7 +4136,7 @@ router.get("/modal.js", (req, res) => {
     renderReviews(currentStepType = 'bundles') {
        if (!this.reviews || this.reviews.length === 0) return '';
        // Check if review count feature is enabled
-       const reviewSettings = this.bundleConfig?.settings?.review_count;
+       const reviewSettings = this.bundleData?.settings?.review_count;
        if (reviewSettings && reviewSettings.enabled === false) return '';
        if (!this.shouldShowInStep('reviews', currentStepType)) return '';
        
