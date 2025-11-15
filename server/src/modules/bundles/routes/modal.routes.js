@@ -512,9 +512,7 @@ router.get("/modal.js", (req, res) => {
         } else {
           const params = new URLSearchParams();
 
-          if (this.contextData.storeId) {
-            params.append('store', this.contextData.storeId);
-          } else if (this.storeDomain) {
+           if (this.storeDomain) {
             params.append('store', this.storeDomain);
           }
 
