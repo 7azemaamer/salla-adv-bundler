@@ -584,10 +584,7 @@ class SnippetController {
   try {
     const params = new URLSearchParams();
     if (CONFIG.storeDomain) params.append('store', CONFIG.storeDomain);
-    // optional: prefer storeId if you have it
-    if (CONFIG.storeId) params.append('storeId', CONFIG.storeId);
 
-    // debug helper: add timestamp to bypass caches while diagnosing
     if (location && location.hostname === 'localhost') params.append('_t', Date.now().toString());
 
     const url = \`\${CONFIG.apiUrl}/storefront/bundles/\${this.productId}?\${params.toString()}\`;
