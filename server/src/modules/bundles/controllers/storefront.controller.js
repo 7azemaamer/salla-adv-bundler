@@ -22,6 +22,10 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
 
   // Handle simplified route: /bundles/:product_id?store=domain
   if (!store_id && (store || storeIdFromHeader)) {
+    console.log(
+      "[Get Bundles] Using store from query/header:",
+      store || storeIdFromHeader
+    );
     store_id = storeIdFromHeader || store;
     product_id = req.params.product_id;
   }

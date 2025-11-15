@@ -12,7 +12,6 @@ import {
 
 const router = Router();
 
-// Public storefront routes (no authentication required)
 
 // Get bundles for a specific product
 router.get(
