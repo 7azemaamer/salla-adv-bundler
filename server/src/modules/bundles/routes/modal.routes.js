@@ -512,7 +512,7 @@ router.get("/modal.js", (req, res) => {
         } else {
           const params = new URLSearchParams();
 
-           if (this.storeDomain) {
+          if (this.storeDomain) {
             params.append('store', this.storeDomain);
           }
 
@@ -927,7 +927,7 @@ router.get("/modal.js", (req, res) => {
 
     async fetchPaymentMethods() {
       try {
-        const storeId = this.contextData.storeId || this.storeDomain;
+        const storeId = this.storeDomain;
         const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/payment-methods\`, {
           headers: { 'ngrok-skip-browser-warning': 'true' }
         });

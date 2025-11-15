@@ -585,9 +585,7 @@ class SnippetController {
         // Build query parameters - prioritize store ID over domain
         const params = new URLSearchParams();
 
-        if (CONFIG.storeId) {
-          params.append('store', CONFIG.storeId);
-        } else if (CONFIG.storeDomain) {
+         if (CONFIG.storeDomain) {
           params.append('store', CONFIG.storeDomain);
         }
 
@@ -1599,9 +1597,7 @@ class SnippetController {
     preloadBundleData() {
       const params = new URLSearchParams();
 
-      if (CONFIG.storeId) {
-        params.append('store', CONFIG.storeId);
-      } else if (CONFIG.storeDomain) {
+      if (CONFIG.storeDomain) {
         params.append('store', CONFIG.storeDomain);
       }
 
