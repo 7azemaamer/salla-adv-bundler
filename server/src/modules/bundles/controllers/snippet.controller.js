@@ -580,44 +580,77 @@ class SnippetController {
       return null;
     }
 
-    async checkBundleExists() {
-      try {
-        // Build query parameters - prioritize store ID over domain
-        const params = new URLSearchParams();
+   async checkBundleExists() {
+  try {
+    const params = new URLSearchParams();
+    if (CONFIG.storeDomain) params.append('store', CONFIG.storeDomain);
+    // optional: prefer storeId if you have it
+    if (CONFIG.storeId) params.append('storeId', CONFIG.storeId);
 
-         if (CONFIG.storeDomain) {
-          params.append('store', CONFIG.storeDomain);
-        }
+    // debug helper: add timestamp to bypass caches while diagnosing
+    if (location && location.hostname === 'localhost') params.append('_t', Date.now().toString());
 
-        const response = await fetch(\`\${CONFIG.apiUrl}/storefront/bundles/\${this.productId}?\${params}\`, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-            'X-Store-Domain': CONFIG.storeDomain || '',
-            'X-Store-ID': CONFIG.storeId || '',
-            'X-Customer-ID': CONFIG.customerId || ''
-          }
-        });
+    const url = \`\${CONFIG.apiUrl}/storefront/bundles/\${this.productId}?\${params.toString()}\`;
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.data) {
-            if (data.data.settings) {
-              this.settings = data.data.settings;
-            }
-            
-            this.bundleData = data.data;
-          }
-          return true;
-        }
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        'X-Store-Domain': CONFIG.storeDomain || '',
+        'X-Store-ID': CONFIG.storeId || '',
+        'X-Customer-ID': CONFIG.customerId || '',
+        'X-Requested-With': 'XMLHttpRequest' // sometimes helps with edge routing
+      },
+      credentials: 'include', // only if you need cookies
+    });
 
-        return false;
-      } catch (error) {
-        console.error('[Salla Bundle] Bundle check failed:', error);
-        return false;
+    // If OK, parse normally
+    if (response.ok) {
+      const json = await response.json().catch(() => null);
+      if (json && json.data) {
+        if (json.data.settings) this.settings = json.data.settings;
+        this.bundleData = json.data;
+        return true;
       }
+      return false;
     }
+
+    // If NOT ok -> still try to parse body (some backends return payload with non-200 status)
+    const text = await response.text().catch(() => null);
+    let parsed = null;
+    try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
+
+    // Logging for debugging (check browser console)
+    console.warn('[Salla Bundle] Non-OK response', {
+      url: response.url,
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      rawBody: text ? (text.length > 1000 ? text.slice(0,1000)+'... (truncated)' : text) : null,
+      parsedBodySample: parsed ? (parsed.success ? 'success:true' : 'has data' ) : 'not json'
+    });
+
+    // If server returned structured JSON with data despite non-OK status, accept it
+    if (parsed && (parsed.success === true || parsed.data)) {
+      if (parsed.data.settings) this.settings = parsed.data.settings;
+      this.bundleData = parsed.data || parsed;
+      return true;
+    }
+
+    // As a last-ditch: treat 404 with non-empty body as a success only if it contains expected shape (risky)
+    if (!response.ok && parsed && parsed.data) {
+      this.bundleData = parsed.data;
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('[Salla Bundle] Bundle check failed (exception):', error);
+    return false;
+  }
+}
+
 
     getThemeSelectors() {
       const theme = this.settings.salla_theme || 'basic';
