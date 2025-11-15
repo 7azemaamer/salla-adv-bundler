@@ -24,9 +24,10 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
   if (!store_id && (store || storeIdFromHeader)) {
     console.log(
       "[Get Bundles] Using store from query/header:",
-      store || storeIdFromHeader
+      store,
+      storeIdFromHeader
     );
-    store_id = storeIdFromHeader || store;
+    store_id = store || storeIdFromHeader;
     product_id = req.params.product_id;
   }
 
