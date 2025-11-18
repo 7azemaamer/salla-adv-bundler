@@ -15,12 +15,8 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
   let { store_id, product_id } = req.params;
   const { store, store_id: queryStoreId } = req.query;
 
-  // Extract additional context from headers (sent by App Snippet)
-  const storeDomain = req.headers["x-store-domain"] || store;
   const storeIdFromHeader = req.headers["x-store-id"] || queryStoreId;
-  const customerId = req.headers["x-customer-id"];
 
-  // Handle simplified route: /bundles/:product_id?store=domain
   if (!store_id && (store || storeIdFromHeader)) {
     console.log(
       "[Get Bundles] Using store from query/header:",
@@ -31,7 +27,6 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     product_id = req.params.product_id;
   }
 
-  // If store is a domain (contains dots), look up the store_id from database
   if (store_id && store_id.includes(".")) {
     const storeDoc = await storeService.getStoreByDomain(store_id);
     if (storeDoc) {
@@ -55,19 +50,15 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     });
   }
 
-  // Track bundle view
   await bundleService.trackBundleView(bundle._id);
 
-  // Get enhanced bundle data with product information
   const enhancedBundle = await bundleService.getEnhancedBundleData(
     store_id,
     bundle
   );
 
-  // Get store settings (includes hide_default_buttons)
   const settings = await settingsService.getSettings(store_id);
 
-  // Return enhanced bundle configuration for frontend with settings
   res.status(200).json({
     success: true,
     data: {
@@ -111,7 +102,6 @@ export const getBundleConfig = asyncWrapper(async (req, res) => {
     });
   }
 
-  // Check if bundle is currently valid (within date range)
   if (!bundle.is_currently_active) {
     return res.status(404).json({
       success: false,

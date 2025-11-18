@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "fetch-payments": "node scripts/fetchAllPayments.js",
-    "refresh-reviews": "node scripts/refreshAllReviews.js"
+    "refresh-reviews": "node scripts/refreshAllReviews.js",
+    "refresh-all-tokens": "node scripts/forceRefreshAllTokens.js"
   },
   "type": "module",
   "keywords": [],
