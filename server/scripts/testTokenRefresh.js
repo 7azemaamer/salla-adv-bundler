@@ -7,6 +7,7 @@
  * before running the full force refresh.
  */
 
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -17,10 +18,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
+const MONGODB_URI = process.env.MONGO_URI;
+
 async function testTokenRefresh() {
   console.log("🧪 Testing token refresh setup...\n");
 
   try {
+    // Connect to MongoDB
+    console.log("Connecting to MongoDB...");
+    await mongoose.connect(MONGODB_URI);
+    console.log("✅ Connected to MongoDB successfully\n");
     // Check environment variables
     const clientKey = process.env.CLIENT_KEY;
     const clientSecret = process.env.CLIENT_SECRET_KEY;
@@ -64,11 +71,14 @@ async function testTokenRefresh() {
   } catch (error) {
     console.error("❌ Test failed:", error.message);
 
-    if (error.message.includes('Mongo')) {
+    if (error.message.includes('Mongo') || error.name === 'MongooseServerSelectionError') {
       console.log("\n💡 Make sure your MongoDB is running and connection string is correct in .env");
     }
 
     process.exit(1);
+  } finally {
+    await mongoose.connection.close();
+    console.log("🔌 MongoDB connection closed");
   }
 }
 

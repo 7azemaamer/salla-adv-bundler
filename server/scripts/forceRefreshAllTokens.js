@@ -9,6 +9,7 @@
  * Usage: node scripts/forceRefreshAllTokens.js
  */
 
+import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -19,6 +20,8 @@ import axios from "axios";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../.env") });
+
+const MONGODB_URI = process.env.MONGO_URI;
 
 class ForceTokenRefresher {
   constructor() {
@@ -128,6 +131,10 @@ class ForceTokenRefresher {
     console.log("🚀 Starting force refresh of ALL Salla tokens...\n");
 
     try {
+      // Connect to MongoDB
+      console.log("Connecting to MongoDB...");
+      await mongoose.connect(MONGODB_URI);
+      console.log("Connected to MongoDB successfully\n");
       // Get ALL stores with refresh tokens (regardless of expiration)
       const stores = await Store.find({
         is_deleted: false,
@@ -213,6 +220,9 @@ class ForceTokenRefresher {
     } catch (error) {
       console.error("💥 Script failed:", error);
       process.exit(1);
+    } finally {
+      await mongoose.connection.close();
+      console.log("🔌 MongoDB connection closed");
     }
   }
 

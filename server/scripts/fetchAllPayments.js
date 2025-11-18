@@ -46,50 +46,6 @@ async function fetchAllPayments() {
         }`
       );
 
-      try {
-        const paymentResult = await fetchPaymentMethods(store.access_token);
-
-        if (paymentResult && paymentResult.data) {
-          store.payment_methods = paymentResult.data;
-          store.payment_methods_updated_at = new Date();
-          await store.save();
-
-          successCount++;
-          const methodCount = paymentResult.data.length;
-          console.log(` Success! Fetched ${methodCount} payment methods`);
-
-          paymentResult.data.forEach((method) => {
-            console.log(`      - ${method.name} (${method.code})`);
-          });
-
-          results.push({
-            store_id: store.store_id,
-            name: store.name,
-            status: "success",
-            methods_count: methodCount,
-            methods: paymentResult.data.map((m) => m.name).join(", "),
-          });
-        } else {
-          failureCount++;
-          console.log(`Failed: No data returned`);
-          results.push({
-            store_id: store.store_id,
-            name: store.name,
-            status: "failed",
-            error: "No data returned",
-          });
-        }
-      } catch (error) {
-        failureCount++;
-        console.error(`Error: ${error.message}`);
-        results.push({
-          store_id: store.store_id,
-          name: store.name,
-          status: "error",
-          error: error.message,
-        });
-      }
-
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
