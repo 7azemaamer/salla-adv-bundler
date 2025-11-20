@@ -15,6 +15,8 @@ import {
   Button,
   Alert,
   Skeleton,
+  Box,
+  Overlay,
 } from "@mantine/core";
 import {
   IconPackage,
@@ -27,9 +29,12 @@ import {
   IconGift,
   IconInfoCircle,
   IconArrowUpRight,
+  IconLock,
 } from "@tabler/icons-react";
 import useAuthStore from "../stores/useAuthStore";
 import useBundleStore from "../stores/useBundleStore";
+import { usePlanFeatures } from "../hooks/usePlanFeatures";
+import DashboardTour from "../components/tour/DashboardTour";
 
 function StatCard({
   title,
@@ -79,9 +84,17 @@ function QuickActionCard({
   color,
   onClick,
   buttonText,
+  dataTour,
 }) {
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder className="h-full">
+    <Card
+      shadow="sm"
+      padding="lg"
+      radius="md"
+      withBorder
+      className="h-full"
+      data-tour={dataTour}
+    >
       <Stack gap="md">
         <Group>
           <ThemeIcon size="lg" variant="light" color={color}>
@@ -168,19 +181,31 @@ export default function DashboardHome() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { bundles, loading, fetchBundles } = useBundleStore();
+  const {
+    limits,
+    planLabel,
+    canCreateBundle,
+    isViewLimitApproaching,
+    isViewLimitReached,
+  } = usePlanFeatures();
+
+  const safeBundles = bundles || [];
 
   const stats = {
-    total: bundles.length,
-    active: bundles.filter((b) => b.status === "active").length,
-    draft: bundles.filter((b) => b.status === "draft").length,
-    inactive: bundles.filter((b) => b.status === "inactive").length,
-    totalViews: bundles.reduce((sum, b) => sum + (b.total_views || 0), 0),
-    totalClicks: bundles.reduce((sum, b) => sum + (b.total_clicks || 0), 0),
-    totalConversions: bundles.reduce(
+    total: safeBundles.length,
+    active: safeBundles.filter((b) => b.status === "active").length,
+    draft: safeBundles.filter((b) => b.status === "draft").length,
+    inactive: safeBundles.filter((b) => b.status === "inactive").length,
+    totalViews: safeBundles.reduce((sum, b) => sum + (b.total_views || 0), 0),
+    totalClicks: safeBundles.reduce((sum, b) => sum + (b.total_clicks || 0), 0),
+    totalConversions: safeBundles.reduce(
       (sum, b) => sum + (b.total_conversions || 0),
       0
     ),
-    totalRevenue: bundles.reduce((sum, b) => sum + (b.total_revenue || 0), 0),
+    totalRevenue: safeBundles.reduce(
+      (sum, b) => sum + (b.total_revenue || 0),
+      0
+    ),
   };
 
   useEffect(() => {
@@ -195,6 +220,7 @@ export default function DashboardHome() {
       color: "blue",
       buttonText: "إنشاء الآن",
       onClick: () => navigate("/dashboard/bundles/create"),
+      dataTour: "create-bundle",
     },
     {
       title: "عرض التحليلات",
@@ -203,6 +229,7 @@ export default function DashboardHome() {
       color: "violet",
       buttonText: "عرض التقارير",
       onClick: () => navigate("/dashboard/analytics"),
+      dataTour: "view-analytics",
     },
     {
       title: "إدارة العروض",
@@ -211,17 +238,18 @@ export default function DashboardHome() {
       color: "green",
       buttonText: "إدارة العروض",
       onClick: () => navigate("/dashboard/bundles"),
+      dataTour: "manage-bundles",
     },
   ];
 
-  const recentBundles = bundles.slice(0, 3);
+  const recentBundles = safeBundles.slice(0, 3);
   const conversionRate =
     stats.totalClicks > 0
       ? ((stats.totalConversions / stats.totalClicks) * 100).toFixed(1)
       : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 app">
       {/* Header */}
       <div>
         <Title order={1} className="text-gray-800 mb-2">
@@ -233,37 +261,99 @@ export default function DashboardHome() {
       </div>
 
       {/* Plan Limit Alert */}
-      {stats.total >=
-        (user?.plan === "basic" ? 3 : user?.plan === "pro" ? 10 : 50) && (
+      {!canCreateBundle(stats.total) && (
         <Alert
           icon={<IconInfoCircle size="1rem" />}
           title="وصلت إلى الحد الأقصى للباقات"
           color="yellow"
           variant="light"
         >
-          لقد وصلت إلى الحد الأقصى لعدد العروض في خطتك الحالية.
-          <Button variant="light" size="xs" ml="sm">
+          لقد وصلت إلى الحد الأقصى لعدد العروض ({limits.maxBundles}) في خطة{" "}
+          {planLabel} الحالية.
+          <Button
+            variant="light"
+            size="xs"
+            ml="sm"
+            onClick={() => navigate("/dashboard/settings")}
+          >
+            ترقية الخطة
+          </Button>
+        </Alert>
+      )}
+
+      {/* View Limit Alert */}
+      {isViewLimitApproaching(stats.totalViews) &&
+        !isViewLimitReached(stats.totalViews) &&
+        limits.monthlyViews && (
+          <Alert
+            icon={<IconInfoCircle size="1rem" />}
+            title="اقتربت من حد المشاهدات"
+            color="orange"
+            variant="light"
+          >
+            لقد استخدمت {stats.totalViews.toLocaleString()} من{" "}
+            {limits.monthlyViews.toLocaleString()} مشاهدة شهرية.
+            <Button
+              variant="light"
+              size="xs"
+              ml="sm"
+              onClick={() => navigate("/dashboard/settings")}
+            >
+              ترقية الخطة
+            </Button>
+          </Alert>
+        )}
+
+      {isViewLimitReached(stats.totalViews) && limits.monthlyViews && (
+        <Alert
+          icon={<IconInfoCircle size="1rem" />}
+          title="وصلت إلى الحد الأقصى للمشاهدات"
+          color="red"
+          variant="light"
+        >
+          لقد وصلت إلى الحد الأقصى للمشاهدات الشهرية (
+          {limits.monthlyViews.toLocaleString()}). قد لا تعمل بعض الميزات.
+          <Button
+            variant="light"
+            size="xs"
+            ml="sm"
+            onClick={() => navigate("/dashboard/settings")}
+          >
             ترقية الخطة
           </Button>
         </Alert>
       )}
 
       {/* Stats Grid */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+      <SimpleGrid
+        cols={{ base: 1, sm: 2, lg: 3 }}
+        spacing="md"
+        data-tour="stats-cards"
+      >
         <StatCard
           title="إجمالي العروض"
-          value={stats.total}
+          value={`${stats.total} / ${limits.maxBundles}`}
           icon={IconPackage}
           color="blue"
-          description={`${stats.active} نشط من ${stats.total}`}
+          description={`${stats.active} نشط من ${limits.maxBundles}`}
         />
 
         <StatCard
           title="إجمالي المشاهدات"
-          value={stats.totalViews.toLocaleString()}
+          value={
+            limits.monthlyViews
+              ? `${stats.totalViews.toLocaleString()} / ${limits.monthlyViews.toLocaleString()}`
+              : stats.totalViews.toLocaleString()
+          }
           icon={IconEye}
           color="green"
-          trend={12}
+          description={
+            limits.monthlyViews
+              ? `${Math.round(
+                  (stats.totalViews / limits.monthlyViews) * 100
+                )}% من الحد المتاح`
+              : undefined
+          }
         />
 
         <StatCard
@@ -271,7 +361,6 @@ export default function DashboardHome() {
           value={`${conversionRate}%`}
           icon={IconClick}
           color="violet"
-          description={`${stats.totalConversions} من ${stats.totalClicks}`}
         />
         {/* 
         <StatCard
@@ -283,47 +372,73 @@ export default function DashboardHome() {
         /> */}
       </SimpleGrid>
 
-      {/* Progress Bar */}
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
-        <Group justify="space-between" mb="md">
-          <div>
-            <Text fw={600}>استخدام الخطة الحالية</Text>
-            <Text size="sm" c="dimmed">
-              {stats.total} من{" "}
-              {user?.plan === "basic" ? 3 : user?.plan === "pro" ? 10 : 50} باقة
-            </Text>
-          </div>
-          <Badge
-            variant="light"
-            color={
-              user?.plan === "basic"
-                ? "blue"
-                : user?.plan === "pro"
-                ? "green"
-                : "purple"
-            }
-            className="capitalize"
-          >
-            {user?.plan || "basic"}
-          </Badge>
-        </Group>
+      {/* Progress Bars */}
+      <SimpleGrid
+        cols={{ base: 1, sm: 2 }}
+        spacing="md"
+        data-tour="progress-bars"
+      >
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" mb="md">
+            <div>
+              <Text fw={600}>استخدام العروض</Text>
+              <Text size="sm" c="dimmed">
+                {stats.total} من {limits.maxBundles} عرض
+              </Text>
+            </div>
+            <Badge
+              variant="light"
+              color={stats.total >= limits.maxBundles ? "red" : "blue"}
+            >
+              {Math.round((stats.total / limits.maxBundles) * 100)}%
+            </Badge>
+          </Group>
 
-        <Progress
-          value={
-            (stats.total /
-              (user?.plan === "basic" ? 3 : user?.plan === "pro" ? 10 : 50)) *
-            100
-          }
-          color={
-            user?.plan === "basic"
-              ? "blue"
-              : user?.plan === "pro"
-              ? "green"
-              : "purple"
-          }
-          size="lg"
-        />
-      </Card>
+          <Progress
+            value={(stats.total / limits.maxBundles) * 100}
+            color={stats.total >= limits.maxBundles ? "red" : "blue"}
+            size="lg"
+          />
+        </Card>
+
+        {limits.monthlyViews && (
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Group justify="space-between" mb="md">
+              <div>
+                <Text fw={600}>استخدام المشاهدات الشهرية</Text>
+                <Text size="sm" c="dimmed">
+                  {stats.totalViews.toLocaleString()} من{" "}
+                  {limits.monthlyViews.toLocaleString()} مشاهدة
+                </Text>
+              </div>
+              <Badge
+                variant="light"
+                color={
+                  isViewLimitReached(stats.totalViews)
+                    ? "red"
+                    : isViewLimitApproaching(stats.totalViews)
+                    ? "orange"
+                    : "green"
+                }
+              >
+                {Math.round((stats.totalViews / limits.monthlyViews) * 100)}%
+              </Badge>
+            </Group>
+
+            <Progress
+              value={(stats.totalViews / limits.monthlyViews) * 100}
+              color={
+                isViewLimitReached(stats.totalViews)
+                  ? "red"
+                  : isViewLimitApproaching(stats.totalViews)
+                  ? "orange"
+                  : "green"
+              }
+              size="lg"
+            />
+          </Card>
+        )}
+      </SimpleGrid>
 
       <Grid>
         {/* Quick Actions */}
@@ -348,6 +463,7 @@ export default function DashboardHome() {
             radius="md"
             withBorder
             className="h-full"
+            data-tour="recent-bundles"
           >
             <Group justify="space-between" mb="md">
               <Title order={3}>العروض الأخيرة</Title>
@@ -400,6 +516,9 @@ export default function DashboardHome() {
           </Card>
         </Grid.Col>
       </Grid>
+
+      {/* Tour Component */}
+      <DashboardTour autoStart={true} />
     </div>
   );
 }

@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
+    "seed-admin": "node scripts/seedAdmin.js",
+    "test-admin-login": "node scripts/testAdminLogin.js",
     "fetch-payments": "node scripts/fetchAllPayments.js",
     "refresh-reviews": "node scripts/refreshAllReviews.js",
     "refresh-all-tokens": "node scripts/forceRefreshAllTokens.js",

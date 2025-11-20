@@ -19,6 +19,8 @@ import {
   Skeleton,
   SimpleGrid,
   Progress,
+  Overlay,
+  Box,
 } from "@mantine/core";
 import {
   IconArrowRight,
@@ -37,9 +39,12 @@ import {
   IconTrash,
   IconChartLine,
   IconExternalLink,
+  IconLock,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useBundleStore from "../stores/useBundleStore";
+import { usePlanFeatures } from "../hooks/usePlanFeatures";
+import UpgradePrompt from "../components/common/UpgradePrompt";
 
 export default function BundleDetailsPage() {
   const { bundleId } = useParams();
@@ -53,6 +58,8 @@ export default function BundleDetailsPage() {
     deactivateBundle,
     deleteBundle,
   } = useBundleStore();
+  const { features } = usePlanFeatures();
+  const hasBundleAnalytics = features.bundleAnalytics !== false;
 
   useEffect(() => {
     if (bundleId) {
@@ -235,22 +242,6 @@ export default function BundleDetailsPage() {
                 >
                   تعديل الباقة
                 </Menu.Item>
-                {/* 
-                <Menu.Item
-                  leftSection={<IconExternalLink size="0.9rem" />}
-                  onClick={() => {
-                    // Use the constructed product_url if available, otherwise fallback
-                    const previewUrl =
-                      currentBundle.product_url ||
-                      `https://${
-                        currentBundle.store_domain || "store.salla.sa"
-                      }/p${currentBundle.target_product_id}`;
-                    window.open(previewUrl, "_blank");
-                  }}
-                  disabled={currentBundle.status !== "active"}
-                >
-                  معاينة في المتجر
-                </Menu.Item> */}
 
                 {currentBundle.status === "draft" && (
                   <Menu.Item
@@ -298,173 +289,268 @@ export default function BundleDetailsPage() {
 
         {/* Statistics Cards */}
         <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
-          {stats.map((stat, index) => (
-            <Card key={index} padding="lg" radius="md" withBorder>
-              <Group gap="sm">
-                <ThemeIcon
-                  size="lg"
+          {stats.map((stat, index) => {
+            const isLockedStat =
+              !hasBundleAnalytics &&
+              (stat.title === "إجمالي النقرات" ||
+                stat.title === "إجمالي التحويلات");
+
+            return (
+              <Box key={index} pos="relative">
+                {isLockedStat && (
+                  <Overlay
+                    color="#000"
+                    backgroundOpacity={0.05}
+                    blur={2}
+                    zIndex={1}
+                    style={{
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <ThemeIcon
+                      size={40}
+                      radius="xl"
+                      color="orange"
+                      variant="light"
+                    >
+                      <IconLock size={20} />
+                    </ThemeIcon>
+                  </Overlay>
+                )}
+                <Card
+                  padding="lg"
                   radius="md"
-                  color={stat.color}
-                  variant="light"
+                  withBorder
+                  style={{ filter: isLockedStat ? "blur(2px)" : "none" }}
                 >
-                  <stat.icon size="1.2rem" />
-                </ThemeIcon>
-                <div>
-                  <Text size="sm" c="dimmed">
-                    {stat.title}
-                  </Text>
-                  <Text size="lg" fw={700}>
-                    {stat.value}
-                  </Text>
-                </div>
-              </Group>
-            </Card>
-          ))}
+                  <Group gap="sm">
+                    <ThemeIcon
+                      size="lg"
+                      radius="md"
+                      color={stat.color}
+                      variant="light"
+                    >
+                      <stat.icon size="1.2rem" />
+                    </ThemeIcon>
+                    <div>
+                      <Text size="sm" c="dimmed">
+                        {stat.title}
+                      </Text>
+                      <Text size="lg" fw={700}>
+                        {stat.value}
+                      </Text>
+                    </div>
+                  </Group>
+                </Card>
+              </Box>
+            );
+          })}
         </SimpleGrid>
 
         {/* Performance Overview */}
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Title order={3} className="text-gray-800" mb="md">
-            أداء الباقة
-          </Title>
-
-          <Grid>
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Text size="sm" fw={500}>
-                    معدل التحويل
-                  </Text>
-                  <Text size="sm" fw={700} c="green">
-                    {conversionRate}%
-                  </Text>
-                </Group>
-                <Progress
-                  value={parseFloat(conversionRate)}
-                  color="green"
-                  size="lg"
-                />
+        <Box pos="relative">
+          {!hasBundleAnalytics && (
+            <Overlay
+              color="#000"
+              backgroundOpacity={0.05}
+              blur={3}
+              zIndex={1}
+              style={{
+                backdropFilter: "blur(8px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Stack align="center" gap="md">
+                <ThemeIcon size={60} radius="xl" color="orange" variant="light">
+                  <IconLock size={30} />
+                </ThemeIcon>
+                <UpgradePrompt featureName="أداء الباقة" compact={false} />
               </Stack>
-            </Grid.Col>
+            </Overlay>
+          )}
+          <Card
+            shadow="sm"
+            padding="lg"
+            radius="md"
+            withBorder
+            style={{ filter: hasBundleAnalytics ? "none" : "blur(2px)" }}
+          >
+            <Title order={3} className="text-gray-800" mb="md">
+              أداء الباقة
+            </Title>
 
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <Stack gap="sm">
-                <Group justify="space-between">
-                  <Text size="sm" fw={500}>
-                    معدل النقر (CTR)
-                  </Text>
-                  <Text size="sm" fw={700} c="blue">
-                    {currentBundle.total_views > 0
-                      ? (
-                          (currentBundle.total_clicks /
+            <Grid>
+              <Grid.Col span={{ base: 12, md: 6 }}>
+                <Stack gap="sm">
+                  <Group justify="space-between">
+                    <Text size="sm" fw={500}>
+                      معدل التحويل
+                    </Text>
+                    <Text size="sm" fw={700} c="green">
+                      {conversionRate}%
+                    </Text>
+                  </Group>
+                  <Progress
+                    value={parseFloat(conversionRate)}
+                    color="green"
+                    size="lg"
+                  />
+                </Stack>
+              </Grid.Col>
+
+              <Grid.Col span={{ base: 12, md: 6 }}>
+                <Stack gap="sm">
+                  <Group justify="space-between">
+                    <Text size="sm" fw={500}>
+                      معدل النقر (CTR)
+                    </Text>
+                    <Text size="sm" fw={700} c="blue">
+                      {currentBundle.total_views > 0
+                        ? (
+                            (currentBundle.total_clicks /
+                              currentBundle.total_views) *
+                            100
+                          ).toFixed(1)
+                        : 0}
+                      %
+                    </Text>
+                  </Group>
+                  <Progress
+                    value={
+                      currentBundle.total_views > 0
+                        ? (currentBundle.total_clicks /
                             currentBundle.total_views) *
                           100
-                        ).toFixed(1)
-                      : 0}
-                    %
-                  </Text>
-                </Group>
-                <Progress
-                  value={
-                    currentBundle.total_views > 0
-                      ? (currentBundle.total_clicks /
-                          currentBundle.total_views) *
-                        100
-                      : 0
-                  }
-                  color="blue"
-                  size="lg"
-                />
-              </Stack>
-            </Grid.Col>
-          </Grid>
-        </Card>
+                        : 0
+                    }
+                    color="blue"
+                    size="lg"
+                  />
+                </Stack>
+              </Grid.Col>
+            </Grid>
+          </Card>
+        </Box>
 
         {/* Tier Analytics */}
-        <Card shadow="sm" padding="md" radius="md" withBorder>
-          <Title order={3} className="text-gray-800" mb="sm">
-            تحليلات العروض (الباقات)
-          </Title>
-
-          {currentBundle.bundles && currentBundle.bundles.length > 0 ? (
-            <Stack gap="xs">
-              {currentBundle.bundles.map((tier, index) => {
-                const checkouts = tier.tier_checkouts || 0;
-                const bundleViews = currentBundle.total_views || 0;
-                const conversionRate =
-                  bundleViews > 0
-                    ? ((checkouts / bundleViews) * 100).toFixed(1)
-                    : 0;
-
-                return (
-                  <Paper key={index} p="sm" withBorder>
-                    <Group justify="space-between" mb="xs">
-                      <Group gap="xs">
-                        <Text fw={600} size="md">
-                          {tier.tier_title || `العرض ${tier.tier}`}
-                        </Text>
-                        <Badge size="xs" variant="light" color="blue">
-                          اشترِ {tier.buy_quantity}
-                        </Badge>
-                        {tier.is_default && (
-                          <Badge size="xs" variant="light" color="yellow">
-                            افتراضي
-                          </Badge>
-                        )}
-                      </Group>
-                    </Group>
-
-                    <Group justify="space-between" grow>
-                      <Stack gap={2}>
-                        <Text size="xs" c="dimmed">
-                          نقرات الدفع
-                        </Text>
-                        <Text size="lg" fw={700} c="blue">
-                          {checkouts}
-                        </Text>
-                      </Stack>
-                      <Stack gap={2}>
-                        <Text size="xs" c="dimmed">
-                          معدل التحويل من المشاهدات
-                        </Text>
-                        <Text size="lg" fw={700} c="violet">
-                          {conversionRate}%
-                        </Text>
-                      </Stack>
-                    </Group>
-
-                    {bundleViews > 0 && (
-                      <>
-                        <Text size="xs" c="dimmed" mt="xs" mb={2}>
-                          معدل نقرات الدفع من إجمالي المشاهدات ({bundleViews})
-                        </Text>
-                        <Progress
-                          value={parseFloat(conversionRate)}
-                          color="violet"
-                          size="sm"
-                        />
-                      </>
-                    )}
-                  </Paper>
-                );
-              })}
-
-              <Alert color="blue" variant="light" title="ملاحظة" p="xs">
-                <Text size="xs">
-                  <strong>نقرات الدفع:</strong> عدد المرات التي نقر فيها العملاء
-                  على زر الدفع مع هذا العرض المحدد
-                  <br />
-                  <strong>معدل التحويل من المشاهدات:</strong> نسبة العملاء الذين
-                  نقروا على الدفع مع هذا العرض من إجمالي مشاهدات الباقة
-                </Text>
-              </Alert>
-            </Stack>
-          ) : (
-            <Text c="dimmed" size="sm">
-              لا توجد بيانات تحليلية متاحة بعد
-            </Text>
+        <Box pos="relative">
+          {!hasBundleAnalytics && (
+            <Overlay
+              color="#000"
+              backgroundOpacity={0.05}
+              blur={3}
+              zIndex={1}
+              style={{
+                backdropFilter: "blur(8px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Stack align="center" gap="md">
+                <ThemeIcon size={60} radius="xl" color="orange" variant="light">
+                  <IconLock size={30} />
+                </ThemeIcon>
+                <UpgradePrompt featureName="تحليلات العروض" compact={false} />
+              </Stack>
+            </Overlay>
           )}
-        </Card>
+          <Card
+            shadow="sm"
+            padding="md"
+            radius="md"
+            withBorder
+            style={{ filter: hasBundleAnalytics ? "none" : "blur(2px)" }}
+          >
+            <Title order={3} className="text-gray-800" mb="sm">
+              تحليلات العروض (الباقات)
+            </Title>
+
+            {currentBundle.bundles && currentBundle.bundles.length > 0 ? (
+              <Stack gap="xs">
+                {currentBundle.bundles.map((tier, index) => {
+                  const checkouts = tier.tier_checkouts || 0;
+                  const bundleViews = currentBundle.total_views || 0;
+                  const conversionRate =
+                    bundleViews > 0
+                      ? ((checkouts / bundleViews) * 100).toFixed(1)
+                      : 0;
+
+                  return (
+                    <Paper key={index} p="sm" withBorder>
+                      <Group justify="space-between" mb="xs">
+                        <Group gap="xs">
+                          <Text fw={600} size="md">
+                            {tier.tier_title || `العرض ${tier.tier}`}
+                          </Text>
+                          <Badge size="xs" variant="light" color="blue">
+                            اشترِ {tier.buy_quantity}
+                          </Badge>
+                          {tier.is_default && (
+                            <Badge size="xs" variant="light" color="yellow">
+                              افتراضي
+                            </Badge>
+                          )}
+                        </Group>
+                      </Group>
+
+                      <Group justify="space-between" grow>
+                        <Stack gap={2}>
+                          <Text size="xs" c="dimmed">
+                            نقرات الدفع
+                          </Text>
+                          <Text size="lg" fw={700} c="blue">
+                            {checkouts}
+                          </Text>
+                        </Stack>
+                        <Stack gap={2}>
+                          <Text size="xs" c="dimmed">
+                            معدل التحويل من المشاهدات
+                          </Text>
+                          <Text size="lg" fw={700} c="violet">
+                            {conversionRate}%
+                          </Text>
+                        </Stack>
+                      </Group>
+
+                      {bundleViews > 0 && (
+                        <>
+                          <Text size="xs" c="dimmed" mt="xs" mb={2}>
+                            معدل نقرات الدفع من إجمالي المشاهدات ({bundleViews})
+                          </Text>
+                          <Progress
+                            value={parseFloat(conversionRate)}
+                            color="violet"
+                            size="sm"
+                          />
+                        </>
+                      )}
+                    </Paper>
+                  );
+                })}
+
+                <Alert color="blue" variant="light" title="ملاحظة" p="xs">
+                  <Text size="xs">
+                    <strong>نقرات الدفع:</strong> عدد المرات التي نقر فيها
+                    العملاء على زر الدفع مع هذا العرض المحدد
+                    <br />
+                    <strong>معدل التحويل من المشاهدات:</strong> نسبة العملاء
+                    الذين نقروا على الدفع مع هذا العرض من إجمالي مشاهدات الباقة
+                  </Text>
+                </Alert>
+              </Stack>
+            ) : (
+              <Text c="dimmed" size="sm">
+                لا توجد بيانات تحليلية متاحة بعد
+              </Text>
+            )}
+          </Card>
+        </Box>
 
         {/* Bundle Configuration */}
         <Grid>

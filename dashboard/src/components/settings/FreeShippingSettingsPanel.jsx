@@ -17,6 +17,7 @@ import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../../stores/useSettingsStore";
 import SettingToggle from "./SettingToggle";
 import IconPicker from "./IconPicker";
+import UpgradePrompt from "../common/UpgradePrompt";
 
 /**
  * Free shipping settings panel component
@@ -25,7 +26,9 @@ export default function FreeShippingSettingsPanel({
   settings,
   loading,
   onToggle,
+  planFeatures = {},
 }) {
+  const hasFeature = planFeatures.freeShipping !== false;
   // Free shipping banner customization state
   const freeShipping = settings.free_shipping || {};
 
@@ -169,13 +172,14 @@ export default function FreeShippingSettingsPanel({
 
   return (
     <Stack gap="md">
+      {!hasFeature && <UpgradePrompt featureName="لافتة الشحن المجاني" />}
       {/* Enable Free Shipping Banner Toggle */}
       <SettingToggle
         label="تفعيل لافتة الشحن المجاني"
         description="عرض لافتة جذابة تعلم العملاء بالشحن المجاني في خطوة الهدايا داخل نافذة الباقة"
         checked={freeShipping.enabled || false}
         onChange={() => onToggle("free_shipping.enabled")}
-        disabled={loading.updating}
+        disabled={loading.updating || !hasFeature}
         infoText="اللافتة تظهر في خطوة الهدايا المجانية داخل نافذة الباقة. يمكنك التحكم في النصوص والألوان والأيقونة، وكذلك إضافة حد أدنى لسعر الطلب لعرض شريط التقدم."
         withDivider={false}
       />

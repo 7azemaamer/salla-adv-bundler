@@ -20,6 +20,9 @@ import {
   Modal,
   Center,
   ThemeIcon,
+  Tooltip,
+  Box,
+  Overlay,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -40,8 +43,13 @@ import {
   IconCheck,
   IconX,
   IconExternalLink,
+  IconAlertCircle,
+  IconLock,
 } from "@tabler/icons-react";
 import useBundleStore from "../stores/useBundleStore";
+import { usePlanFeatures } from "../hooks/usePlanFeatures";
+import UpgradePrompt from "../components/common/UpgradePrompt";
+import BundlesTour from "../components/tour/BundlesTour";
 
 function BundleCard({
   bundle,
@@ -50,6 +58,7 @@ function BundleCard({
   onDelete,
   onToggleStatus,
   onGenerateOffers,
+  hasBundleAnalytics = true,
 }) {
   const [actionLoading, setActionLoading] = useState("");
 
@@ -84,7 +93,13 @@ function BundleCard({
   //     : 0;
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card
+      shadow="sm"
+      padding="lg"
+      radius="md"
+      withBorder
+      data-tour="bundle-card"
+    >
       {/* Header */}
       <Group justify="space-between" mb="md">
         <div className="flex-1">
@@ -92,7 +107,11 @@ function BundleCard({
             <Text fw={600} size="lg" lineClamp={1}>
               {bundle.name}
             </Text>
-            <Badge color={statusColors[bundle.status]} size="sm">
+            <Badge
+              color={statusColors[bundle.status]}
+              size="sm"
+              data-tour="bundle-status"
+            >
               {statusLabels[bundle.status]}
             </Badge>
           </Group>
@@ -104,7 +123,7 @@ function BundleCard({
 
         <Menu shadow="md" width={200}>
           <Menu.Target>
-            <ActionIcon variant="light" color="gray">
+            <ActionIcon variant="light" color="gray" data-tour="bundle-actions">
               <IconDots size="1rem" />
             </ActionIcon>
           </Menu.Target>
@@ -232,24 +251,70 @@ function BundleCard({
           </div>
         </Grid.Col>
         <Grid.Col span={3}>
-          <div className="text-center">
-            <Text size="lg" fw={700} c="green">
-              {bundle.total_clicks || 0}
-            </Text>
-            <Text size="xs" c="dimmed">
-              نقرة
-            </Text>
-          </div>
+          <Box pos="relative">
+            {!hasBundleAnalytics && (
+              <Overlay
+                color="#000"
+                backgroundOpacity={0.05}
+                blur={2}
+                zIndex={1}
+                style={{
+                  backdropFilter: "blur(6px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ThemeIcon size={24} radius="xl" color="orange" variant="light">
+                  <IconLock size={12} />
+                </ThemeIcon>
+              </Overlay>
+            )}
+            <div
+              className="text-center"
+              style={{ filter: hasBundleAnalytics ? "none" : "blur(2px)" }}
+            >
+              <Text size="lg" fw={700} c="green">
+                {bundle.total_clicks || 0}
+              </Text>
+              <Text size="xs" c="dimmed">
+                نقرة
+              </Text>
+            </div>
+          </Box>
         </Grid.Col>
         <Grid.Col span={3}>
-          <div className="text-center">
-            <Text size="lg" fw={700} c="violet">
-              {bundle.total_conversions || 0}
-            </Text>
-            <Text size="xs" c="dimmed">
-              تحويل
-            </Text>
-          </div>
+          <Box pos="relative">
+            {!hasBundleAnalytics && (
+              <Overlay
+                color="#000"
+                backgroundOpacity={0.05}
+                blur={2}
+                zIndex={1}
+                style={{
+                  backdropFilter: "blur(6px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ThemeIcon size={24} radius="xl" color="orange" variant="light">
+                  <IconLock size={12} />
+                </ThemeIcon>
+              </Overlay>
+            )}
+            <div
+              className="text-center"
+              style={{ filter: hasBundleAnalytics ? "none" : "blur(2px)" }}
+            >
+              <Text size="lg" fw={700} c="violet">
+                {bundle.total_conversions || 0}
+              </Text>
+              <Text size="xs" c="dimmed">
+                تحويل
+              </Text>
+            </div>
+          </Box>
         </Grid.Col>
         {/* <Grid.Col span={3}>
           <div className="text-center">
@@ -341,6 +406,9 @@ export default function BundlesPage() {
     setFilters,
     getFilteredBundles,
   } = useBundleStore();
+
+  const { features } = usePlanFeatures();
+  const hasBundleAnalytics = features.bundleAnalytics !== false;
 
   const itemsPerPage = 9;
   const filteredBundles = getFilteredBundles();
@@ -481,28 +549,71 @@ export default function BundlesPage() {
     }
   };
 
+  const { limits, canCreateBundle } = usePlanFeatures();
+  const bundleCount = bundles?.length || 0;
+  const canCreate = canCreateBundle(bundleCount);
+  const isAtLimit = bundleCount >= limits.maxBundles;
+
   return (
     <Container size="xl" px={0}>
       <Stack gap="lg">
         {/* Header */}
-        <Group justify="space-between">
+        <Group justify="space-between" align="flex-start">
           <div>
-            <Title order={1} className="text-gray-800 mb-2">
-              إدارة العروض
-            </Title>
+            <Group gap="sm" mb="xs">
+              <Title order={1} className="text-gray-800">
+                إدارة العروض
+              </Title>
+              <Badge
+                size="lg"
+                color={
+                  isAtLimit
+                    ? "red"
+                    : bundleCount >= limits.maxBundles * 0.8
+                    ? "orange"
+                    : "blue"
+                }
+                variant="light"
+              >
+                {bundleCount} /{" "}
+                {limits.maxBundles === 999999 ? "∞" : limits.maxBundles}
+              </Badge>
+            </Group>
             <Text className="text-gray-600">
               عرض وإدارة جميع باقاتك والعروض الخاصة
             </Text>
           </div>
 
-          <Button
-            leftSection={<IconPlus size="1rem" />}
-            onClick={() => navigate("/dashboard/bundles/create")}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            إنشاء باقة جديدة
-          </Button>
+          {canCreate ? (
+            <Button
+              data-tour="create-bundle-btn"
+              leftSection={<IconPlus size="1rem" />}
+              onClick={() => navigate("/dashboard/bundles/create")}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              إنشاء باقة جديدة
+            </Button>
+          ) : (
+            <Tooltip
+              label="وصلت إلى الحد الأقصى للباقات في خطتك الحالية"
+              multiline
+              w={200}
+            >
+              <div>
+                <Button
+                  leftSection={<IconAlertCircle size="1rem" />}
+                  disabled
+                  color="orange"
+                >
+                  إنشاء باقة جديدة
+                </Button>
+              </div>
+            </Tooltip>
+          )}
         </Group>
+
+        {/* Plan Limit Warning */}
+        {isAtLimit && <UpgradePrompt featureName="المزيد من الباقات" />}
 
         {/* Error Alert */}
         {error && (
@@ -515,6 +626,7 @@ export default function BundlesPage() {
         <Card shadow="sm" padding="md" radius="md" withBorder>
           <Group gap="md">
             <TextInput
+              data-tour="search-bundles"
               placeholder="البحث في العروض..."
               leftSection={<IconSearch size="0.9rem" />}
               value={searchQuery}
@@ -523,6 +635,7 @@ export default function BundlesPage() {
             />
 
             <Select
+              data-tour="filter-bundles"
               placeholder="الحالة"
               value={statusFilter}
               onChange={(value) => setStatusFilter(value || "all")}
@@ -559,6 +672,7 @@ export default function BundlesPage() {
                     onDelete={handleDelete}
                     onToggleStatus={handleToggleStatus}
                     onGenerateOffers={handleGenerateOffers}
+                    hasBundleAnalytics={hasBundleAnalytics}
                   />
                 </Grid.Col>
               ))}
@@ -613,6 +727,8 @@ export default function BundlesPage() {
         bundleName={bundleToDelete?.name || ""}
         loading={loading.deleting}
       />
+
+      <BundlesTour />
     </Container>
   );
 }

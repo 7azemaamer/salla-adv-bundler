@@ -21,6 +21,7 @@ import {
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../../stores/useSettingsStore";
+import UpgradePrompt from "../common/UpgradePrompt";
 
 /**
  * Announcement banner settings panel component
@@ -28,8 +29,10 @@ import useSettingsStore from "../../stores/useSettingsStore";
 export default function AnnouncementSettingsPanel({
   settings,
   loading,
+  planFeatures = {},
   //   onToggle,
 }) {
+  const hasFeature = planFeatures.announcement !== false;
   const announcement = settings.announcement || {};
   const { updateSettings } = useSettingsStore();
 
@@ -110,6 +113,7 @@ export default function AnnouncementSettingsPanel({
 
   return (
     <Stack gap="md">
+      {!hasFeature && <UpgradePrompt featureName="لافتة الإعلان" />}
       <Alert icon={<IconBell size="1rem" />} title="لافتة الإعلان" color="blue">
         عرض إعلان أو رسالة مهمة للعملاء في صفحة الفاتورة النهائية
       </Alert>
@@ -123,7 +127,7 @@ export default function AnnouncementSettingsPanel({
             onChange={(event) =>
               setAnnouncementEnabled(event.currentTarget.checked)
             }
-            disabled={loading.updating || loading.fetching}
+            disabled={loading.updating || loading.fetching || !hasFeature}
           />
 
           {announcementEnabled && (
@@ -137,7 +141,7 @@ export default function AnnouncementSettingsPanel({
                 onChange={(event) =>
                   setAnnouncementTitle(event.currentTarget.value)
                 }
-                disabled={loading.updating}
+                disabled={loading.updating || !hasFeature}
               />
 
               <Textarea
@@ -148,7 +152,7 @@ export default function AnnouncementSettingsPanel({
                   setAnnouncementContent(event.currentTarget.value)
                 }
                 minRows={3}
-                disabled={loading.updating}
+                disabled={loading.updating || !hasFeature}
                 required
               />
 
@@ -156,8 +160,8 @@ export default function AnnouncementSettingsPanel({
                 label="أيقونة الإعلان"
                 data={iconOptions}
                 value={announcementIcon}
-                onChange={(value) => setAnnouncementIcon(value)}
-                disabled={loading.updating}
+                onChange={setAnnouncementIcon}
+                disabled={loading.updating || !hasFeature}
               />
 
               <Group grow>
@@ -165,7 +169,7 @@ export default function AnnouncementSettingsPanel({
                   label="لون الخلفية"
                   value={announcementBgColor}
                   onChange={setAnnouncementBgColor}
-                  disabled={loading.updating}
+                  disabled={loading.updating || !hasFeature}
                   format="hex"
                   swatches={presetColors.map((c) => c.bg)}
                 />
@@ -174,7 +178,7 @@ export default function AnnouncementSettingsPanel({
                   label="لون النص"
                   value={announcementTextColor}
                   onChange={setAnnouncementTextColor}
-                  disabled={loading.updating}
+                  disabled={loading.updating || !hasFeature}
                   format="hex"
                   swatches={presetColors.map((c) => c.text)}
                 />

@@ -72,12 +72,20 @@ export const getCachedReviews = async (
       customerCity: review.customer?.city || null,
       createdAt: review.created_at || new Date().toISOString(),
       timeAgo: calculateTimeAgo(review.created_at),
+      isManual: false, // Salla API reviews are not manual
     }));
+
+    // Preserve existing manual reviews
+    const existingManualReviews =
+      cachedData?.cached_reviews?.filter((r) => r.isManual) || [];
+
+    // Merge manual reviews with new Salla reviews (manual reviews first)
+    const mergedReviews = [...existingManualReviews, ...formattedReviews];
 
     const cacheData = {
       store_id,
       product_id,
-      cached_reviews: formattedReviews,
+      cached_reviews: mergedReviews,
       last_fetched: new Date(),
       cache_expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       fetch_count: cachedData ? cachedData.fetch_count + 1 : 1,
@@ -224,14 +232,23 @@ export const forceFetchReviews = async (
       customerCity: review.customer?.city || null,
       createdAt: review.created_at || new Date().toISOString(),
       timeAgo: calculateTimeAgo(review.created_at),
+      isManual: false, // Salla API reviews are not manual
     }));
 
-    // Update cache with fresh data
+    // Update cache with fresh data, but preserve manual reviews
     const cachedData = await ProductCache.findOne({ store_id, product_id });
+
+    // Extract existing manual reviews to preserve them
+    const existingManualReviews =
+      cachedData?.cached_reviews?.filter((r) => r.isManual) || [];
+
+    // Merge manual reviews with new Salla reviews (manual reviews first)
+    const mergedReviews = [...existingManualReviews, ...formattedReviews];
+
     const cacheData = {
       store_id,
       product_id,
-      cached_reviews: formattedReviews,
+      cached_reviews: mergedReviews,
       last_fetched: new Date(),
       cache_expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       fetch_count: cachedData ? cachedData.fetch_count + 1 : 1,
@@ -271,6 +288,66 @@ export const forceFetchReviews = async (
     return {
       success: false,
       data: [],
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Add or update manual reviews in cache
+ */
+export const syncManualReviewsToCache = async (
+  store_id,
+  product_id,
+  manualReviews
+) => {
+  try {
+    const cachedData = await ProductCache.findOne({ store_id, product_id });
+
+    if (!cachedData) {
+      // Create new cache entry with manual reviews
+      const cacheData = {
+        store_id,
+        product_id,
+        cached_reviews: manualReviews.map((r) => ({ ...r, isManual: true })),
+        last_fetched: new Date(),
+        cache_expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        fetch_count: 1,
+      };
+
+      await ProductCache.create(cacheData);
+      return { success: true, message: "Manual reviews cached successfully" };
+    }
+
+    // Get existing Salla reviews (non-manual)
+    const sallaReviews = cachedData.cached_reviews.filter((r) => !r.isManual);
+
+    // Merge manual reviews with Salla reviews
+    const mergedReviews = [
+      ...manualReviews.map((r) => ({ ...r, isManual: true })),
+      ...sallaReviews,
+    ];
+
+    cachedData.cached_reviews = mergedReviews;
+    cachedData.markModified("cached_reviews");
+    await cachedData.save();
+
+    return {
+      success: true,
+      message: "Manual reviews synced to cache",
+      data: {
+        manual_count: manualReviews.length,
+        salla_count: sallaReviews.length,
+        total_count: mergedReviews.length,
+      },
+    };
+  } catch (error) {
+    console.error(
+      "[ProductCache]: Error syncing manual reviews:",
+      error.message
+    );
+    return {
+      success: false,
       error: error.message,
     };
   }

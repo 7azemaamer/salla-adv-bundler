@@ -58,6 +58,10 @@ const ProductCacheSchema = new mongoose.Schema(
           type: String,
           default: "قبل يومين",
         },
+        isManual: {
+          type: Boolean,
+          default: false, // true for admin-added custom reviews
+        },
       },
     ],
     last_fetched: {

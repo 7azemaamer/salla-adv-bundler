@@ -1,12 +1,14 @@
-import { asyncWrapper } from "../../../utils/errorHandler.js";
+import { AppError, asyncWrapper } from "../../../utils/errorHandler.js";
 import bundleService from "../services/bundle.service.js";
 import BundleConfig from "../model/bundleConfig.model.js";
 import {
   invalidateProductCache,
   getCachedReviews,
   forceFetchReviews,
+  syncManualReviewsToCache,
 } from "../../products/services/productCache.service.js";
-import { getValidAccessToken } from "../../../utils/tokenHelper.js";
+import Store from "../../stores/model/store.model.js";
+import { stripBundleStylingUpdate } from "../../stores/constants/planConfig.js";
 
 /* ===============================================
  * Create a new bundle configuration
@@ -150,9 +152,6 @@ export const updateBundle = asyncWrapper(async (req, res) => {
     }
   }
 
-  // Add updated timestamp
-  updates.updatedAt = new Date();
-
   if (Object.keys(updates).length === 0) {
     return res.status(400).json({
       success: false,
@@ -160,10 +159,27 @@ export const updateBundle = asyncWrapper(async (req, res) => {
     });
   }
 
+  const store = await Store.findOne({ store_id, is_deleted: false });
+
+  if (!store) {
+    throw new AppError("Store not found", 404);
+  }
+
+  let sanitizedUpdates = stripBundleStylingUpdate(updates, store.plan);
+
+  if (Object.keys(sanitizedUpdates).length === 0) {
+    throw new AppError(
+      "هذه الإعدادات متاحة في الباقات الأعلى. قم بالترقية من سلة لفتح التخصيص.",
+      403
+    );
+  }
+
+  sanitizedUpdates.updatedAt = new Date();
+
   // Update the bundle
   const updatedBundle = await BundleConfig.findOneAndUpdate(
     { _id: bundle_id, store_id },
-    updates,
+    sanitizedUpdates,
     { new: true }
   );
 
@@ -172,6 +188,18 @@ export const updateBundle = asyncWrapper(async (req, res) => {
       success: false,
       message: "Bundle not found",
     });
+  }
+
+  // If manual_reviews were updated, sync them to product cache
+  if (sanitizedUpdates.manual_reviews !== undefined) {
+    const productId = updatedBundle.target_product_id
+      .toString()
+      .replace(/^p/, "");
+    await syncManualReviewsToCache(
+      store_id,
+      productId,
+      sanitizedUpdates.manual_reviews
+    );
   }
 
   res.status(200).json({
@@ -217,11 +245,14 @@ export const deleteBundle = asyncWrapper(async (req, res) => {
 export const trackBundleView = asyncWrapper(async (req, res) => {
   const { bundle_id } = req.params;
 
-  await bundleService.trackBundleView(bundle_id);
+  const result = await bundleService.trackBundleView(bundle_id);
 
   res.status(200).json({
     success: true,
-    message: "View tracked",
+    message: result.limitReached
+      ? "تم تجاوز الحد الشهري للمشاهدات في باقتك الحالية"
+      : "View tracked",
+    data: result,
   });
 });
 
@@ -265,25 +296,11 @@ export const refetchProductReviews = asyncWrapper(async (req, res) => {
       });
     }
 
-    const accessToken = await getValidAccessToken(store_id);
-
-    if (!accessToken) {
-      return res.status(400).json({
-        success: false,
-        message: "Access token not available",
-      });
-    }
-
     const productId = bundle.target_product_id.toString().replace(/^p/, "");
     const fetchLimit = bundle.review_fetch_limit || 20;
 
     // Force fetch from Salla API (bypasses cache)
-    const result = await forceFetchReviews(
-      store_id,
-      productId,
-      accessToken,
-      fetchLimit
-    );
+    const result = await forceFetchReviews(store_id, productId, fetchLimit);
 
     if (result.success) {
       return res.status(200).json({

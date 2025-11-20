@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import axios from "axios";
+import useAuthStore from "./useAuthStore";
 
 const useSettingsStore = create((set, get) => ({
   // State
@@ -16,7 +17,6 @@ const useSettingsStore = create((set, get) => ({
       text_color: "#ffffff",
       position: "bottom-center",
       width_type: "auto",
-      custom_width: 250,
     },
     free_shipping: {
       enabled: true,
@@ -84,6 +84,7 @@ const useSettingsStore = create((set, get) => ({
     updating: false,
   },
   error: null,
+  planContext: null,
 
   // Setters
   setLoading: (key, value) =>
@@ -102,7 +103,14 @@ const useSettingsStore = create((set, get) => ({
       const response = await axios.get("/settings");
 
       if (response.data.success) {
-        set({ settings: response.data.data });
+        const planContext = response.data.meta || get().planContext;
+        set({
+          settings: response.data.data,
+          planContext,
+        });
+        if (planContext) {
+          useAuthStore.getState().setPlanContext(planContext);
+        }
       } else {
         throw new Error(response.data.message || "Failed to fetch settings");
       }
@@ -124,7 +132,14 @@ const useSettingsStore = create((set, get) => ({
 
       if (response.data.success) {
         // Update settings in state
-        set({ settings: response.data.data });
+        const planContext = response.data.meta || get().planContext;
+        set({
+          settings: response.data.data,
+          planContext,
+        });
+        if (planContext) {
+          useAuthStore.getState().setPlanContext(planContext);
+        }
         return response.data.data;
       } else {
         throw new Error(response.data.message || "Failed to update settings");

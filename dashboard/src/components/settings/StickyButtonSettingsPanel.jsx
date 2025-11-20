@@ -16,6 +16,7 @@ import { IconCheck, IconX, IconInfoCircle } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../../stores/useSettingsStore";
 import SettingToggle from "./SettingToggle";
+import UpgradePrompt from "../common/UpgradePrompt";
 
 /**
  * Sticky button settings panel component
@@ -24,7 +25,9 @@ export default function StickyButtonSettingsPanel({
   settings,
   loading,
   onToggle,
+  planFeatures = {},
 }) {
+  const hasFeature = planFeatures.stickyButton !== false;
   // Sticky button customization state
   const stickyButton = settings.sticky_button || {};
 
@@ -146,13 +149,15 @@ export default function StickyButtonSettingsPanel({
 
   return (
     <Stack gap="md">
+      {!hasFeature && <UpgradePrompt featureName="الزر الثابت" />}
+
       {/* Enable Sticky Button Toggle */}
       <SettingToggle
         label="تفعيل الزر الثابت"
         description="عرض زر ثابت في أسفل الصفحة للوصول السريع لنافذة الباقة"
         checked={stickyButton.enabled || false}
         onChange={() => onToggle("sticky_button.enabled")}
-        disabled={loading.updating}
+        disabled={loading.updating || !hasFeature}
       />
 
       <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
@@ -176,6 +181,7 @@ export default function StickyButtonSettingsPanel({
                 value={buttonText}
                 onChange={(event) => setButtonText(event.currentTarget.value)}
                 description="النص الذي يظهر على الزر"
+                disabled={!hasFeature}
               />
             </Grid.Col>
 
@@ -185,6 +191,7 @@ export default function StickyButtonSettingsPanel({
                 value={buttonBgColor}
                 onChange={setButtonBgColor}
                 format="hex"
+                disabled={!hasFeature}
                 swatches={[
                   "#10b981",
                   "#3b82f6",

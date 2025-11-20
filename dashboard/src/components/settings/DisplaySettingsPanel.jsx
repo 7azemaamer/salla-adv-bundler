@@ -28,6 +28,7 @@ import {
   IconSettings,
 } from "@tabler/icons-react";
 import SettingToggle from "./SettingToggle";
+import UpgradePrompt from "../common/UpgradePrompt";
 
 /**
  * Display settings panel component
@@ -36,12 +37,15 @@ export default function DisplaySettingsPanel({
   settings,
   loading,
   onToggle,
+  planFeatures = {},
   onShowButtonsModal,
   onShowOfferModal,
   onShowOptionsModal,
   onShowQuantityModal,
   onShowPriceModal,
 }) {
+  const hasCustomSelectors = planFeatures.customHideSelectors !== false;
+  const hasCouponControls = planFeatures.couponControls !== false;
   const [newSelector, setNewSelector] = useState("");
   const customSelectors = settings?.custom_hide_selectors || [];
 
@@ -232,21 +236,29 @@ export default function DisplaySettingsPanel({
       />
 
       {/* Hide Coupon Section Toggle */}
-      <SettingToggle
-        label="إخفاء قسم الكوبون"
-        description="إخفاء قسم الكوبون في نافذة الباقة (يطبق على النسخة المكتبية والجوال)"
-        checked={settings.hide_coupon_section}
-        onChange={() => onToggle("hide_coupon_section")}
-        disabled={loading.updating}
-        infoText="عند تفعيل هذا الخيار، سيتم إخفاء قسم إدخال كود الكوبون من نافذة الباقة على جميع الأجهزة. مفيد إذا كنت لا تستخدم أكواد الخصم في متجرك."
-        withDivider={false}
-      />
+      <div data-tour="locked-features">
+        {!hasCouponControls && (
+          <UpgradePrompt featureName="التحكم في قسم الكوبون" />
+        )}
+        <SettingToggle
+          label="إخفاء قسم الكوبون"
+          description="إخفاء قسم الكوبون في نافذة الباقة (يطبق على النسخة المكتبية والجوال)"
+          checked={settings.hide_coupon_section}
+          onChange={() => onToggle("hide_coupon_section")}
+          disabled={loading.updating || !hasCouponControls}
+          infoText="عند تفعيل هذا الخيار، سيتم إخفاء قسم إدخال كود الكوبون من نافذة الباقة على جميع الأجهزة. مفيد إذا كنت لا تستخدم أكواد الخصم في متجرك."
+          withDivider={false}
+        />
+      </div>
 
       <Divider my="lg" />
 
       {/* Custom Hide Selectors - Advanced Section */}
+      {!hasCustomSelectors && (
+        <UpgradePrompt featureName="إخفاء عناصر مخصصة (متقدم)" />
+      )}
       <Accordion variant="separated" chevron={<IconChevronDown size="1rem" />}>
-        <Accordion.Item value="custom-selectors">
+        <Accordion.Item value="custom-selectors" disabled={!hasCustomSelectors}>
           <Accordion.Control icon={<IconCode size="1.2rem" />}>
             <Group gap="xs">
               <Text fw={500}>إخفاء عناصر مخصصة (متقدم)</Text>
@@ -310,11 +322,15 @@ export default function DisplaySettingsPanel({
                         input: { direction: "ltr", textAlign: "left" },
                       }}
                       leftSection={<IconCode size="1rem" />}
-                      disabled={loading.updating}
+                      disabled={loading.updating || !hasCustomSelectors}
                     />
                     <Button
                       onClick={handleAddSelector}
-                      disabled={!newSelector.trim() || loading.updating}
+                      disabled={
+                        !newSelector.trim() ||
+                        loading.updating ||
+                        !hasCustomSelectors
+                      }
                       leftSection={<IconPlus size="1rem" />}
                       size="sm"
                     >
@@ -349,7 +365,7 @@ export default function DisplaySettingsPanel({
                             variant="subtle"
                             size="sm"
                             onClick={() => handleRemoveSelector(selector)}
-                            disabled={loading.updating}
+                            disabled={loading.updating || !hasCustomSelectors}
                           >
                             <IconTrash size="1rem" />
                           </ActionIcon>

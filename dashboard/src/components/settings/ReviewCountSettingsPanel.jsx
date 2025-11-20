@@ -29,6 +29,7 @@ import {
   IconRefresh,
   IconClock,
 } from "@tabler/icons-react";
+import UpgradePrompt from "../common/UpgradePrompt";
 
 const DEFAULT_REVIEW_DATE_PRESETS = [
   "قبل يوم",
@@ -43,7 +44,12 @@ const DEFAULT_REVIEW_DATE_PRESETS = [
   "منذ شهر ونصف",
 ];
 
-export default function ReviewCountSettingsPanel({ settings, onToggle }) {
+export default function ReviewCountSettingsPanel({
+  settings,
+  onToggle,
+  planFeatures = {},
+}) {
+  const hasFeature = planFeatures.reviewsWidget !== false;
   const reviewCountSettings = settings?.review_count || {};
   const customReviews = settings?.custom_reviews || [];
   const dateRandomizer = settings?.review_date_randomizer || {};
@@ -144,6 +150,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
 
   return (
     <Stack gap="xl">
+      {!hasFeature && <UpgradePrompt featureName="عرض التقييمات" />}
       {/* Enable/Disable Review Count Display */}
       <Paper p="md" radius="md" withBorder>
         <Stack gap="md">
@@ -168,7 +175,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               onChange={(e) =>
                 onToggle("review_count.enabled", e.currentTarget.checked)
               }
-              disabled={false}
+              disabled={!hasFeature}
               size="md"
             />
           </Group>
@@ -195,7 +202,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
                 { value: "review", label: "مراجعة الطلب" },
                 { value: "all", label: "جميع الخطوات" },
               ]}
-              disabled={false}
+              disabled={!hasFeature}
               comboboxProps={{
                 position: "bottom",
                 middlewares: { flip: false, shift: false },
@@ -231,6 +238,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               </Text>
             </div>
             <Switch
+              disabled={!hasFeature}
               checked={hideDates}
               onChange={(e) =>
                 onToggle("review_display.hide_dates", e.currentTarget.checked)
@@ -248,6 +256,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               </Text>
             </div>
             <Switch
+              disabled={!hasFeature}
               checked={hideRatings}
               onChange={(e) =>
                 onToggle("review_display.hide_ratings", e.currentTarget.checked)
@@ -265,6 +274,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               </Text>
             </div>
             <Switch
+              disabled={!hasFeature}
               checked={hideNames}
               onChange={(e) =>
                 onToggle("review_display.hide_names", e.currentTarget.checked)
@@ -282,6 +292,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               </Text>
             </div>
             <Switch
+              disabled={!hasFeature}
               checked={hideAvatars}
               onChange={(e) =>
                 onToggle("review_display.hide_avatars", e.currentTarget.checked)
@@ -308,6 +319,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               </Text>
             </div>
             <Switch
+              disabled={!hasFeature}
               checked={dateRandomizerEnabled}
               onChange={(e) =>
                 onToggle(
@@ -326,7 +338,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
             value={datePresetsInput}
             onChange={(event) => setDatePresetsInput(event.currentTarget.value)}
             onBlur={handlePresetsBlur}
-            disabled={!dateRandomizerEnabled}
+            disabled={!dateRandomizerEnabled || !hasFeature}
             minRows={4}
             autosize
           />
@@ -341,7 +353,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               size="xs"
               leftSection={<IconRefresh size="0.9rem" />}
               onClick={handleResetPresets}
-              disabled={!dateRandomizerEnabled}
+              disabled={!dateRandomizerEnabled || !hasFeature}
             >
               استعادة القيم الافتراضية
             </Button>
@@ -358,6 +370,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
               </Text>
             </div>
             <Switch
+              disabled={!hasFeature}
               checked={hideRealReviews}
               onChange={(e) =>
                 onToggle(
@@ -381,6 +394,8 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
         }
         labelPosition="center"
       />
+
+      {!hasFeature && <UpgradePrompt featureName="التقييمات المخصصة" />}
 
       <Alert icon={<IconInfoCircle size="1rem" />} color="blue" variant="light">
         <Text size="xs">
@@ -416,6 +431,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
                   color="red"
                   variant="light"
                   onClick={() => handleDeleteReview(index)}
+                  disabled={!hasFeature}
                 >
                   <IconTrash size="1rem" />
                 </ActionIcon>
@@ -439,6 +455,7 @@ export default function ReviewCountSettingsPanel({ settings, onToggle }) {
           leftSection={<IconPlus size="1rem" />}
           variant="light"
           onClick={() => setShowAddForm(true)}
+          disabled={!hasFeature}
         >
           إضافة تقييم جديد
         </Button>

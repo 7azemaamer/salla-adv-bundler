@@ -41,10 +41,14 @@ import {
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import useBundleStore from "../stores/useBundleStore";
+import { usePlanFeatures } from "../hooks/usePlanFeatures";
+import UpgradePrompt from "../components/common/UpgradePrompt";
+import CreateBundleTour from "../components/tour/CreateBundleTour";
 
 export default function CreateBundlePage() {
   const navigate = useNavigate();
   const { createBundle, fetchProducts, products, loading } = useBundleStore();
+  const { features } = usePlanFeatures();
   const [active, setActive] = useState(0);
   const [productSearch, setProductSearch] = useState("");
   const [offerSearch, setOfferSearch] = useState("");
@@ -60,10 +64,10 @@ export default function CreateBundlePage() {
       modal_title: "اختر باقتك",
       modal_subtitle: "",
       cta_button_text: "اختر الباقة",
-      cta_button_bg_color: "#0066ff",
+      cta_button_bg_color: "#000",
       cta_button_text_color: "#ffffff",
       checkout_button_text: "إتمام الطلب — {total_price}",
-      checkout_button_bg_color: "#0066ff",
+      checkout_button_bg_color: "#000",
       checkout_button_text_color: "#ffffff",
       bundles: [
         {
@@ -261,6 +265,10 @@ export default function CreateBundlePage() {
   const prevStep = () =>
     setActive((current) => (current > 0 ? current - 1 : current));
 
+  const { canCreateBundle } = usePlanFeatures();
+  const bundleCount = useBundleStore.getState().bundles?.length || 0;
+  const canCreate = canCreateBundle(bundleCount);
+
   return (
     <Container size="xl">
       <Stack gap="lg">
@@ -282,6 +290,8 @@ export default function CreateBundlePage() {
             أنشئ باقة مخصصة مع هدايا مجانية لزيادة المبيعات وقيمة الطلب الواحد
           </Text>
         </div>
+
+        {!canCreate && <UpgradePrompt featureName="إنشاء باقات إضافية" />}
 
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Card shadow="sm" padding="xl" radius="md" withBorder>
@@ -319,6 +329,7 @@ export default function CreateBundlePage() {
                 <Grid>
                   <Grid.Col span={12}>
                     <TextInput
+                      data-tour="bundle-name"
                       label="اسم الباقة"
                       placeholder="مثال: باقة الصيف المميزة"
                       required
@@ -335,16 +346,18 @@ export default function CreateBundlePage() {
                   </Grid.Col>
 
                   <Grid.Col span={12}>
-                    <Text size="sm" fw={500} mb="xs">
-                      المنتج المستهدف <span className="text-red-500">*</span>
-                    </Text>
-                    <TextInput
-                      placeholder="البحث في المنتجات..."
-                      leftSection={<IconSearch size="0.9rem" />}
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      mb="sm"
-                    />
+                    <div data-tour="target-product">
+                      <Text size="sm" fw={500} mb="xs">
+                        المنتج المستهدف <span className="text-red-500">*</span>
+                      </Text>
+                      <TextInput
+                        placeholder="البحث في المنتجات..."
+                        leftSection={<IconSearch size="0.9rem" />}
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        mb="sm"
+                      />
+                    </div>
 
                     <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
                       {loading.products ? (
@@ -444,6 +457,7 @@ export default function CreateBundlePage() {
                     p="md"
                     withBorder
                     style={{ backgroundColor: tier.tier_bg_color || "#f8f9fa" }}
+                    data-tour={tierIndex === 0 ? "free-items" : undefined}
                   >
                     <Group justify="space-between" mb="md">
                       <Group gap="sm">
@@ -513,6 +527,7 @@ export default function CreateBundlePage() {
                         <TextInput
                           label="نص التميز (اختياري)"
                           placeholder="مثال: وفر أكثر، أفضل قيمة"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_highlight_text`
                           )}
@@ -550,6 +565,10 @@ export default function CreateBundlePage() {
                       labelPosition="center"
                     />
 
+                    {!features.advancedBundleStyling && (
+                      <UpgradePrompt featureName="تخصيص ألوان العرض" compact />
+                    )}
+
                     <Grid>
                       <Grid.Col span={6}>
                         <ColorInput
@@ -557,6 +576,7 @@ export default function CreateBundlePage() {
                           description="لون الخلفية للبطاقة في الواجهة"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_bg_color`
                           )}
@@ -568,6 +588,7 @@ export default function CreateBundlePage() {
                           description="لون النصوص داخل البطاقة"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_text_color`
                           )}
@@ -579,6 +600,7 @@ export default function CreateBundlePage() {
                           description="لون خلفية الشارة (مثل: أفضل قيمة)"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_highlight_bg_color`
                           )}
@@ -590,6 +612,7 @@ export default function CreateBundlePage() {
                           description="لون نص الشارة"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_highlight_text_color`
                           )}
@@ -792,12 +815,17 @@ export default function CreateBundlePage() {
                   labelPosition="center"
                 />
 
-                <Grid>
+                {!features.advancedBundleStyling && (
+                  <UpgradePrompt featureName="تخصيص تصميم الباقات" />
+                )}
+
+                <Grid data-tour="bundle-settings">
                   <Grid.Col span={12}>
                     <TextInput
                       label="عنوان النافذة المنبثقة"
                       placeholder="مثال: اختر باقتك المفضلة"
                       description="العنوان الذي سيظهر في أعلى نافذة اختيار الباقات"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("modal_title")}
                     />
                   </Grid.Col>
@@ -806,6 +834,7 @@ export default function CreateBundlePage() {
                       label="العنوان الفرعي للباقات (اختياري)"
                       placeholder="مثال: اختيارات أفضل قيمة — وفر أكثر"
                       description="نص توضيحي يظهر أسفل عنوان 'باقاتنا' (اتركه فارغاً لإخفائه)"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("modal_subtitle")}
                     />
                   </Grid.Col>
@@ -814,6 +843,7 @@ export default function CreateBundlePage() {
                       label="نص زر الاختيار"
                       placeholder="مثال: اختر الباقة"
                       description="النص الذي سيظهر على زر الاختيار لكل باقة"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("cta_button_text")}
                     />
                   </Grid.Col>
@@ -823,6 +853,7 @@ export default function CreateBundlePage() {
                       description="لون الخلفية لزر الاختيار"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("cta_button_bg_color")}
                     />
                   </Grid.Col>
@@ -832,6 +863,7 @@ export default function CreateBundlePage() {
                       description="لون النص داخل الزر"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("cta_button_text_color")}
                     />
                   </Grid.Col>
@@ -845,6 +877,7 @@ export default function CreateBundlePage() {
                       label="نص زر إتمام الطلب"
                       placeholder="مثال: إتمام الطلب — {total_price}"
                       description="النص الذي سيظهر على الزر في الخطوة الأخيرة. يمكنك استخدام {total_price} لإظهار السعر الإجمالي"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("checkout_button_text")}
                     />
                   </Grid.Col>
@@ -854,6 +887,7 @@ export default function CreateBundlePage() {
                       description="لون خلفية الزر"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("checkout_button_bg_color")}
                     />
                   </Grid.Col>
@@ -863,6 +897,7 @@ export default function CreateBundlePage() {
                       description="لون النص داخل الزر"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("checkout_button_text_color")}
                     />
                   </Grid.Col>
@@ -1135,6 +1170,7 @@ export default function CreateBundlePage() {
                   type="submit"
                   loading={loading.creating}
                   leftSection={<IconCheck size="1rem" />}
+                  data-tour="save-bundle"
                 >
                   حفظ الباقة
                 </Button>
@@ -1143,6 +1179,7 @@ export default function CreateBundlePage() {
           </Card>
         </form>
       </Stack>
+      <CreateBundleTour />
     </Container>
   );
 }

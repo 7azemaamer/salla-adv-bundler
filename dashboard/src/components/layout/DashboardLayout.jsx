@@ -7,7 +7,6 @@ import {
   Avatar,
   Menu,
   ScrollArea,
-  Button,
   Badge,
   ThemeIcon,
   Burger,
@@ -22,13 +21,14 @@ import {
   IconChartBar,
   IconSettings,
   IconLogout,
-  IconPlus,
   IconBell,
   IconUser,
   IconChevronDown,
+  IconHelpCircle,
 } from "@tabler/icons-react";
 import useAuthStore from "../../stores/useAuthStore";
 import useBundleStore from "../../stores/useBundleStore";
+import useTourStore from "../../stores/useTourStore";
 
 const navItems = [
   {
@@ -36,28 +36,33 @@ const navItems = [
     label: "الرئيسية",
     path: "/dashboard",
     color: "blue",
+    dataTour: "nav-dashboard",
   },
   {
     icon: IconPackage,
     label: "الباقات",
     path: "/dashboard/bundles",
     color: "green",
+    dataTour: "nav-bundles",
   },
   {
     icon: IconChartBar,
     label: "التحليلات",
     path: "/dashboard/analytics",
     color: "violet",
+    dataTour: "nav-analytics",
   },
   {
     icon: IconSettings,
     label: "الإعدادات",
     path: "/dashboard/settings",
     color: "gray",
+    dataTour: "nav-settings",
   },
 ];
 
-function NavbarLink({ icon: Icon, label, path, color, active, onClick }) {
+function NavbarLink({ icon: Icon, label, color, active, onClick }) {
+  const IconComponent = Icon;
   return (
     <UnstyledButton
       onClick={onClick}
@@ -73,7 +78,7 @@ function NavbarLink({ icon: Icon, label, path, color, active, onClick }) {
           variant={active ? "filled" : "light"}
           color={active ? "blue" : color}
         >
-          <Icon size="1.1rem" />
+          <IconComponent size="1.1rem" />
         </ThemeIcon>
         <Text size="sm" fw={active ? 600 : 400}>
           {label}
@@ -141,10 +146,12 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuthStore();
-  const bundles = useBundleStore((state) => state.bundles);
 
-  // Calculate stats directly to avoid infinite re-renders
-  const activeBundles = bundles.filter((b) => b.status === "active").length;
+  // Use a selector that returns a stable reference
+  const activeBundles = useBundleStore((state) => {
+    const bundles = state.bundles || [];
+    return bundles.filter((b) => b.status === "active").length;
+  });
   // const totalConversions = bundles.reduce(
   //   (sum, b) => sum + (b.total_conversions || 0),
   //   0
@@ -188,14 +195,19 @@ export default function DashboardLayout() {
           </Group>
 
           <Group gap="md">
-            <Button
-              leftSection={<IconPlus size="1rem" />}
-              size="sm"
-              onClick={() => navigate("/dashboard/bundles/create")}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              إنشاء باقة جديدة
-            </Button>
+            <Tooltip label="جولة إرشادية" data-tour="settings">
+              <ActionIcon
+                variant="light"
+                color="blue"
+                size="lg"
+                onClick={() => {
+                  const tourStore = useTourStore.getState();
+                  tourStore.startTour();
+                }}
+              >
+                <IconHelpCircle size="1.1rem" />
+              </ActionIcon>
+            </Tooltip>
 
             <Tooltip label="الإشعارات">
               <ActionIcon variant="light" color="gray" size="lg">
@@ -257,15 +269,16 @@ export default function DashboardLayout() {
             {/* Navigation Items */}
             <div className="space-y-1">
               {navItems.map((item) => (
-                <NavbarLink
-                  key={item.path}
-                  icon={item.icon}
-                  label={item.label}
-                  path={item.path}
-                  color={item.color}
-                  active={location.pathname === item.path}
-                  onClick={() => navigate(item.path)}
-                />
+                <div key={item.path} data-tour={item.dataTour}>
+                  <NavbarLink
+                    icon={item.icon}
+                    label={item.label}
+                    path={item.path}
+                    color={item.color}
+                    active={location.pathname === item.path}
+                    onClick={() => navigate(item.path)}
+                  />
+                </div>
               ))}
             </div>
           </div>

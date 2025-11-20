@@ -6,6 +6,7 @@ import "@mantine/notifications/styles.css";
 import "@mantine/dates/styles.css";
 import AppRouter from "./routes/AppRouter";
 import useAuthStore from "./stores/useAuthStore";
+import { usePlanRefresh } from "./hooks/usePlanRefresh";
 
 // Custom theme for RTL support and Arabic typography
 const theme = createTheme({
@@ -53,6 +54,13 @@ const theme = createTheme({
 
 function App() {
   const initAuth = useAuthStore((state) => state.initAuth);
+
+  // Auto-refresh plan context every 5 minutes and on window focus
+  usePlanRefresh({
+    enableAutoRefresh: true,
+    refreshIntervalMs: 5 * 60 * 1000, // 5 minutes
+    refreshOnFocus: true,
+  });
 
   useEffect(() => {
     // Initialize auth on app start

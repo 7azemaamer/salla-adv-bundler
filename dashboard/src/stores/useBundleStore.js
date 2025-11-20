@@ -3,7 +3,7 @@ import axios from "axios";
 
 const useBundleStore = create((set, get) => ({
   // State
-  bundles: [],
+  deebundles: [],
   currentBundle: null,
   products: [],
   analytics: null,
@@ -309,6 +309,10 @@ const useBundleStore = create((set, get) => ({
 
   getFilteredBundles: () => {
     const { bundles, filters } = get();
+
+    if (!bundles || !Array.isArray(bundles)) {
+      return [];
+    }
 
     return bundles.filter((bundle) => {
       // Status filter

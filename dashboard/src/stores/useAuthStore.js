@@ -16,6 +16,7 @@ const useAuthStore = create(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      planContext: null,
 
       // Actions
       setAuth: (token, user) => {
@@ -26,6 +27,7 @@ const useAuthStore = create(
           token,
           user,
           isAuthenticated: true,
+          planContext: user?.plan_context || null,
           error: null,
         });
       },
@@ -38,6 +40,7 @@ const useAuthStore = create(
           user: null,
           token: null,
           isAuthenticated: false,
+          planContext: null,
           error: null,
         });
       },
@@ -45,6 +48,17 @@ const useAuthStore = create(
       setLoading: (isLoading) => set({ isLoading }),
 
       setError: (error) => set({ error }),
+
+      setPlanContext: (planContext) =>
+        set((state) => ({
+          planContext,
+          user: state.user
+            ? {
+                ...state.user,
+                plan_context: planContext,
+              }
+            : state.user,
+        })),
 
       // Login via Salla redirect
       loginViaSalla: () => {
@@ -89,6 +103,7 @@ const useAuthStore = create(
             set({
               user: response.data.data,
               isAuthenticated: true,
+              planContext: response.data.data?.plan_context || null,
               error: null,
             });
             return true;
@@ -105,6 +120,29 @@ const useAuthStore = create(
         }
       },
 
+      // Refresh plan context (call after admin updates plan)
+      refreshPlanContext: async () => {
+        const { token } = get();
+        if (!token) return false;
+
+        try {
+          const response = await axios.get("/auth/refresh-plan", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.data.success) {
+            const newPlanContext = response.data.plan_context;
+            get().setPlanContext(newPlanContext);
+            console.log("✅ Plan context refreshed:", newPlanContext);
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Plan refresh error:", error);
+          return false;
+        }
+      },
+
       // Initialize auth on app start
       initAuth: () => {
         const { token, isAuthenticated } = get();
@@ -112,11 +150,9 @@ const useAuthStore = create(
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
           set({ isAuthenticated: true });
-
-   
         } else {
           delete axios.defaults.headers.common["Authorization"];
-          set({ isAuthenticated: false });
+          set({ isAuthenticated: false, planContext: null });
         }
       },
     }),
@@ -127,6 +163,7 @@ const useAuthStore = create(
         token: state.token,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        planContext: state.planContext,
       }),
     }
   )

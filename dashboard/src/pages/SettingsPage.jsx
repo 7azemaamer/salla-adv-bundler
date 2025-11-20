@@ -20,6 +20,7 @@ import {
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../stores/useSettingsStore";
+import { usePlanFeatures } from "../hooks/usePlanFeatures";
 import SettingsHeader from "../components/settings/SettingsHeader";
 import DisplaySettingsPanel from "../components/settings/DisplaySettingsPanel";
 import FreeShippingSettingsPanel from "../components/settings/FreeShippingSettingsPanel";
@@ -29,6 +30,7 @@ import ReviewCountSettingsPanel from "../components/settings/ReviewCountSettings
 import AnnouncementSettingsPanel from "../components/settings/AnnouncementSettingsPanel";
 import SystemSettingsPanel from "../components/settings/SystemSettingsPanel";
 import DemoImageModal from "../components/settings/DemoImageModal";
+import SettingsTour from "../components/tour/SettingsTour";
 
 export default function SettingsPage() {
   const {
@@ -39,6 +41,7 @@ export default function SettingsPage() {
     toggleSetting,
     updateSettings,
   } = useSettingsStore();
+  const { features } = usePlanFeatures();
   const [showButtonsModal, setShowButtonsModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -187,11 +190,12 @@ export default function SettingsPage() {
             </Tabs.List>
 
             {/* Tab 1: Display Settings */}
-            <Tabs.Panel value="display" pt={0}>
+            <Tabs.Panel value="display" pt={0} data-tour="display-settings">
               <DisplaySettingsPanel
                 settings={settings}
                 loading={loading}
                 onToggle={handleToggleChange}
+                planFeatures={features}
                 onShowButtonsModal={() => setShowButtonsModal(true)}
                 onShowOfferModal={() => setShowOfferModal(true)}
                 onShowOptionsModal={() => setShowOptionsModal(true)}
@@ -201,11 +205,12 @@ export default function SettingsPage() {
             </Tabs.Panel>
 
             {/* Tab 2: Sticky Button */}
-            <Tabs.Panel value="sticky-button" pt={0}>
+            <Tabs.Panel value="sticky-button" pt={0} data-tour="features-panel">
               <StickyButtonSettingsPanel
                 settings={settings}
                 loading={loading}
                 onToggle={handleToggleChange}
+                planFeatures={features}
               />
             </Tabs.Panel>
 
@@ -215,6 +220,7 @@ export default function SettingsPage() {
                 settings={settings}
                 loading={loading}
                 onToggle={handleToggleChange}
+                planFeatures={features}
               />
             </Tabs.Panel>
 
@@ -224,6 +230,7 @@ export default function SettingsPage() {
                 settings={settings}
                 loading={loading}
                 onToggle={handleToggleChange}
+                planFeatures={features}
               />
             </Tabs.Panel>
 
@@ -233,6 +240,7 @@ export default function SettingsPage() {
                 settings={settings}
                 loading={loading}
                 onToggle={handleToggleChange}
+                planFeatures={features}
               />
             </Tabs.Panel>
 
@@ -242,6 +250,7 @@ export default function SettingsPage() {
                 settings={settings}
                 loading={loading}
                 onToggle={handleToggleChange}
+                planFeatures={features}
               />
             </Tabs.Panel>
 
@@ -303,6 +312,7 @@ export default function SettingsPage() {
           warningText="سيتم إخفاء قسم السعر الافتراضي الموجود داخل النموذج (product-form) في صفحة المنتج المستهدف فقط عند وجود عروض باقات نشطة عليه. يتم عرض السعر من خلال نافذة الباقة بدلاً من ذلك."
         />
       </Stack>
+      <SettingsTour />
     </Container>
   );
 }

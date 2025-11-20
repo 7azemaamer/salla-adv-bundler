@@ -46,13 +46,17 @@ import {
   IconStar,
   IconRefresh,
   IconUserCircle,
+  IconLock,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import { useForm } from "@mantine/form";
 import useBundleStore from "../stores/useBundleStore";
+import { usePlanFeatures } from "../hooks/usePlanFeatures";
+import UpgradePrompt from "../components/common/UpgradePrompt";
 import axios from "axios";
 
 export default function EditBundlePage() {
+  const { features } = usePlanFeatures();
   const navigate = useNavigate();
   const { bundleId } = useParams();
   const {
@@ -103,10 +107,10 @@ export default function EditBundlePage() {
       modal_title: "اختر باقتك",
       modal_subtitle: "",
       cta_button_text: "اختر الباقة",
-      cta_button_bg_color: "#0066ff",
+      cta_button_bg_color: "#000",
       cta_button_text_color: "#ffffff",
       checkout_button_text: "إتمام الطلب — {total_price}",
-      checkout_button_bg_color: "#0066ff",
+      checkout_button_bg_color: "#000",
       checkout_button_text_color: "#ffffff",
       selected_review_ids: [],
       review_limit: 20,
@@ -253,12 +257,12 @@ export default function EditBundlePage() {
         modal_title: currentBundle.modal_title || "اختر باقتك",
         modal_subtitle: currentBundle.modal_subtitle || "",
         cta_button_text: currentBundle.cta_button_text || "اختر الباقة",
-        cta_button_bg_color: currentBundle.cta_button_bg_color || "#0066ff",
+        cta_button_bg_color: currentBundle.cta_button_bg_color || "#000",
         cta_button_text_color: currentBundle.cta_button_text_color || "#ffffff",
         checkout_button_text:
           currentBundle.checkout_button_text || "إتمام الطلب — {total_price}",
         checkout_button_bg_color:
-          currentBundle.checkout_button_bg_color || "#0066ff",
+          currentBundle.checkout_button_bg_color || "#000",
         checkout_button_text_color:
           currentBundle.checkout_button_text_color || "#ffffff",
         selected_review_ids: currentBundle.selected_review_ids || [],
@@ -520,15 +524,10 @@ export default function EditBundlePage() {
 
       if (response.data.success) {
         const fetchedReviews = response.data.data || [];
-        const manualReviews = form.values.manual_reviews || [];
 
-        // Merge manual reviews (with isManual flag) with fetched reviews
-        const allReviews = [
-          ...manualReviews.map((r) => ({ ...r, isManual: true })),
-          ...fetchedReviews,
-        ];
-
-        setProductReviews(allReviews);
+        // Backend now handles merging manual reviews with Salla reviews
+        // Manual reviews are preserved in ProductCache with isManual flag
+        setProductReviews(fetchedReviews);
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -955,6 +954,7 @@ export default function EditBundlePage() {
                           description="لون الخلفية للبطاقة في الواجهة"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_bg_color`
                           )}
@@ -966,6 +966,7 @@ export default function EditBundlePage() {
                           description="لون النصوص داخل البطاقة"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_text_color`
                           )}
@@ -977,6 +978,7 @@ export default function EditBundlePage() {
                           description="لون خلفية الشارة (مثل: أفضل قيمة)"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_highlight_bg_color`
                           )}
@@ -988,6 +990,7 @@ export default function EditBundlePage() {
                           description="لون نص الشارة"
                           placeholder="اختر اللون"
                           format="hex"
+                          disabled={!features.advancedBundleStyling}
                           {...form.getInputProps(
                             `bundles.${tierIndex}.tier_highlight_text_color`
                           )}
@@ -1258,14 +1261,22 @@ export default function EditBundlePage() {
                       label="عنوان النافذة المنبثقة"
                       placeholder="مثال: اختر باقتك المفضلة"
                       description="العنوان الذي سيظهر في أعلى نافذة اختيار الباقات"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("modal_title")}
                     />
                   </Grid.Col>
                   <Grid.Col span={12}>
+                    {!features.advancedBundleStyling && (
+                      <UpgradePrompt
+                        featureName="تخصيص العنوان الفرعي"
+                        compact={true}
+                      />
+                    )}
                     <TextInput
                       label="العنوان الفرعي للباقات (اختياري)"
                       placeholder="مثال: اختيارات أفضل قيمة — وفر أكثر"
                       description="نص توضيحي يظهر أسفل عنوان 'باقاتنا' (اتركه فارغاً لإخفائه)"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("modal_subtitle")}
                     />
                   </Grid.Col>
@@ -1274,6 +1285,7 @@ export default function EditBundlePage() {
                       label="نص زر الاختيار"
                       placeholder="مثال: اختر الباقة"
                       description="النص الذي سيظهر على زر الاختيار لكل باقة"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("cta_button_text")}
                     />
                   </Grid.Col>
@@ -1283,6 +1295,7 @@ export default function EditBundlePage() {
                       description="لون الخلفية لزر الاختيار"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("cta_button_bg_color")}
                     />
                   </Grid.Col>
@@ -1292,6 +1305,7 @@ export default function EditBundlePage() {
                       description="لون النص داخل الزر"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("cta_button_text_color")}
                     />
                   </Grid.Col>
@@ -1301,10 +1315,17 @@ export default function EditBundlePage() {
 
                 <Grid>
                   <Grid.Col span={12}>
+                    {!features.advancedBundleStyling && (
+                      <UpgradePrompt
+                        featureName="تخصيص زر إتمام الطلب"
+                        compact={true}
+                      />
+                    )}
                     <TextInput
                       label="نص زر إتمام الطلب"
                       placeholder="مثال: إتمام الطلب — {total_price}"
                       description="النص الذي سيظهر على الزر في الخطوة الأخيرة. يمكنك استخدام {total_price} لإظهار السعر الإجمالي"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("checkout_button_text")}
                     />
                   </Grid.Col>
@@ -1314,6 +1335,7 @@ export default function EditBundlePage() {
                       description="لون خلفية الزر"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("checkout_button_bg_color")}
                     />
                   </Grid.Col>
@@ -1323,6 +1345,7 @@ export default function EditBundlePage() {
                       description="لون النص داخل الزر"
                       placeholder="اختر اللون"
                       format="hex"
+                      disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("checkout_button_text_color")}
                     />
                   </Grid.Col>
@@ -1593,7 +1616,32 @@ export default function EditBundlePage() {
 
             {/* Product Reviews Section - Show in Step 4 */}
             {active === 3 && productReviews.length > 0 && (
-              <Paper p="md" withBorder mt="xl">
+              <Paper p="md" withBorder mt="xl" pos="relative">
+                {features.reviewsWidget === false && (
+                  <>
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                        backdropFilter: "blur(4px)",
+                        zIndex: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <Stack align="center" gap="md">
+                        <IconLock size={40} color="orange" />
+                        <UpgradePrompt
+                          featureName="تقييمات المنتج"
+                          compact={false}
+                        />
+                      </Stack>
+                    </div>
+                  </>
+                )}
                 <Group justify="space-between" mb="md">
                   <Group gap="xs">
                     <IconStar size="1.2rem" style={{ color: "#fbbf24" }} />

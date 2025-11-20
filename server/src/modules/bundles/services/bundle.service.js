@@ -5,6 +5,11 @@ import Store from "../../stores/model/store.model.js";
 import specialOffersService from "./specialOffers.service.js";
 import productService from "../../products/services/product.service.js";
 import { AppError } from "../../../utils/errorHandler.js";
+import {
+  stripBundleStylingInput,
+  stripBundleStylingUpdate,
+  enrichBundleForPlanResponse,
+} from "../../stores/constants/planConfig.js";
 
 class BundleService {
   /* ===============
@@ -16,6 +21,12 @@ class BundleService {
     if (!store) {
       throw new AppError("Store not found or inactive", 404);
     }
+
+    const planConfig = store.getPlanConfig();
+    const sanitizedPayload = stripBundleStylingInput(
+      bundleData,
+      planConfig.key
+    );
 
     // Check bundle limits based on plan
     const activeBundles = await BundleConfig.countDocuments({
@@ -34,11 +45,14 @@ class BundleService {
     // Fetch real product data from Salla API
     const productData = await this.fetchAndStoreProductData(
       store_id,
-      bundleData
+      sanitizedPayload
     );
 
     // Validate products exist and are available
-    const validation = await this.validateBundleProducts(store_id, bundleData);
+    const validation = await this.validateBundleProducts(
+      store_id,
+      sanitizedPayload
+    );
     if (!validation.valid) {
       throw new AppError(
         `Product validation failed: ${validation.errors.join(", ")}`,
@@ -47,7 +61,7 @@ class BundleService {
     }
 
     // Generate config hash for idempotency
-    const configHash = this.generateConfigHash(bundleData);
+    const configHash = this.generateConfigHash(sanitizedPayload);
 
     // Check for existing bundle with same config
     const existingBundle = await BundleConfig.findOne({
@@ -63,30 +77,31 @@ class BundleService {
     // Create bundle configuration with real product data
     const bundle = await BundleConfig.create({
       store_id,
-      name: bundleData.name,
-      description: bundleData.description || "",
-      target_product_id: bundleData.target_product_id,
+      name: sanitizedPayload.name,
+      description: sanitizedPayload.description || "",
+      target_product_id: sanitizedPayload.target_product_id,
       target_product_name: productData.targetProduct.name,
       target_product_data: productData.targetProduct,
       bundles: productData.enhancedBundles,
-      start_date: new Date(bundleData.start_date),
-      expiry_date: bundleData.expiry_date
-        ? new Date(bundleData.expiry_date)
+      start_date: new Date(sanitizedPayload.start_date),
+      expiry_date: sanitizedPayload.expiry_date
+        ? new Date(sanitizedPayload.expiry_date)
         : null,
-      modal_title: bundleData.modal_title || "اختر باقتك",
-      modal_subtitle: bundleData.modal_subtitle || "",
-      cta_button_text: bundleData.cta_button_text || "اختر الباقة",
-      cta_button_bg_color: bundleData.cta_button_bg_color || "#0066ff",
-      cta_button_text_color: bundleData.cta_button_text_color || "#ffffff",
+      modal_title: sanitizedPayload.modal_title || "اختر باقتك",
+      modal_subtitle: sanitizedPayload.modal_subtitle || "",
+      cta_button_text: sanitizedPayload.cta_button_text || "اختر الباقة",
+      cta_button_bg_color: sanitizedPayload.cta_button_bg_color || "#0066ff",
+      cta_button_text_color:
+        sanitizedPayload.cta_button_text_color || "#ffffff",
       checkout_button_text:
-        bundleData.checkout_button_text || "إتمام الطلب — {total_price}",
+        sanitizedPayload.checkout_button_text || "إتمام الطلب — {total_price}",
       checkout_button_bg_color:
-        bundleData.checkout_button_bg_color || "#0066ff",
+        sanitizedPayload.checkout_button_bg_color || "#0066ff",
       checkout_button_text_color:
-        bundleData.checkout_button_text_color || "#ffffff",
+        sanitizedPayload.checkout_button_text_color || "#ffffff",
       config_hash: configHash,
       status: "draft",
-      created_by: bundleData.created_by || "system",
+      created_by: sanitizedPayload.created_by || "system",
     });
 
     return bundle;
@@ -412,7 +427,9 @@ class BundleService {
       }
     }
 
-    return {
+    const planKey = store?.plan || "basic";
+
+    const bundlePayload = {
       ...bundle.toObject(),
       offers,
       total_offers: offers.length,
@@ -420,6 +437,8 @@ class BundleService {
       store_domain: store?.domain,
       product_url: productUrl,
     };
+
+    return enrichBundleForPlanResponse(bundlePayload, planKey);
   }
 
   /* ===============
@@ -444,6 +463,8 @@ class BundleService {
     const store = await Store.findOne({ store_id });
 
     // Get offer counts for each bundle
+    const planKey = store?.plan || "basic";
+
     const bundlesWithOffers = await Promise.all(
       bundles.map(async (bundle) => {
         const offerCount = await BundleOffer.countDocuments({
@@ -466,12 +487,14 @@ class BundleService {
           }
         }
 
-        return {
+        const bundleObject = {
           ...bundle.toObject(),
           active_offers_count: offerCount,
           store_domain: store?.domain,
           product_url: productUrl,
         };
+
+        return enrichBundleForPlanResponse(bundleObject, planKey);
       })
     );
 
@@ -501,6 +524,8 @@ class BundleService {
    * ===============*/
   async getEnhancedBundleData(store_id, bundle) {
     try {
+      const store = await Store.findOne({ store_id });
+
       // Collect all product IDs from the bundle
       const allProductIds = [bundle.target_product_id];
       bundle.bundles.forEach((tier) => {
@@ -600,7 +625,8 @@ class BundleService {
         checkout_button_text_color: bundle.checkout_button_text_color,
       };
 
-      return result;
+      const planKey = store?.plan || "basic";
+      return enrichBundleForPlanResponse(result, planKey);
     } catch (error) {
       console.error("[Bundle Service] Error enhancing bundle data:", error);
       throw error;
@@ -681,9 +707,65 @@ class BundleService {
    * Update bundle analytics
    * ===============*/
   async trackBundleView(bundle_id) {
-    await BundleConfig.findByIdAndUpdate(bundle_id, {
-      $inc: { total_views: 1 },
-    });
+    const bundle = await BundleConfig.findById(bundle_id).select("store_id");
+
+    if (!bundle) {
+      return { limitReached: false, skipped: true };
+    }
+
+    const store = await Store.findOne({ store_id: bundle.store_id });
+
+    if (!store) {
+      return { limitReached: false, skipped: true };
+    }
+
+    const viewLimit = store.getMonthlyViewLimit();
+    let limitReached = false;
+    let usageUpdated = false;
+
+    if (viewLimit !== null && viewLimit !== undefined) {
+      const now = new Date();
+      const period = `${now.getUTCFullYear()}-${String(
+        now.getUTCMonth() + 1
+      ).padStart(2, "0")}`;
+
+      if (!store.plan_usage) {
+        store.plan_usage = {};
+      }
+
+      if (!store.plan_usage.monthly_views) {
+        store.plan_usage.monthly_views = {
+          period,
+          count: 0,
+        };
+        usageUpdated = true;
+      }
+
+      if (store.plan_usage.monthly_views.period !== period) {
+        store.plan_usage.monthly_views.period = period;
+        store.plan_usage.monthly_views.count = 0;
+        usageUpdated = true;
+      }
+
+      if (store.plan_usage.monthly_views.count >= viewLimit) {
+        limitReached = true;
+      } else {
+        store.plan_usage.monthly_views.count += 1;
+        usageUpdated = true;
+      }
+    }
+
+    if (usageUpdated) {
+      await store.save();
+    }
+
+    if (!limitReached) {
+      await BundleConfig.findByIdAndUpdate(bundle_id, {
+        $inc: { total_views: 1 },
+      });
+    }
+
+    return { limitReached };
   }
 
   async trackBundleClick(bundle_id) {

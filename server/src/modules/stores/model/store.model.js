@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { getPlanConfig } from "../constants/planConfig.js";
 
 const StoreSchema = new mongoose.Schema(
   {
@@ -76,6 +77,17 @@ const StoreSchema = new mongoose.Schema(
         default: true,
       },
     },
+    plan_usage: {
+      monthly_views: {
+        period: {
+          type: String,
+        },
+        count: {
+          type: Number,
+          default: 0,
+        },
+      },
+    },
     // Cached payment methods
     payment_methods: {
       type: Array,
@@ -105,30 +117,28 @@ const StoreSchema = new mongoose.Schema(
 // Pre-save middleware to set bundle limits based on plan
 StoreSchema.pre("save", function (next) {
   // Set max_bundles_per_store based on plan
-  if (
-    this.plan &&
-    (!this.bundle_settings || !this.bundle_settings.max_bundles_per_store)
-  ) {
-    if (!this.bundle_settings) {
-      this.bundle_settings = {};
-    }
+  const planConfig = getPlanConfig(this.plan);
 
-    switch (this.plan) {
-      case "basic":
-        this.bundle_settings.max_bundles_per_store = 3;
-        break;
-      case "pro":
-        this.bundle_settings.max_bundles_per_store = 10;
-        break;
-      case "enterprise":
-        this.bundle_settings.max_bundles_per_store = 50;
-        break;
-      case "special":
-        this.bundle_settings.max_bundles_per_store = 100;
-        break;
-      default:
-        this.bundle_settings.max_bundles_per_store = 3;
-    }
+  if (!this.bundle_settings) {
+    this.bundle_settings = {};
+  }
+
+  if (
+    this.isNew ||
+    this.isModified("plan") ||
+    this.bundle_settings.max_bundles_per_store === undefined
+  ) {
+    this.bundle_settings.max_bundles_per_store = planConfig.limits.maxBundles;
+  }
+
+  if (
+    this.isNew ||
+    this.isModified("plan") ||
+    this.bundle_settings.analytics_enabled === undefined
+  ) {
+    this.bundle_settings.analytics_enabled = Boolean(
+      planConfig.features.bundleAnalytics
+    );
   }
 
   next();
@@ -136,23 +146,17 @@ StoreSchema.pre("save", function (next) {
 
 // Instance method to get bundle limit
 StoreSchema.methods.getBundleLimit = function () {
-  if (this.bundle_settings && this.bundle_settings.max_bundles_per_store) {
-    return this.bundle_settings.max_bundles_per_store;
-  }
+  const planConfig = getPlanConfig(this.plan);
+  return planConfig.limits.maxBundles;
+};
 
-  // Fallback based on plan
-  switch (this.plan) {
-    case "basic":
-      return 3;
-    case "pro":
-      return 10;
-    case "enterprise":
-      return 50;
-    case "special":
-      return 100;
-    default:
-      return 3;
-  }
+StoreSchema.methods.getPlanConfig = function () {
+  return getPlanConfig(this.plan);
+};
+
+StoreSchema.methods.getMonthlyViewLimit = function () {
+  const planConfig = this.getPlanConfig();
+  return planConfig.limits.monthlyViews;
 };
 
 const Store = mongoose.model("Store", StoreSchema);

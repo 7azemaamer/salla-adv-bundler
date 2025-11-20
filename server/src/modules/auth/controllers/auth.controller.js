@@ -5,6 +5,7 @@ import { asyncWrapper } from "../../../utils/errorHandler.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { getPlanFeatureSnapshot } from "../../stores/constants/planConfig.js";
 
 /* ===================================
  * EASY MODE: Get store info for setup
@@ -155,10 +156,13 @@ export const completeSetup = asyncWrapper(async (req, res) => {
     { expiresIn: "30d" } // Long-lived token
   );
 
+  const planContext = getPlanFeatureSnapshot(store.plan);
+
   res.json({
     success: true,
     token: jwtToken,
     message: "تم إنشاء الحساب بنجاح",
+    plan: planContext,
   });
 });
 
@@ -207,7 +211,6 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
     store.access_token_expires_at &&
     store.access_token_expires_at < new Date()
   ) {
-
     if (!store.refresh_token) {
       return res.status(403).json({
         message:
@@ -241,8 +244,6 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
       }
       store.access_token_expires_at = new Date(Date.now() + expires_in * 1000);
       await store.save();
-
-
     } catch (error) {
       console.error(
         `[Login]: Failed to refresh token for store ${store.store_id}:`,
@@ -269,6 +270,7 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
     { expiresIn: "30d" }
   );
 
+  const planContext = getPlanFeatureSnapshot(store.plan);
 
   res.json({
     success: true,
@@ -279,6 +281,7 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
       domain: store.domain,
       plan: store.plan,
       email: store.email,
+      plan_context: planContext,
     },
   });
 });
@@ -318,8 +321,6 @@ export const forgotPassword = asyncWrapper(async (req, res) => {
   store.reset_code = resetCode;
   store.reset_code_expires = new Date(Date.now() + 15 * 60 * 1000);
   await store.save();
-
-
 
   res.json({
     success: true,

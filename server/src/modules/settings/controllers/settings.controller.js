@@ -14,11 +14,12 @@ export const getSettings = asyncWrapper(async (req, res) => {
     throw new AppError("Store ID not found in request", 400);
   }
 
-  const settings = await settingsService.getSettings(store_id);
+  const { settings, planContext } = await settingsService.getSettings(store_id);
 
   res.status(200).json({
     success: true,
     data: settings,
+    meta: planContext,
   });
 });
 
@@ -32,12 +33,16 @@ export const updateSettings = asyncWrapper(async (req, res) => {
     throw new AppError("Store ID not found in request", 400);
   }
 
-  const settings = await settingsService.updateSettings(store_id, req.body);
+  const { settings, planContext } = await settingsService.updateSettings(
+    store_id,
+    req.body
+  );
 
   res.status(200).json({
     success: true,
     message: "Settings updated successfully",
     data: settings,
+    meta: planContext,
   });
 });
 
@@ -89,7 +94,6 @@ export const refetchPaymentMethods = asyncWrapper(async (req, res) => {
       store.payment_methods = methodsResult.data;
       store.payment_methods_updated_at = new Date();
       await store.save();
-
     }
 
     res.status(200).json({

@@ -1,17 +1,150 @@
 import { AppError } from "../../../utils/errorHandler.js";
 import Settings from "../model/settings.model.js";
+import Store from "../../stores/model/store.model.js";
+import {
+  getPlanConfig,
+  getPlanFeatureSnapshot,
+} from "../../stores/constants/planConfig.js";
 
 class SettingsService {
+  applyPlanLocks(settingsDoc, planConfig) {
+    let mutated = false;
+
+    if (!settingsDoc) {
+      return mutated;
+    }
+
+    if (
+      !planConfig.features.couponControls &&
+      !settingsDoc.hide_coupon_section
+    ) {
+      settingsDoc.hide_coupon_section = true;
+      mutated = true;
+    }
+
+    if (
+      !planConfig.features.customHideSelectors &&
+      settingsDoc.custom_hide_selectors?.length
+    ) {
+      settingsDoc.custom_hide_selectors = [];
+      mutated = true;
+    }
+
+    if (!settingsDoc.sticky_button) {
+      settingsDoc.sticky_button = {};
+    }
+
+    if (
+      !planConfig.features.stickyButton &&
+      settingsDoc.sticky_button.enabled
+    ) {
+      settingsDoc.sticky_button.enabled = false;
+      mutated = true;
+    }
+
+    if (!settingsDoc.timer) {
+      settingsDoc.timer = {};
+    }
+
+    if (!planConfig.features.timer && settingsDoc.timer.enabled) {
+      settingsDoc.timer.enabled = false;
+      mutated = true;
+    }
+
+    if (!settingsDoc.free_shipping) {
+      settingsDoc.free_shipping = {};
+    }
+
+    if (
+      !planConfig.features.freeShipping &&
+      settingsDoc.free_shipping.enabled
+    ) {
+      settingsDoc.free_shipping.enabled = false;
+      mutated = true;
+    }
+
+    if (!settingsDoc.review_count) {
+      settingsDoc.review_count = {};
+    }
+
+    if (!planConfig.features.reviewsWidget) {
+      if (settingsDoc.review_count.enabled) {
+        settingsDoc.review_count.enabled = false;
+        mutated = true;
+      }
+
+      if (settingsDoc.review_count.initial_count !== 0) {
+        settingsDoc.review_count.initial_count = 0;
+        mutated = true;
+      }
+
+      if (settingsDoc.review_count.current_count !== 0) {
+        settingsDoc.review_count.current_count = 0;
+        mutated = true;
+      }
+
+      if (!settingsDoc.review_date_randomizer) {
+        settingsDoc.review_date_randomizer = {};
+      }
+
+      if (settingsDoc.review_date_randomizer.enabled) {
+        settingsDoc.review_date_randomizer.enabled = false;
+        mutated = true;
+      }
+
+      if (settingsDoc.review_date_randomizer.hide_real_reviews) {
+        settingsDoc.review_date_randomizer.hide_real_reviews = false;
+        mutated = true;
+      }
+
+      if (
+        Array.isArray(settingsDoc.custom_reviews) &&
+        settingsDoc.custom_reviews.length > 0
+      ) {
+        settingsDoc.custom_reviews = [];
+        mutated = true;
+      }
+    }
+
+    if (!settingsDoc.announcement) {
+      settingsDoc.announcement = {};
+    }
+
+    if (!planConfig.features.ads && settingsDoc.announcement.enabled) {
+      settingsDoc.announcement.enabled = false;
+      mutated = true;
+    }
+
+    return mutated;
+  }
+
+  serializeSettings(settingsDoc, planConfig) {
+    const payload = settingsDoc.toObject();
+    return {
+      settings: payload,
+      planContext: getPlanFeatureSnapshot(planConfig.key),
+    };
+  }
+
   /* ===============
    * Get settings for a store (create default if not exists)
    * ===============*/
   async getSettings(store_id) {
     try {
+      const store = await Store.findOne({ store_id, is_deleted: false });
+
+      if (!store) {
+        throw new AppError("Store not found", 404);
+      }
+
+      const planConfig = store.getPlanConfig
+        ? store.getPlanConfig()
+        : getPlanConfig(store.plan);
+
       let settings = await Settings.findOne({ store_id });
 
-      // Create default settings if not exists
       if (!settings) {
-        settings = await Settings.create({
+        settings = new Settings({
           store_id,
           hide_default_buttons: false,
           hide_salla_offer_modal: false,
@@ -25,7 +158,6 @@ class SettingsService {
             text_color: "#ffffff",
             position: "bottom-center",
             width_type: "auto",
-            custom_width: 250,
           },
           free_shipping: {
             enabled: false,
@@ -76,9 +208,17 @@ class SettingsService {
             hide_avatars: false,
           },
         });
+
+        await settings.save();
       }
 
-      return settings;
+      const mutated = this.applyPlanLocks(settings, planConfig);
+
+      if (mutated) {
+        await settings.save();
+      }
+
+      return this.serializeSettings(settings, planConfig);
     } catch (error) {
       console.error(
         `[Settings]: Failed to get settings for store ${store_id}:`,
@@ -147,14 +287,43 @@ class SettingsService {
             .filter((preset) => preset.length > 0);
       }
 
-      // Update or create settings
-      const settings = await Settings.findOneAndUpdate(
-        { store_id },
-        { $set: filteredUpdates },
-        { new: true, upsert: true, runValidators: true }
-      );
+      const store = await Store.findOne({ store_id, is_deleted: false });
 
-      return settings;
+      if (!store) {
+        throw new AppError("Store not found", 404);
+      }
+
+      const planConfig = store.getPlanConfig
+        ? store.getPlanConfig()
+        : getPlanConfig(store.plan);
+
+      let settings = await Settings.findOne({ store_id });
+
+      if (!settings) {
+        settings = new Settings({ store_id });
+      }
+
+      Object.entries(filteredUpdates).forEach(([field, value]) => {
+        settings.set(field, value);
+      });
+
+      const mutated = this.applyPlanLocks(settings, planConfig);
+
+      if (mutated) {
+        // ensure mongoose tracks nested modifications
+        settings.markModified("sticky_button");
+        settings.markModified("free_shipping");
+        settings.markModified("timer");
+        settings.markModified("review_count");
+        settings.markModified("review_date_randomizer");
+        settings.markModified("custom_reviews");
+        settings.markModified("announcement");
+        settings.markModified("custom_hide_selectors");
+      }
+
+      await settings.save({ validateBeforeSave: true });
+
+      return this.serializeSettings(settings, planConfig);
     } catch (error) {
       console.error(
         `[Settings]: Failed to update settings for store ${store_id}:`,

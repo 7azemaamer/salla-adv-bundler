@@ -9,8 +9,12 @@ import docsRoutes from "../modules/bundles/routes/docs.routes.js";
 import snippetRoutes from "../modules/bundles/routes/snippet.routes.js";
 import settingsRoutes from "../modules/settings/routes/settings.routes.js";
 import timerSettingsRoutes from "../modules/settings/routes/timerSettings.routes.js";
+import adminRoutes from "../modules/admin/routes/admin.routes.js";
 
 const router = Router();
+
+// Admin routes (protected - requires admin authentication)
+router.use("/admin", adminRoutes);
 
 // Authentication routes
 router.use("/auth", authRoutes);

@@ -17,11 +17,18 @@ import { IconCheck, IconX, IconInfoCircle } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useSettingsStore from "../../stores/useSettingsStore";
 import SettingToggle from "./SettingToggle";
+import UpgradePrompt from "../common/UpgradePrompt";
 
 /**
  * Timer settings panel component
  */
-export default function TimerSettingsPanel({ settings, loading, onToggle }) {
+export default function TimerSettingsPanel({
+  settings,
+  loading,
+  onToggle,
+  planFeatures = {},
+}) {
+  const hasFeature = planFeatures.timer !== false;
   // Timer customization state
   const timer = settings.timer || {};
 
@@ -127,13 +134,14 @@ export default function TimerSettingsPanel({ settings, loading, onToggle }) {
 
   return (
     <Stack gap="md">
+      {!hasFeature && <UpgradePrompt featureName="مؤقت العد التنازلي" />}
       {/* Enable Timer Toggle */}
       <SettingToggle
         label="تفعيل مؤقت العد التنازلي"
         description="عرض مؤقت للعد التنازلي في رأس نافذة الباقة لخلق إحساس بالإلحاح"
         checked={timer.enabled || false}
         onChange={() => onToggle("timer.enabled")}
-        disabled={loading.updating}
+        disabled={loading.updating || !hasFeature}
         infoText="المؤقت يظهر في رأس نافذة الباقة ويمكنك التحكم في مدته، ألوانه، والمؤثرات البصرية."
         withDivider={false}
       />
