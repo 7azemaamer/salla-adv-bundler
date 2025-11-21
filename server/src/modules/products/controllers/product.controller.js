@@ -8,13 +8,15 @@ import { getValidAccessToken } from "../../../utils/tokenHelper.js";
  * =============================================== */
 export const getProducts = asyncWrapper(async (req, res) => {
   const { store_id } = req.user;
-  const { page = 1, per_page = 50, search } = req.query;
+  const { page = 1, per_page = 200, search } = req.query;
+
+  const limit = Math.min(parseInt(per_page), 1000);
 
   try {
     const products = await productService.getProducts(
       store_id,
       page,
-      per_page,
+      limit,
       search
     );
 

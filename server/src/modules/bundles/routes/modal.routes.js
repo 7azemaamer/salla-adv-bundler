@@ -237,7 +237,7 @@ router.get("/modal.js", (req, res) => {
       ];
       
       // Default checkout button text (will be overwritten when bundle data loads)
-      this.checkoutButtonText = 'إتمام الطلب — {total_price}';
+      this.checkoutButtonText = 'الإنتقال الى الدفع — {total_price}';
 
       this.initializeFeatureState();
     }
@@ -452,6 +452,12 @@ router.get("/modal.js", (req, res) => {
           params.append('customer_id', customerId);
         }
 
+        // Add include flags to get payment methods and reviews in one call
+        params.append('include_payment_methods', 'true');
+        params.append('include_reviews', 'true');
+        params.append('product_id', productId);
+        params.append('reviews_limit', '20');
+
         const response = await fetch(\`\${apiUrl}/storefront/bundles/\${productId}?\${params}\`, {
           method: 'GET',
           headers: {
@@ -467,7 +473,33 @@ router.get("/modal.js", (req, res) => {
           const responseText = await response.text();
           const bundleData = JSON.parse(responseText);
 
+          // Check if monthly view limit was reached
+          if (bundleData && bundleData.limitReached === true) {
+            console.log('[Bundle Modal Preload] Monthly view limit reached');
+            SallaBundleModal.dataCache.limitReached = true;
+            return null; // Don't cache, return null
+          }
+
+          // Cache the bundle data
           SallaBundleModal.dataCache.bundleData[productId] = bundleData;
+
+          // Extract and cache payment methods if included
+          if (bundleData.data && bundleData.data.payment_methods) {
+            SallaBundleModal.dataCache.paymentMethods = bundleData.data.payment_methods;
+          }
+
+          // Extract and cache reviews if included
+          if (bundleData.data && bundleData.data.reviews) {
+            if (!SallaBundleModal.dataCache.productReviews) {
+              SallaBundleModal.dataCache.productReviews = {};
+            }
+            const normalizedProductId = productId.toString().replace(/^p/, '');
+            SallaBundleModal.dataCache.productReviews[normalizedProductId] = bundleData.data.reviews;
+            
+            if (bundleData.data.review_display_config) {
+              SallaBundleModal.dataCache.reviewDisplayConfig = bundleData.data.review_display_config;
+            }
+          }
 
           return bundleData;
         }
@@ -540,6 +572,14 @@ router.get("/modal.js", (req, res) => {
           try {
             this.bundleData = JSON.parse(responseText);
             
+            // Check if monthly view limit was reached
+            if (this.bundleData && this.bundleData.limitReached === true) {
+              console.log('[Salla Bundle Modal] Monthly view limit reached - bundle unavailable');
+              // Gracefully exit - don't show modal or button
+              // The button should already be hidden by the button script check
+              return; // Exit initialization
+            }
+            
             // Check if bundle data is valid
             if (!this.bundleData || (!this.bundleData.data && !this.bundleData.bundles)) {
               throw new Error('No bundle offers found for this product');
@@ -583,11 +623,8 @@ router.get("/modal.js", (req, res) => {
 
           if (Array.isArray(cachedProductReviews)) {
             this.reviews = cachedProductReviews;
-          } else {
-            await this.fetchReviews(targetProductId);
           }
-        } else if (!Array.isArray(this.reviews) || this.reviews.length === 0) {
-          await this.fetchReviews();
+          // Reviews already loaded from bundle endpoint with include_reviews=true
         }
 
         // Merge manual reviews with fetched reviews
@@ -641,7 +678,7 @@ router.get("/modal.js", (req, res) => {
         this.hideCouponSection = bundleConfig.settings?.hide_coupon_section || false;
 
         // Store checkout button text for last step
-        this.checkoutButtonText = bundleConfig.checkout_button_text || 'إتمام الطلب — {total_price}';
+        this.checkoutButtonText = bundleConfig.checkout_button_text || 'الإنتقال الى الدفع — {total_price}';
 
         this.createModal();
 
@@ -677,57 +714,6 @@ router.get("/modal.js", (req, res) => {
       } catch (error) {
         console.error('[Timer] Fetch failed:', error);
       }
-    }
-
-    async fetchReviews(productIdOverride = null) {
-      const storeId = this.contextData.storeId || this.storeDomain;
-      const bundleConfig = (this.bundleData && (this.bundleData.data || this.bundleData)) || {};
-      const rawProductId =
-        productIdOverride ||
-        this.productId ||
-        bundleConfig.target_product_id ||
-        '';
-      const normalizedProductId = rawProductId
-        ? rawProductId.toString().replace(/^p/, '')
-        : '';
-      const productParam = normalizedProductId
-        ? '&product_id=' + encodeURIComponent(normalizedProductId)
-        : '';
-      const url =
-        this.apiUrl +
-        '/storefront/stores/' +
-        storeId +
-        '/reviews?limit=20' +
-        productParam;
-
-      try {
-
-        const response = await fetch(url, {
-          headers: { 'ngrok-skip-browser-warning': 'true' },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          this.reviews = result.data || [];
-          this.reviewDisplayConfig = result.display_config || {};
-
-          if (normalizedProductId) {
-            if (!SallaBundleModal.dataCache.productReviews) {
-              SallaBundleModal.dataCache.productReviews = {};
-            }
-            SallaBundleModal.dataCache.productReviews[normalizedProductId] = this.reviews;
-          } else {
-            SallaBundleModal.dataCache.reviews = this.reviews;
-          }
-          SallaBundleModal.dataCache.reviewDisplayConfig = this.reviewDisplayConfig;
-
-          return this.reviews;
-        }
-      } catch (error) {
-        console.error('[Reviews] Fetch failed:', error);
-      }
-
-      return this.reviews;
     }
 
     hideSwalToasts() {
@@ -922,22 +908,6 @@ router.get("/modal.js", (req, res) => {
         if (this.originalSallaNotify.warning) window.salla.notify.warning = this.originalSallaNotify.warning;
         if (this.originalSallaNotify.info) window.salla.notify.info = this.originalSallaNotify.info;
         this.originalSallaNotify = null;
-      }
-    }
-
-    async fetchPaymentMethods() {
-      try {
-        const storeId = this.storeDomain;
-        const response = await fetch(\`\${this.apiUrl}/storefront/stores/\${storeId}/payment-methods\`, {
-          headers: { 'ngrok-skip-browser-warning': 'true' }
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          this.paymentMethods = result.data || [];
-        }
-      } catch (error) {
-        console.error('[Payment Methods] Fetch failed:', error);
       }
     }
 
@@ -1329,9 +1299,9 @@ router.get("/modal.js", (req, res) => {
         </div>
         \${announcementHtml}
         <button class="salla-checkout-button"
-                style="background-color: \${bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#0066ff'}; color: \${bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff'};"
+                style="background-color: \${bundleConfig.checkout_button_bg_color || bundleConfig.cta_button_bg_color || '#000'}; color: \${bundleConfig.checkout_button_text_color || bundleConfig.cta_button_text_color || '#ffffff'};"
                 onclick="if(window.sallaBundleModal) window.sallaBundleModal.handleCheckout(); else console.error('Modal instance not found for checkout');">
-          <span>\${(bundleConfig.checkout_button_text || 'إتمام الطلب — {total_price}').replace('{total_price}', formatPrice(finalTotal))}</span>
+          <span>\${(bundleConfig.checkout_button_text || 'الإنتقال الى الدفع — {total_price}').replace('{total_price}', formatPrice(finalTotal))}</span>
         </button>
         \${this.renderPaymentMethods()}
       \`;
@@ -2052,7 +2022,7 @@ router.get("/modal.js", (req, res) => {
         if (!isMobile) {
           const summaryDetails = document.querySelector('.salla-summary-details');
           if (summaryDetails && !summaryDetails.classList.contains('expanded')) {
-            this.showSallaToast('يرجى مراجعة الملخص قبل إتمام الطلب', 'info');
+            this.showSallaToast('يرجى مراجعة الملخص قبل الإنتقال الى الدفع', 'info');
             this.toggleSummary();
             return;
           }
@@ -2081,7 +2051,7 @@ router.get("/modal.js", (req, res) => {
           
           let errorMessage = '';
           if (targetProducts.length > 0) {
-            errorMessage = \`عذراً، المنتج الأساسي "\${targetProducts[0].name}" غير متوفر حالياً. لا يمكن إتمام الطلب.\`;
+            errorMessage = \`عذراً، المنتج الأساسي "\${targetProducts[0].name}" غير متوفر حالياً. لا يمكن الإنتقال الى الدفع.\`;
           } else if (offerProducts.length > 0) {
             const offerNames = offerProducts.map(p => p.name).join('، ');
             errorMessage = \`عذراً، المنتجات التالية من العرض غير متوفرة حالياً: \${offerNames}.\`;
@@ -2169,7 +2139,8 @@ router.get("/modal.js", (req, res) => {
             const targetCartItem = {
               id: this.productId,
               quantity: 1,
-              options: targetOptionsForThisQuantity
+              options: targetOptionsForThisQuantity,
+              notes: \`Bundle: \${this.bundleId} | Tier: \${this.selectedBundle}\`
             };
 
             try {
@@ -2213,7 +2184,8 @@ router.get("/modal.js", (req, res) => {
                 const addToCartParams = {
                   id: offer.product_id,
                   quantity: offer.quantity || 1,
-                  options: offerOptions
+                  options: offerOptions,
+                  notes: \`Bundle: \${this.bundleId} | Tier: \${this.selectedBundle}\`
                 };
 
 
@@ -4506,7 +4478,8 @@ router.get("/modal.js", (req, res) => {
           const targetCartItem = {
             id: this.productId,
             quantity: 1,
-            options: targetOptionsForThisQuantity
+            options: targetOptionsForThisQuantity,
+            notes: \`Bundle: \${this.bundleId} | Tier: \${this.selectedBundle}\`
           };
           
           await window.salla.cart.addItem(targetCartItem);
@@ -4530,7 +4503,8 @@ router.get("/modal.js", (req, res) => {
               const addToCartParams = {
                 id: offer.product_id,
                 quantity: offer.quantity || 1,
-                options: offerOptions
+                options: offerOptions,
+                notes: \`Bundle: \${this.bundleId} | Tier: \${this.selectedBundle}\`
               };
               
               await window.salla.cart.addItem(addToCartParams);

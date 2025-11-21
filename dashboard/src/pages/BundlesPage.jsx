@@ -143,22 +143,6 @@ function BundleCard({
               تعديل
             </Menu.Item>
 
-            {/* <Menu.Item
-              leftSection={<IconExternalLink size="0.9rem" />}
-              onClick={() => {
-                // Use the constructed product_url if available, otherwise fallback
-                const previewUrl =
-                  bundle.product_url ||
-                  `https://${bundle.store_domain || "store.salla.sa"}/p${
-                    bundle.target_product_id
-                  }`;
-                window.open(previewUrl, "_blank");
-              }}
-              disabled={bundle.status !== "active"}
-            >
-              معاينة في المتجر
-            </Menu.Item> */}
-
             {bundle.status === "draft" && (
               <Menu.Item
                 leftSection={<IconPlayerPlay size="0.9rem" />}

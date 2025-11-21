@@ -3,10 +3,14 @@ import axios from "axios";
 
 const useBundleStore = create((set, get) => ({
   // State
-  deebundles: [],
+  bundles: [],
   currentBundle: null,
   products: [],
   analytics: null,
+  monthlyAnalytics: null,
+  analyticsHistory: [],
+  storeAnalytics: null,
+  bundleAggregatedStats: null,
   loading: {
     bundles: false,
     products: false,
@@ -14,6 +18,7 @@ const useBundleStore = create((set, get) => ({
     updating: false,
     deleting: false,
     generating: false,
+    analytics: false,
   },
   error: null,
   filters: {
@@ -238,13 +243,14 @@ const useBundleStore = create((set, get) => ({
   },
 
   // Product Actions
-  fetchProducts: async (search = "") => {
+  fetchProducts: async (search = "", perPage = 200) => {
     try {
       set({ error: null });
       get().setLoading("products", true);
 
       const params = new URLSearchParams();
       if (search) params.append("search", search);
+      params.append("per_page", perPage);
 
       const response = await axios.get(`/products?${params.toString()}`);
 
@@ -279,6 +285,127 @@ const useBundleStore = create((set, get) => ({
     } catch (error) {
       console.error("Fetch analytics error:", error);
       set({ error: error.response?.data?.message || error.message });
+    }
+  },
+
+  // Fetch monthly analytics for a bundle
+  fetchMonthlyAnalytics: async (bundleId, year = null, month = null) => {
+    try {
+      get().setLoading("analytics", true);
+      set({ error: null });
+
+      const params = new URLSearchParams();
+      if (year) params.append("year", year);
+      if (month) params.append("month", month);
+
+      const response = await axios.get(
+        `/bundles/${bundleId}/analytics?${params.toString()}`
+      );
+
+      if (response.data.success) {
+        set({ monthlyAnalytics: response.data.data });
+        return response.data.data;
+      } else {
+        throw new Error(
+          response.data.message || "Failed to fetch monthly analytics"
+        );
+      }
+    } catch (error) {
+      console.error("Fetch monthly analytics error:", error);
+      set({ error: error.response?.data?.message || error.message });
+      return null;
+    } finally {
+      get().setLoading("analytics", false);
+    }
+  },
+
+  // Fetch analytics history for a bundle
+  fetchAnalyticsHistory: async (bundleId, limit = 12) => {
+    try {
+      get().setLoading("analytics", true);
+      set({ error: null });
+
+      const params = new URLSearchParams();
+      if (limit) params.append("limit", limit);
+
+      const response = await axios.get(
+        `/bundles/${bundleId}/analytics/history?${params.toString()}`
+      );
+
+      if (response.data.success) {
+        set({ analyticsHistory: response.data.data });
+        return response.data.data;
+      } else {
+        throw new Error(
+          response.data.message || "Failed to fetch analytics history"
+        );
+      }
+    } catch (error) {
+      console.error("Fetch analytics history error:", error);
+      set({ error: error.response?.data?.message || error.message });
+      return [];
+    } finally {
+      get().setLoading("analytics", false);
+    }
+  },
+
+  // Fetch aggregated analytics for a bundle with period filter
+  fetchBundleAggregatedStats: async (bundleId, days = null) => {
+    try {
+      get().setLoading("analytics", true);
+      set({ error: null });
+
+      const params = new URLSearchParams();
+      if (days) params.append("days", days);
+
+      const response = await axios.get(
+        `/bundles/${bundleId}/analytics/aggregated?${params.toString()}`
+      );
+
+      if (response.data.success) {
+        set({ bundleAggregatedStats: response.data.data });
+        return response.data.data;
+      } else {
+        throw new Error(
+          response.data.message || "Failed to fetch bundle aggregated stats"
+        );
+      }
+    } catch (error) {
+      console.error("Fetch bundle aggregated stats error:", error);
+      set({ error: error.response?.data?.message || error.message });
+      return null;
+    } finally {
+      get().setLoading("analytics", false);
+    }
+  },
+
+  // Fetch store-level analytics
+  fetchStoreAnalytics: async (days = null) => {
+    try {
+      get().setLoading("analytics", true);
+      set({ error: null });
+
+      const params = new URLSearchParams();
+      if (days) params.append("days", days);
+
+      const response = await axios.get(
+        `/analytics/store/aggregated?${params.toString()}`
+      );
+
+      if (response.data.success) {
+        set({ storeAnalytics: response.data });
+        return response.data;
+      } else {
+        throw new Error(
+          response.data.message || "Failed to fetch store analytics"
+        );
+      }
+    } catch (error) {
+      console.error("Fetch store analytics error:", error);
+      set({ error: error.response?.data?.message || error.message });
+      return null;
+    } finally {
+      get().setLoading("analytics", false);
     }
   },
 

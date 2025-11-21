@@ -18,6 +18,7 @@ import BundleDetailsPage from "../pages/BundleDetailsPage";
 import AnalyticsPage from "../pages/AnalyticsPage";
 import SettingsPage from "../pages/SettingsPage";
 import ProfilePage from "../pages/ProfilePage";
+import PlansPage from "../pages/PlansPage";
 
 export default function AppRouter() {
   return (
@@ -46,6 +47,7 @@ export default function AppRouter() {
           <Route path="bundles/:bundleId" element={<BundleDetailsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="plans" element={<PlansPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
 

@@ -10,14 +10,21 @@ import snippetRoutes from "../modules/bundles/routes/snippet.routes.js";
 import settingsRoutes from "../modules/settings/routes/settings.routes.js";
 import timerSettingsRoutes from "../modules/settings/routes/timerSettings.routes.js";
 import adminRoutes from "../modules/admin/routes/admin.routes.js";
+import adminNotificationRoutes from "../modules/notifications/routes/admin.notification.routes.js";
+import userNotificationRoutes from "../modules/notifications/routes/user.notification.routes.js";
+import analyticsRoutes from "../modules/bundles/routes/analytics.routes.js";
 
 const router = Router();
 
 // Admin routes (protected - requires admin authentication)
 router.use("/admin", adminRoutes);
+router.use("/admin/notifications", adminNotificationRoutes);
 
 // Authentication routes
 router.use("/auth", authRoutes);
+
+// Notification routes (protected - user routes)
+router.use("/notifications", userNotificationRoutes);
 
 // Webhook routes
 router.use("/webhooks", webhookRoutes);
@@ -27,6 +34,9 @@ router.use("/products", productRoutes);
 
 // Bundle management routes (protected)
 router.use("/bundles", bundleRoutes);
+
+// Analytics routes (protected)
+router.use("/analytics", analyticsRoutes);
 
 // Settings routes (protected)
 router.use("/settings", settingsRoutes);

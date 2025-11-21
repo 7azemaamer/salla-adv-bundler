@@ -59,7 +59,9 @@ class PlanConfigService {
         "features",
         "description",
         "price",
+        "originalPrice",
         "currency",
+        "ui",
       ];
       const filteredUpdates = {};
 
@@ -89,6 +91,32 @@ class PlanConfigService {
         }
       }
 
+      // Validate price - ensure non-negative
+      if (
+        filteredUpdates.price !== undefined &&
+        filteredUpdates.price !== null
+      ) {
+        const priceValue = Number(filteredUpdates.price);
+        if (isNaN(priceValue) || priceValue < 0) {
+          throw new Error("Price must be a non-negative number (0 or greater)");
+        }
+        filteredUpdates.price = Math.max(0, priceValue);
+      }
+
+      // Validate originalPrice - ensure non-negative
+      if (
+        filteredUpdates.originalPrice !== undefined &&
+        filteredUpdates.originalPrice !== null
+      ) {
+        const originalPriceValue = Number(filteredUpdates.originalPrice);
+        if (isNaN(originalPriceValue) || originalPriceValue < 0) {
+          throw new Error(
+            "Original price must be a non-negative number (0 or greater)"
+          );
+        }
+        filteredUpdates.originalPrice = Math.max(0, originalPriceValue);
+      }
+
       const plan = await PlanConfig.findOneAndUpdate(
         { key: planKey },
         { $set: filteredUpdates },
@@ -116,13 +144,35 @@ class PlanConfigService {
         throw new Error(`Plan with key ${planData.key} already exists`);
       }
 
+      // Validate price before creating
+      const priceValue = Number(planData.price) || 0;
+      if (isNaN(priceValue) || priceValue < 0) {
+        throw new Error("Price must be a non-negative number (0 or greater)");
+      }
+
+      // Validate originalPrice if provided
+      let originalPriceValue = 0;
+      if (
+        planData.originalPrice !== undefined &&
+        planData.originalPrice !== null
+      ) {
+        originalPriceValue = Number(planData.originalPrice);
+        if (isNaN(originalPriceValue) || originalPriceValue < 0) {
+          throw new Error(
+            "Original price must be a non-negative number (0 or greater)"
+          );
+        }
+      }
+
       const plan = new PlanConfig({
         key: planData.key,
         label: planData.label,
         limits: planData.limits || { maxBundles: 1, monthlyViews: 10000 },
         features: planData.features || { ...BASE_PLAN_FEATURES },
         description: planData.description || "",
-        price: planData.price || 0,
+        price: Math.max(0, priceValue),
+        originalPrice:
+          originalPriceValue > 0 ? Math.max(0, originalPriceValue) : undefined,
         currency: planData.currency || "SAR",
       });
 

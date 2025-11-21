@@ -13,20 +13,30 @@ import {
   Eye,
   Infinity as InfinityIcon,
   Save,
+  Palette,
 } from "lucide-react";
+import PlanUIEditor from "../../components/PlanUIEditor";
 
 export default function PlansPage() {
   const [editingPlan, setEditingPlan] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingUI, setEditingUI] = useState(null);
   const queryClient = useQueryClient();
 
   // Fetch Plans
-  const { data: plans, isLoading: plansLoading } = useQuery({
+  const { data: plansData, isLoading: plansLoading } = useQuery({
     queryKey: ["plans"],
     queryFn: async () => {
       const response = await adminApi.get("/admin/plans");
       return response.data.data;
     },
+  });
+
+  // Sort plans by displayOrder
+  const plans = plansData?.sort((a, b) => {
+    const orderA = a.ui?.displayOrder ?? 999;
+    const orderB = b.ui?.displayOrder ?? 999;
+    return orderA - orderB;
   });
 
   // Fetch Features
@@ -108,6 +118,7 @@ export default function PlansPage() {
             }
             onDelete={() => deletePlanMutation.mutate(plan.key)}
             onReset={() => resetPlanMutation.mutate(plan.key)}
+            onEditUI={() => setEditingUI(plan)}
           />
         ))}
       </div>
@@ -117,6 +128,20 @@ export default function PlansPage() {
           features={features}
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={(data) => createPlanMutation.mutate(data)}
+        />
+      )}
+
+      {editingUI && (
+        <PlanUIEditor
+          plan={editingUI}
+          onSave={(uiData) => {
+            updatePlanMutation.mutate({
+              key: editingUI.key,
+              data: { ui: uiData },
+            });
+            setEditingUI(null);
+          }}
+          onClose={() => setEditingUI(null)}
         />
       )}
     </div>
@@ -132,6 +157,7 @@ function PlanCard({
   onSave,
   onDelete,
   onReset,
+  onEditUI,
 }) {
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: plan,
@@ -187,7 +213,7 @@ function PlanCard({
           </div>
 
           {/* Pricing Edit */}
-          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg dark:bg-zinc-800/50">
+          <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg dark:bg-zinc-800/50">
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
                 Price
@@ -196,8 +222,46 @@ function PlanCard({
                 <input
                   type="number"
                   step="0.01"
-                  {...register("price", { valueAsNumber: true })}
-                  className="w-full pl-3 pr-8 py-2 text-sm border rounded-lg border-zinc-300 focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                  min="0"
+                  {...register("price", {
+                    valueAsNumber: true,
+                    min: 0,
+                    validate: (value) =>
+                      value >= 0 || "Price must be 0 or greater",
+                  })}
+                  className="w-full pl-3 pr-8 py-2 text-sm border rounded-lg border-zinc-300 focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  onKeyDown={(e) => {
+                    // Prevent minus sign
+                    if (e.key === "-" || e.key === "e" || e.key === "E") {
+                      e.preventDefault();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase mb-1">
+                Original Price
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register("originalPrice", {
+                    valueAsNumber: true,
+                    min: 0,
+                    validate: (value) =>
+                      !value || value >= 0 || "Price must be 0 or greater",
+                  })}
+                  className="w-full pl-3 pr-8 py-2 text-sm border rounded-lg border-zinc-300 focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="For discount display"
+                  onKeyDown={(e) => {
+                    // Prevent minus sign
+                    if (e.key === "-" || e.key === "e" || e.key === "E") {
+                      e.preventDefault();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -431,25 +495,34 @@ function PlanCard({
 
           {/* Footer Actions */}
           <div className="p-4 bg-gray-50 border-t border-zinc-100 dark:bg-zinc-800/30 dark:border-zinc-800 rounded-b-xl flex justify-between items-center">
-            <button
-              onClick={onReset}
-              disabled={plan.key === "basic"}
-              className="text-xs font-medium text-gray-500 hover:text-gray-900 flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-400 dark:hover:text-white transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" /> Reset Default
-            </button>
-
-            {plan.key !== "basic" && (
+            <div className="flex gap-2">
               <button
-                onClick={() => {
-                  if (confirm("Are you sure you want to delete this plan?"))
-                    onDelete();
-                }}
-                className="text-xs font-medium text-red-500 hover:text-red-700 flex items-center gap-1 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                onClick={onReset}
+                disabled={plan.key === "basic"}
+                className="text-xs font-medium text-gray-500 hover:text-gray-900 flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed dark:text-gray-400 dark:hover:text-white transition-colors"
               >
-                <Trash2 className="w-3 h-3" /> Delete Plan
+                <RotateCcw className="w-3 h-3" /> Reset
               </button>
-            )}
+
+              {plan.key !== "basic" && (
+                <button
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete this plan?"))
+                      onDelete();
+                  }}
+                  className="text-xs font-medium text-red-500 hover:text-red-700 flex items-center gap-1 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={onEditUI}
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+            >
+              <Palette className="w-3 h-3" /> Edit UI
+            </button>
           </div>
         </>
       )}
@@ -545,8 +618,20 @@ function CreatePlanModal({ features, onClose, onSubmit }) {
                   <input
                     type="number"
                     step="0.01"
-                    {...register("price", { valueAsNumber: true })}
-                    className="w-full pl-3 pr-4 py-2 border rounded-lg border-zinc-300 focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white"
+                    min="0"
+                    {...register("price", {
+                      valueAsNumber: true,
+                      min: 0,
+                      validate: (value) =>
+                        value >= 0 || "Price must be 0 or greater",
+                    })}
+                    className="w-full pl-3 pr-4 py-2 border rounded-lg border-zinc-300 focus:ring-2 focus:ring-blue-500 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    onKeyDown={(e) => {
+                      // Prevent minus sign, e, and E
+                      if (e.key === "-" || e.key === "e" || e.key === "E") {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                 </div>
               </div>

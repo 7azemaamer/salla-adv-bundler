@@ -18,6 +18,15 @@ import {
   getBundleConfig,
   trackBundleInteraction,
 } from "../controllers/storefront.controller.js";
+import {
+  getBundleMonthlyAnalytics,
+  getBundleAnalyticsHistory,
+  getBundleAggregatedStats,
+  getBundleTierPerformance,
+  getStoreCurrentMonthAnalytics,
+  getStoreAggregatedStats,
+  getStoreTrendingBundles,
+} from "../controllers/analytics.controller.js";
 import { authenticateToken } from "../../../middleware/auth.middleware.js";
 
 const router = Router();
@@ -41,6 +50,12 @@ router.post("/:bundle_id/deactivate", deactivateBundle);
 router.post("/:bundle_id/track/view", trackBundleView);
 router.post("/:bundle_id/track/click", trackBundleClick);
 router.post("/:bundle_id/track/conversion", trackBundleConversion);
+
+// Monthly analytics routes
+router.get("/:bundle_id/analytics", getBundleMonthlyAnalytics);
+router.get("/:bundle_id/analytics/history", getBundleAnalyticsHistory);
+router.get("/:bundle_id/analytics/aggregated", getBundleAggregatedStats);
+router.get("/:bundle_id/analytics/tiers", getBundleTierPerformance);
 
 // Product reviews cache
 router.post("/:bundle_id/refetch-reviews", refetchProductReviews);

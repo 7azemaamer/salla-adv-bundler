@@ -1,3 +1,5 @@
+import planConfigService from "../../admin/services/planConfig.service.js";
+
 export const BASE_PLAN_FEATURES = {
   advancedBundleStyling: true,
   stickyButton: true,
@@ -6,9 +8,10 @@ export const BASE_PLAN_FEATURES = {
   couponControls: true,
   customHideSelectors: true,
   reviewsWidget: true,
-  ads: true,
+  announcement: true,
   bundleAnalytics: true,
   dashboardAnalytics: true,
+  analyticsPage: true,
   conversionInsights: true,
   bundlePerformance: true,
   offerAnalytics: true,
@@ -21,7 +24,7 @@ export const BUNDLE_STYLING_DEFAULTS = {
   cta_button_text: "اختر الباقة",
   cta_button_bg_color: "#000",
   cta_button_text_color: "#ffffff",
-  checkout_button_text: "إتمام الطلب — {total_price}",
+  checkout_button_text: "الإنتقال الى الدفع — {total_price}",
   checkout_button_bg_color: "#000",
   checkout_button_text_color: "#ffffff",
 };
@@ -51,9 +54,10 @@ const PLAN_TEMPLATES = {
       couponControls: false,
       customHideSelectors: false,
       reviewsWidget: false,
-      ads: false,
+      announcement: false,
       bundleAnalytics: false,
       dashboardAnalytics: false,
+      analyticsPage: false,
       conversionInsights: false,
       bundlePerformance: false,
       offerAnalytics: false,
@@ -111,10 +115,6 @@ export const getPlanConfig = (planKey = "basic") => {
  */
 export const getPlanConfigAsync = async (planKey = "basic") => {
   try {
-    // Dynamic import to avoid circular dependency
-    const { default: planConfigService } = await import(
-      "../../admin/services/planConfig.service.js"
-    );
     return await planConfigService.getPlanConfigForStore(planKey);
   } catch (error) {
     console.warn(

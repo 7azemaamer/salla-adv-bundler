@@ -195,7 +195,7 @@ const BundleConfigSchema = new mongoose.Schema(
     cta_button_bg_color: {
       type: String,
       trim: true,
-      default: "#0066ff",
+      default: "#000",
     },
     cta_button_text_color: {
       type: String,
@@ -206,12 +206,12 @@ const BundleConfigSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxLength: 100,
-      default: "إتمام الطلب — {total_price}",
+      default: "الإنتقال الى الدفع — {total_price}",
     },
     checkout_button_bg_color: {
       type: String,
       trim: true,
-      default: "#0066ff",
+      default: "#000",
     },
     checkout_button_text_color: {
       type: String,
@@ -267,23 +267,10 @@ const BundleConfigSchema = new mongoose.Schema(
     deactivated_at: {
       type: Date,
     },
-    // Analytics and tracking
-    total_views: {
-      type: Number,
-      default: 0,
-    },
-    total_clicks: {
-      type: Number,
-      default: 0,
-    },
-    total_conversions: {
-      type: Number,
-      default: 0,
-    },
-    total_revenue: {
-      type: Number,
-      default: 0,
-    },
+    // Analytics are now tracked in BundleAnalytics collection only
+    // Removed: total_views, total_clicks, total_conversions, total_revenue
+    // These fields are deprecated and no longer used
+
     // Store references for efficient querying
     offers_count: {
       type: Number,

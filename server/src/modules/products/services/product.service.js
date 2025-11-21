@@ -1,5 +1,9 @@
 import axios from "axios";
 import Store from "../../stores/model/store.model.js";
+import {
+  getValidAccessToken,
+  refreshAccessToken,
+} from "../../../utils/tokenHelper.js";
 
 class ProductService {
   constructor() {
@@ -9,8 +13,7 @@ class ProductService {
   /* ===============
    * Get all products from Salla store
    * ===============*/
-  async getProducts(store_id, page = 1, per_page = 50, search = null) {
-
+  async getProducts(store_id, page = 1, per_page = 200, search = null) {
     try {
       const store = await Store.findOne({ store_id });
       if (!store) {
@@ -18,20 +21,82 @@ class ProductService {
         throw new Error("Store not found");
       }
 
-
       const params = { page, per_page };
+
+      // Salla API only supports 'name' search, so we'll fetch with name and filter SKU locally
       if (search) {
         params.name = search;
       }
 
-      const response = await axios.get(`${this.baseURL}/products`, {
-        headers: {
-          Authorization: `Bearer ${store.access_token}`,
-          "Content-Type": "application/json",
-        },
-        params,
-      });
+      // Get valid access token (auto-refreshes if needed)
+      const accessToken = await getValidAccessToken(store_id);
 
+      try {
+        const response = await axios.get(`${this.baseURL}/products`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          params,
+        });
+
+        return response.data;
+      } catch (apiError) {
+        if (apiError.response?.status === 401) {
+          console.log(
+            `[ProductService] 401 error, forcing token refresh for store ${store_id}`
+          );
+          const freshToken = await refreshAccessToken(store_id);
+
+          const retryResponse = await axios.get(`${this.baseURL}/products`, {
+            headers: {
+              Authorization: `Bearer ${freshToken}`,
+              "Content-Type": "application/json",
+            },
+            params,
+          });
+
+          if (search && retryResponse.data?.data) {
+            const searchLower = search.toLowerCase();
+            const allProducts = retryResponse.data.data;
+            const filteredProducts = allProducts.filter(
+              (product) =>
+                product.name?.toLowerCase().includes(searchLower) ||
+                product.sku?.toLowerCase().includes(searchLower)
+            );
+            return {
+              ...retryResponse.data,
+              data: filteredProducts,
+              pagination: {
+                ...retryResponse.data.pagination,
+                total: filteredProducts.length,
+              },
+            };
+          }
+
+          return retryResponse.data;
+        }
+        throw apiError;
+      }
+
+      // If searching, filter results to include SKU matches as well
+      if (search && response.data?.data) {
+        const searchLower = search.toLowerCase();
+        const allProducts = response.data.data;
+        const filteredProducts = allProducts.filter(
+          (product) =>
+            product.name?.toLowerCase().includes(searchLower) ||
+            product.sku?.toLowerCase().includes(searchLower)
+        );
+        return {
+          ...response.data,
+          data: filteredProducts,
+          pagination: {
+            ...response.data.pagination,
+            total: filteredProducts.length,
+          },
+        };
+      }
 
       return response.data;
     } catch (error) {
@@ -66,14 +131,40 @@ class ProductService {
     const store = await Store.findOne({ store_id });
     if (!store) throw new Error("Store not found");
 
-    const response = await axios.get(`${this.baseURL}/products/${product_id}`, {
-      headers: {
-        Authorization: `Bearer ${store.access_token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    // Get valid access token (auto-refreshes if needed)
+    const accessToken = await getValidAccessToken(store_id);
 
-    return response.data;
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/products/${product_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      // Retry once on 401
+      if (error.response?.status === 401) {
+        const freshToken = await refreshAccessToken(store_id);
+
+        const retryResponse = await axios.get(
+          `${this.baseURL}/products/${product_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${freshToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        return retryResponse.data;
+      }
+      throw error;
+    }
   }
 
   /* ===============
@@ -83,7 +174,8 @@ class ProductService {
     const store = await Store.findOne({ store_id });
     if (!store) throw new Error("Store not found");
 
-    const products = [];
+    // Get valid access token once for all requests
+    const accessToken = await getValidAccessToken(store_id);
 
     const productPromises = product_ids.map(async (product_id) => {
       try {
@@ -91,7 +183,7 @@ class ProductService {
           `${this.baseURL}/products/${product_id}`,
           {
             headers: {
-              Authorization: `Bearer ${store.access_token}`,
+              Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
             },
           }
@@ -103,6 +195,43 @@ class ProductService {
           success: true,
         };
       } catch (error) {
+        // Retry once on 401
+        if (error.response?.status === 401) {
+          try {
+            const { refreshAccessToken } = await import(
+              "../../../utils/tokenHelper.js"
+            );
+            const freshToken = await refreshAccessToken(store_id);
+
+            const retryResponse = await axios.get(
+              `${this.baseURL}/products/${product_id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${freshToken}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            return {
+              id: product_id,
+              data: retryResponse.data.data,
+              success: true,
+            };
+          } catch (retryError) {
+            console.error(
+              `Failed to fetch product ${product_id} after retry:`,
+              retryError.message
+            );
+            return {
+              id: product_id,
+              data: null,
+              success: false,
+              error: retryError.message,
+            };
+          }
+        }
+
         console.error(`Failed to fetch product ${product_id}:`, error.message);
         return {
           id: product_id,
@@ -173,7 +302,6 @@ class ProductService {
     }
 
     if (variant.unlimited_quantity === true) {
-
       return false;
     }
 
@@ -183,7 +311,6 @@ class ProductService {
       !parentProduct.inventory_tracking;
 
     if (noStockTracking) {
-
       return false; // Assume unlimited stock when all tracking is disabled
     }
 
@@ -212,7 +339,6 @@ class ProductService {
 
       return false;
     }
-
 
     return false;
   }

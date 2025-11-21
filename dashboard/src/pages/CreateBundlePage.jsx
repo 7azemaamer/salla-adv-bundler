@@ -50,8 +50,8 @@ export default function CreateBundlePage() {
   const { createBundle, fetchProducts, products, loading } = useBundleStore();
   const { features } = usePlanFeatures();
   const [active, setActive] = useState(0);
-  const [productSearch, setProductSearch] = useState("");
   const [offerSearch, setOfferSearch] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState(null);
 
   const form = useForm({
     initialValues: {
@@ -66,7 +66,7 @@ export default function CreateBundlePage() {
       cta_button_text: "اختر الباقة",
       cta_button_bg_color: "#000",
       cta_button_text_color: "#ffffff",
-      checkout_button_text: "إتمام الطلب — {total_price}",
+      checkout_button_text: "الإنتقال الى الدفع — {total_price}",
       checkout_button_bg_color: "#000",
       checkout_button_text_color: "#ffffff",
       bundles: [
@@ -105,14 +105,11 @@ export default function CreateBundlePage() {
 
   useEffect(() => {
     fetchProducts();
+    // Cleanup timeout on unmount
+    return () => {
+      if (searchTimeout) clearTimeout(searchTimeout);
+    };
   }, [fetchProducts]);
-
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-      (product.sku &&
-        product.sku.toLowerCase().includes(productSearch.toLowerCase()))
-  );
 
   const filteredOfferProducts = products.filter(
     (product) =>
@@ -347,88 +344,94 @@ export default function CreateBundlePage() {
 
                   <Grid.Col span={12}>
                     <div data-tour="target-product">
-                      <Text size="sm" fw={500} mb="xs">
-                        المنتج المستهدف <span className="text-red-500">*</span>
-                      </Text>
-                      <TextInput
-                        placeholder="البحث في المنتجات..."
+                      <Select
+                        label={
+                          <>
+                            المنتج المستهدف{" "}
+                            <span style={{ color: "red" }}>*</span>
+                          </>
+                        }
+                        placeholder="ابحث عن منتج أو اختر من القائمة..."
+                        searchable
+                        clearable
+                        nothingFoundMessage="لا توجد منتجات"
                         leftSection={<IconSearch size="0.9rem" />}
-                        value={productSearch}
-                        onChange={(e) => setProductSearch(e.target.value)}
-                        mb="sm"
-                      />
-                    </div>
-
-                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
-                      {loading.products ? (
-                        <div className="p-4 text-center text-gray-500">
-                          جاري تحميل المنتجات...
-                        </div>
-                      ) : filteredProducts.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">
-                          لا توجد منتجات
-                        </div>
-                      ) : (
-                        filteredProducts.map((product) => (
-                          <div
-                            key={product.id}
-                            className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                              form.values.target_product_id === product.id
-                                ? "bg-blue-50"
-                                : ""
-                            }`}
-                            onClick={() => {
-                              form.setFieldValue(
-                                "target_product_id",
-                                product.id
-                              );
-                              form.setFieldValue(
-                                "target_product_name",
-                                product.name
-                              );
-                            }}
-                          >
-                            <Group gap="sm">
+                        data={products.map((product) => ({
+                          value: product.id.toString(),
+                          label: product.name,
+                          product: product,
+                        }))}
+                        value={
+                          form.values.target_product_id?.toString() || null
+                        }
+                        onChange={(value) => {
+                          const selectedProduct = products.find(
+                            (p) => p.id.toString() === value
+                          );
+                          if (selectedProduct) {
+                            form.setFieldValue(
+                              "target_product_id",
+                              selectedProduct.id
+                            );
+                            form.setFieldValue(
+                              "target_product_name",
+                              selectedProduct.name
+                            );
+                          }
+                        }}
+                        onSearchChange={(query) => {
+                          // Debounced search
+                          if (searchTimeout) clearTimeout(searchTimeout);
+                          const timeout = setTimeout(() => {
+                            if (query.length >= 2) {
+                              fetchProducts(query);
+                            } else if (query.length === 0) {
+                              fetchProducts();
+                            }
+                          }, 500);
+                          setSearchTimeout(timeout);
+                        }}
+                        maxDropdownHeight={400}
+                        renderOption={({ option }) => {
+                          const product = option.product;
+                          return (
+                            <Group gap="sm" wrap="nowrap">
                               {product.image && (
                                 <Image
                                   src={product.image}
                                   alt={product.name}
-                                  w={40}
-                                  h={40}
+                                  w={50}
+                                  h={50}
                                   radius="sm"
+                                  fit="cover"
                                 />
                               )}
-                              <div className="flex-1">
-                                <Text size="sm" fw={500}>
+                              <div style={{ flex: 1 }}>
+                                <Text size="sm" fw={500} lineClamp={1}>
                                   {product.name}
                                 </Text>
-                                <Group gap="xs">
+                                <Group gap="xs" mt={4}>
                                   {product.sku && (
-                                    <Badge size="xs" variant="light">
-                                      SKU: {product.sku}
+                                    <Badge
+                                      size="xs"
+                                      variant="light"
+                                      color="gray"
+                                    >
+                                      {product.sku}
                                     </Badge>
                                   )}
-                                  <Text size="xs" c="dimmed">
+                                  <Text size="xs" c="dimmed" fw={500}>
                                     {product.price} {product.currency}
                                   </Text>
                                 </Group>
                               </div>
-                              {form.values.target_product_id === product.id && (
-                                <IconCheck
-                                  size="1rem"
-                                  className="text-blue-600"
-                                />
-                              )}
                             </Group>
-                          </div>
-                        ))
-                      )}
+                          );
+                        }}
+                        {...form.getInputProps("target_product_id")}
+                        error={form.errors.target_product_id}
+                      />
                     </div>
-                    {form.errors.target_product_id && (
-                      <Text size="xs" c="red" mt="xs">
-                        {form.errors.target_product_id}
-                      </Text>
-                    )}
                   </Grid.Col>
                 </Grid>
               </Stack>
@@ -869,13 +872,13 @@ export default function CreateBundlePage() {
                   </Grid.Col>
                 </Grid>
 
-                <Divider label="زر إتمام الطلب" labelPosition="center" />
+                <Divider label="زر الإنتقال الى الدفع" labelPosition="center" />
 
                 <Grid>
                   <Grid.Col span={12}>
                     <TextInput
-                      label="نص زر إتمام الطلب"
-                      placeholder="مثال: إتمام الطلب — {total_price}"
+                      label="نص زر الإنتقال الى الدفع"
+                      placeholder="مثال: الإنتقال الى الدفع — {total_price}"
                       description="النص الذي سيظهر على الزر في الخطوة الأخيرة. يمكنك استخدام {total_price} لإظهار السعر الإجمالي"
                       disabled={!features.advancedBundleStyling}
                       {...form.getInputProps("checkout_button_text")}
@@ -883,7 +886,7 @@ export default function CreateBundlePage() {
                   </Grid.Col>
                   <Grid.Col span={6}>
                     <ColorInput
-                      label="لون خلفية زر إتمام الطلب"
+                      label="لون خلفية زر الإنتقال الى الدفع"
                       description="لون خلفية الزر"
                       placeholder="اختر اللون"
                       format="hex"
@@ -893,7 +896,7 @@ export default function CreateBundlePage() {
                   </Grid.Col>
                   <Grid.Col span={6}>
                     <ColorInput
-                      label="لون نص زر إتمام الطلب"
+                      label="لون نص زر الإنتقال الى الدفع"
                       description="لون النص داخل الزر"
                       placeholder="اختر اللون"
                       format="hex"

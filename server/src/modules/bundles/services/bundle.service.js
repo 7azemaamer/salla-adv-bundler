@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import BundleConfig from "../model/bundleConfig.model.js";
 import BundleOffer from "../model/bundleOffer.model.js";
+import BundleAnalytics from "../model/bundleAnalytics.model.js";
 import Store from "../../stores/model/store.model.js";
 import specialOffersService from "./specialOffers.service.js";
 import productService from "../../products/services/product.service.js";
@@ -90,13 +91,14 @@ class BundleService {
       modal_title: sanitizedPayload.modal_title || "اختر باقتك",
       modal_subtitle: sanitizedPayload.modal_subtitle || "",
       cta_button_text: sanitizedPayload.cta_button_text || "اختر الباقة",
-      cta_button_bg_color: sanitizedPayload.cta_button_bg_color || "#0066ff",
+      cta_button_bg_color: sanitizedPayload.cta_button_bg_color || "#000",
       cta_button_text_color:
         sanitizedPayload.cta_button_text_color || "#ffffff",
       checkout_button_text:
-        sanitizedPayload.checkout_button_text || "إتمام الطلب — {total_price}",
+        sanitizedPayload.checkout_button_text ||
+        "الإنتقال الى الدفع — {total_price}",
       checkout_button_bg_color:
-        sanitizedPayload.checkout_button_bg_color || "#0066ff",
+        sanitizedPayload.checkout_button_bg_color || "#000",
       checkout_button_text_color:
         sanitizedPayload.checkout_button_text_color || "#ffffff",
       config_hash: configHash,
@@ -472,6 +474,17 @@ class BundleService {
           status: "active",
         });
 
+        // Get current month analytics for this bundle
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        const currentMonthAnalytics = await BundleAnalytics.findOne({
+          bundle_id: bundle._id,
+          month: currentMonth,
+          year: currentYear,
+        }).lean();
+
         // Construct proper Salla product URL
         let productUrl = null;
         if (store?.domain) {
@@ -492,6 +505,19 @@ class BundleService {
           active_offers_count: offerCount,
           store_domain: store?.domain,
           product_url: productUrl,
+          current_month_analytics: currentMonthAnalytics
+            ? {
+                views: currentMonthAnalytics.views || 0,
+                clicks: currentMonthAnalytics.clicks || 0,
+                conversions: currentMonthAnalytics.conversions || 0,
+                revenue: currentMonthAnalytics.revenue || 0,
+              }
+            : {
+                views: 0,
+                clicks: 0,
+                conversions: 0,
+                revenue: 0,
+              },
         };
 
         return enrichBundleForPlanResponse(bundleObject, planKey);
@@ -704,10 +730,12 @@ class BundleService {
   }
 
   /* ===============
-   * Update bundle analytics
+   * Update bundle analytics - Now with monthly tracking and IP-based unique visitors
    * ===============*/
-  async trackBundleView(bundle_id) {
-    const bundle = await BundleConfig.findById(bundle_id).select("store_id");
+  async trackBundleView(bundle_id, visitorIp = null) {
+    const bundle = await BundleConfig.findById(bundle_id).select(
+      "store_id name"
+    );
 
     if (!bundle) {
       return { limitReached: false, skipped: true };
@@ -719,16 +747,17 @@ class BundleService {
       return { limitReached: false, skipped: true };
     }
 
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth() + 1; // 1-12
+    const period = `${year}-${String(month).padStart(2, "0")}`;
+
     const viewLimit = store.getMonthlyViewLimit();
     let limitReached = false;
     let usageUpdated = false;
 
+    // Check and update store-level plan usage (for plan limit enforcement)
     if (viewLimit !== null && viewLimit !== undefined) {
-      const now = new Date();
-      const period = `${now.getUTCFullYear()}-${String(
-        now.getUTCMonth() + 1
-      ).padStart(2, "0")}`;
-
       if (!store.plan_usage) {
         store.plan_usage = {};
       }
@@ -753,50 +782,213 @@ class BundleService {
         store.plan_usage.monthly_views.count += 1;
         usageUpdated = true;
       }
+
+      if (usageUpdated) {
+        await store.save();
+      }
     }
 
-    if (usageUpdated) {
-      await store.save();
+    // Always track bundle-level analytics in monthly records, even if limit reached
+    try {
+      // Get or create monthly analytics record
+      const analytics = await BundleAnalytics.getOrCreate(
+        bundle_id,
+        bundle.name,
+        bundle.store_id,
+        year,
+        month
+      );
+
+      // Increment view count (counts all requests, even over-limit)
+      analytics.views += 1;
+
+      // Track if this view exceeded the plan limit
+      // This helps merchants understand how much demand they're missing
+      if (limitReached) {
+        if (!analytics.over_limit_views) {
+          analytics.over_limit_views = 0;
+        }
+        analytics.over_limit_views += 1;
+      }
+
+      // Track unique visitor by IP if provided
+      if (visitorIp) {
+        analytics.addUniqueVisitor(visitorIp);
+      }
+
+      await analytics.save();
+    } catch (error) {
+      console.error(
+        `[Bundle Service] Failed to track monthly analytics for bundle ${bundle_id}:`,
+        error
+      );
     }
 
-    if (!limitReached) {
-      await BundleConfig.findByIdAndUpdate(bundle_id, {
-        $inc: { total_views: 1 },
-      });
-    }
+    // Analytics are tracked in BundleAnalytics collection only
+    // No need to update bundle document
 
     return { limitReached };
   }
 
   async trackBundleClick(bundle_id) {
-    await BundleConfig.findByIdAndUpdate(bundle_id, {
-      $inc: { total_clicks: 1 },
-    });
+    // Update monthly analytics
+    try {
+      const bundle = await BundleConfig.findById(bundle_id).select(
+        "store_id name"
+      );
+      if (bundle) {
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = now.getUTCMonth() + 1;
+
+        const analytics = await BundleAnalytics.getOrCreate(
+          bundle_id,
+          bundle.name,
+          bundle.store_id,
+          year,
+          month
+        );
+
+        analytics.clicks += 1;
+        await analytics.save();
+      }
+    } catch (error) {
+      console.error(
+        `[Bundle Service] Failed to track monthly click for bundle ${bundle_id}:`,
+        error
+      );
+    }
   }
 
   async trackBundleConversion(bundle_id, revenue = 0) {
-    await BundleConfig.findByIdAndUpdate(bundle_id, {
-      $inc: {
-        total_conversions: 1,
-        total_revenue: revenue,
-      },
-    });
+    // Update monthly analytics
+    try {
+      const bundle = await BundleConfig.findById(bundle_id).select(
+        "store_id name"
+      );
+      if (bundle) {
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = now.getUTCMonth() + 1;
+
+        const analytics = await BundleAnalytics.getOrCreate(
+          bundle_id,
+          bundle.name,
+          bundle.store_id,
+          year,
+          month
+        );
+
+        analytics.conversions += 1;
+        analytics.revenue += revenue;
+        await analytics.save();
+      }
+    } catch (error) {
+      console.error(
+        `[Bundle Service] Failed to track monthly conversion for bundle ${bundle_id}:`,
+        error
+      );
+    }
   }
 
   async trackTierSelection(bundle_id, tier_id) {
-    // Increment tier_selections for the specific tier
+    // Increment tier_selections for the specific tier in bundle
     await BundleConfig.findOneAndUpdate(
       { _id: bundle_id, "bundles.tier": tier_id },
       { $inc: { "bundles.$.tier_selections": 1 } }
     );
+
+    // Update monthly analytics tier stats
+    try {
+      const bundle = await BundleConfig.findById(bundle_id).select(
+        "store_id name bundles"
+      );
+      if (bundle) {
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = now.getUTCMonth() + 1;
+
+        const analytics = await BundleAnalytics.getOrCreate(
+          bundle_id,
+          bundle.name,
+          bundle.store_id,
+          year,
+          month
+        );
+
+        // Find or create tier stat
+        let tierStat = analytics.tier_stats.find((t) => t.tier === tier_id);
+        if (!tierStat) {
+          const tierData = bundle.bundles.find((t) => t.tier === tier_id);
+          analytics.tier_stats.push({
+            tier: tier_id,
+            tier_name: tierData?.tier_title || `العرض ${tier_id}`,
+            selections: 1,
+            checkouts: 0,
+            conversion_rate: 0,
+          });
+        } else {
+          tierStat.selections += 1;
+        }
+
+        await analytics.save();
+      }
+    } catch (error) {
+      console.error(
+        `[Bundle Service] Failed to track monthly tier selection for bundle ${bundle_id}:`,
+        error
+      );
+    }
   }
 
   async trackTierCheckout(bundle_id, tier_id) {
-    // Increment tier_checkouts for the specific tier
+    // Increment tier_checkouts for the specific tier in bundle
     await BundleConfig.findOneAndUpdate(
       { _id: bundle_id, "bundles.tier": tier_id },
       { $inc: { "bundles.$.tier_checkouts": 1 } }
     );
+
+    // Update monthly analytics tier stats
+    try {
+      const bundle = await BundleConfig.findById(bundle_id).select(
+        "store_id name bundles"
+      );
+      if (bundle) {
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = now.getUTCMonth() + 1;
+
+        const analytics = await BundleAnalytics.getOrCreate(
+          bundle_id,
+          bundle.name,
+          bundle.store_id,
+          year,
+          month
+        );
+
+        // Find or create tier stat
+        let tierStat = analytics.tier_stats.find((t) => t.tier === tier_id);
+        if (!tierStat) {
+          const tierData = bundle.bundles.find((t) => t.tier === tier_id);
+          analytics.tier_stats.push({
+            tier: tier_id,
+            tier_name: tierData?.tier_title || `العرض ${tier_id}`,
+            selections: 0,
+            checkouts: 1,
+            conversion_rate: 0,
+          });
+        } else {
+          tierStat.checkouts += 1;
+        }
+
+        await analytics.save();
+      }
+    } catch (error) {
+      console.error(
+        `[Bundle Service] Failed to track monthly tier checkout for bundle ${bundle_id}:`,
+        error
+      );
+    }
   }
 
   /* ===============

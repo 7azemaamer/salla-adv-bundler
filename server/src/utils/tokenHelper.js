@@ -42,13 +42,21 @@ export const refreshAccessToken = async (store_id) => {
   }
 
   try {
+    // OAuth2 requires application/x-www-form-urlencoded content type
+    const params = new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: store.refresh_token,
+      client_id: process.env.CLIENT_KEY,
+      client_secret: process.env.CLIENT_SECRET_KEY,
+    });
+
     const response = await axios.post(
       "https://accounts.salla.sa/oauth2/token",
+      params.toString(),
       {
-        grant_type: "refresh_token",
-        refresh_token: store.refresh_token,
-        client_id: process.env.CLIENT_KEY,
-        client_secret: process.env.CLIENT_SECRET_KEY,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       }
     );
 
@@ -63,7 +71,6 @@ export const refreshAccessToken = async (store_id) => {
         access_token_expires_at: new Date(Date.now() + expires_in * 1000),
       }
     );
-
 
     return access_token;
   } catch (error) {

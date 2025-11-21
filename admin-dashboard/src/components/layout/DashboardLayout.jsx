@@ -5,6 +5,7 @@ import {
   Store,
   Package,
   CreditCard,
+  Bell,
   Settings,
   LogOut,
   Menu,
@@ -30,6 +31,7 @@ export default function DashboardLayout() {
     { name: "Stores", href: "/stores", icon: Store },
     { name: "Bundles", href: "/bundles", icon: Package },
     { name: "Plans", href: "/plans", icon: CreditCard },
+    { name: "Notifications", href: "/notifications", icon: Bell },
     { name: "Users", href: "/users", icon: Users },
     { name: "Settings", href: "/settings", icon: Settings },
   ];

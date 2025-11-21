@@ -25,10 +25,12 @@ import {
   IconUser,
   IconChevronDown,
   IconHelpCircle,
+  IconCrown,
 } from "@tabler/icons-react";
 import useAuthStore from "../../stores/useAuthStore";
 import useBundleStore from "../../stores/useBundleStore";
 import useTourStore from "../../stores/useTourStore";
+import NotificationMenu from "../common/NotificationMenu";
 
 const navItems = [
   {
@@ -51,6 +53,13 @@ const navItems = [
     path: "/dashboard/analytics",
     color: "violet",
     dataTour: "nav-analytics",
+  },
+  {
+    icon: IconCrown,
+    label: "الخطط",
+    path: "/dashboard/plans",
+    color: "yellow",
+    dataTour: "nav-plans",
   },
   {
     icon: IconSettings,
@@ -202,18 +211,26 @@ export default function DashboardLayout() {
                 size="lg"
                 onClick={() => {
                   const tourStore = useTourStore.getState();
-                  tourStore.startTour();
+                  const location = window.location.pathname;
+
+                  // Determine which tour to start based on current page
+                  let tourId = "dashboard";
+                  if (location.includes("/bundles/create")) {
+                    tourId = "createBundle";
+                  } else if (location.includes("/bundles")) {
+                    tourId = "bundles";
+                  } else if (location.includes("/settings")) {
+                    tourId = "settings";
+                  }
+
+                  tourStore.startTour(tourId);
                 }}
               >
                 <IconHelpCircle size="1.1rem" />
               </ActionIcon>
             </Tooltip>
 
-            <Tooltip label="الإشعارات">
-              <ActionIcon variant="light" color="gray" size="lg">
-                <IconBell size="1.1rem" />
-              </ActionIcon>
-            </Tooltip>
+            <NotificationMenu />
 
             <UserMenu />
           </Group>

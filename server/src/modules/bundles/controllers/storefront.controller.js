@@ -50,7 +50,32 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     });
   }
 
-  await bundleService.trackBundleView(bundle._id);
+  // Extract visitor IP from request
+  const visitorIp =
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.headers["x-real-ip"] ||
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    req.ip ||
+    "unknown";
+
+  // Track view and check if plan limit reached
+  const { limitReached } = await bundleService.trackBundleView(
+    bundle._id,
+    visitorIp
+  );
+
+  // If view limit exceeded, return disabled bundle state (graceful degradation)
+  // This allows the modal to handle it properly without showing errors to customers
+  if (limitReached) {
+    return res.status(200).json({
+      success: true,
+      data: null,
+      limitReached: true,
+      message: "Monthly view limit reached",
+      // Frontend can detect this and hide the bundle button gracefully
+    });
+  }
 
   const enhancedBundle = await bundleService.getEnhancedBundleData(
     store_id,
@@ -92,6 +117,12 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
  * =============================================== */
 export const getBundleConfig = asyncWrapper(async (req, res) => {
   const { bundle_id } = req.params;
+  const {
+    include_payment_methods,
+    include_reviews,
+    product_id,
+    reviews_limit = 20,
+  } = req.query;
 
   const bundle = await bundleService.getBundleDetails(bundle_id);
 
@@ -109,17 +140,80 @@ export const getBundleConfig = asyncWrapper(async (req, res) => {
     });
   }
 
+  const responseData = {
+    id: bundle._id,
+    name: bundle.name,
+    target_product_id: bundle.target_product_id,
+    target_product_name: bundle.target_product_name,
+    bundles: bundle.bundles,
+    start_date: bundle.start_date,
+    expiry_date: bundle.expiry_date,
+  };
+
+  // Optionally include payment methods to reduce API calls
+  if (include_payment_methods === "true") {
+    try {
+      const store = await storeService.getStoreById(bundle.store_id);
+      if (store && store.payment_methods && store.payment_methods.length > 0) {
+        responseData.payment_methods = store.payment_methods;
+      }
+    } catch (error) {
+      console.error(
+        "[Bundle Config] Failed to include payment methods:",
+        error
+      );
+      responseData.payment_methods = [];
+    }
+  }
+
+  // Optionally include reviews to reduce API calls
+  if (include_reviews === "true") {
+    try {
+      const settings = await settingsService.getSettings(bundle.store_id);
+      const reviewDisplay = settings.review_display || {};
+
+      // Use product_id if provided, otherwise fetch general reviews
+      const targetProductId = product_id || bundle.target_product_id;
+
+      if (targetProductId) {
+        const accessToken = await getValidAccessToken(bundle.store_id);
+        if (accessToken) {
+          const normalizedProductId = targetProductId
+            .toString()
+            .replace(/^p/, "");
+          const cacheResult = await getCachedReviews(
+            bundle.store_id,
+            normalizedProductId,
+            accessToken
+          );
+
+          if (
+            cacheResult.success &&
+            cacheResult.reviews &&
+            cacheResult.reviews.length > 0
+          ) {
+            responseData.reviews = cacheResult.reviews.slice(
+              0,
+              parseInt(reviews_limit)
+            );
+            responseData.review_display_config = {
+              hide_dates: !!reviewDisplay.hide_dates,
+              hide_ratings: !!reviewDisplay.hide_ratings,
+              hide_names: !!reviewDisplay.hide_names,
+              hide_avatars: !!reviewDisplay.hide_avatars,
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[Bundle Config] Failed to include reviews:", error);
+      responseData.reviews = [];
+    }
+  }
+
   res.status(200).json({
     success: true,
-    data: {
-      id: bundle._id,
-      name: bundle.name,
-      target_product_id: bundle.target_product_id,
-      target_product_name: bundle.target_product_name,
-      bundles: bundle.bundles,
-      start_date: bundle.start_date,
-      expiry_date: bundle.expiry_date,
-    },
+    data: responseData,
   });
 });
 

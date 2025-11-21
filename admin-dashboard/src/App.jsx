@@ -18,6 +18,7 @@ import DashboardHome from "./pages/dashboard/DashboardHome";
 import StoresPage from "./pages/stores/StoresPage";
 import StoreDetailPage from "./pages/stores/StoreDetailPage";
 import PlansPage from "./pages/plans/PlansPage";
+import NotificationsPage from "./pages/notifications/NotificationsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ProfilePage from "./pages/auth/ProfilePage";
 import UsersPage from "./pages/users/UsersPage";
@@ -92,6 +93,7 @@ function App() {
             <Route path="stores" element={<StoresPage />} />
             <Route path="stores/:storeId" element={<StoreDetailPage />} />
             <Route path="plans" element={<PlansPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
             <Route path="bundles" element={<BundlesPage />} />
             <Route path="bundles/:bundleId" element={<BundleDetailPage />} />
             <Route path="settings" element={<SettingsPage />} />

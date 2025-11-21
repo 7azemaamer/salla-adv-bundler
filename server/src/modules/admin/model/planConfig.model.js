@@ -69,6 +69,12 @@ const planConfigSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      analyticsPage: {
+        type: Boolean,
+        default: false,
+        description:
+          "Access to dedicated analytics page with charts and insights",
+      },
       conversionInsights: {
         type: Boolean,
         default: false,
@@ -102,6 +108,69 @@ const planConfigSchema = new mongoose.Schema(
     currency: {
       type: String,
       default: "SAR",
+    },
+    // UI Display Configuration (for user-facing plans page)
+    ui: {
+      displayTitle: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      displayDescription: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      featuresIncluded: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      featuresExcluded: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      displayPrice: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      originalPrice: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      discountBadge: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      upgradeLink: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      ctaButtonText: {
+        type: String,
+        default: "ترقية الآن",
+        trim: true,
+      },
+      highlight: {
+        type: Boolean,
+        default: false,
+      },
+      popularBadge: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+      displayOrder: {
+        type: Number,
+        default: 0,
+      },
     },
   },
   {

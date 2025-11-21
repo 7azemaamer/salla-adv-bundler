@@ -58,7 +58,21 @@ export const updatePlan = async (req, res) => {
     });
   } catch (error) {
     console.error("Update plan error:", error);
-    res.status(error.message.includes("not found") ? 404 : 500).json({
+
+    // Better error status codes
+    let statusCode = 500;
+    if (error.message.includes("not found")) {
+      statusCode = 404;
+    } else if (
+      error.message.includes("non-negative") ||
+      error.message.includes("must be")
+    ) {
+      statusCode = 400;
+    } else if (error.name === "ValidationError") {
+      statusCode = 400;
+    }
+
+    res.status(statusCode).json({
       success: false,
       message: error.message || "Failed to update plan",
     });

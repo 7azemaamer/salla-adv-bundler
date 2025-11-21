@@ -274,7 +274,7 @@ export default function DashboardHome() {
             variant="light"
             size="xs"
             ml="sm"
-            onClick={() => navigate("/dashboard/settings")}
+            onClick={() => navigate("/dashboard/plans")}
           >
             ترقية الخطة
           </Button>

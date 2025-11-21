@@ -1,7 +1,7 @@
 import { Alert, Button, Group, Text } from "@mantine/core";
 import { IconLock, IconSparkles } from "@tabler/icons-react";
 
-const SALLA_UPGRADE_URL = "https://s.salla.sa";
+const SALLA_UPGRADE_URL = "/dashboard/plans";
 
 export default function UpgradePrompt({
   featureName,
@@ -23,8 +23,6 @@ export default function UpgradePrompt({
             color="orange"
             component="a"
             href={SALLA_UPGRADE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
           >
             ترقية
           </Button>
@@ -61,8 +59,6 @@ export default function UpgradePrompt({
             color="orange"
             component="a"
             href={SALLA_UPGRADE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
             leftSection={<IconSparkles size="1rem" />}
           >
             ترقية الباقة

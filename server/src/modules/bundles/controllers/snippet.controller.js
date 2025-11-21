@@ -396,7 +396,7 @@ class SnippetController {
       };
       this.bundleData = {
         cta_button_text: 'اختر الباقة',
-        cta_button_bg_color: '#0066ff',
+        cta_button_bg_color: '#000',
         cta_button_text_color: '#ffffff'
       };
     }
@@ -1465,7 +1465,7 @@ class SnippetController {
       bundleButton.innerHTML = buttonText;
 
       // Use dynamic colors from bundle configuration
-      const buttonBgColor = this.bundleData.cta_button_bg_color || '#0066ff';
+      const buttonBgColor = this.bundleData.cta_button_bg_color || '#000';
       const buttonTextColor = this.bundleData.cta_button_text_color || '#ffffff';
       
       // Create a darker shade for hover effect
@@ -1552,7 +1552,7 @@ class SnippetController {
           notice.className = 'salla-bundle-notice';
           
           // Use dynamic colors from bundle configuration
-          const buttonBgColor = this.bundleData.cta_button_bg_color || '#0066ff';
+          const buttonBgColor = this.bundleData.cta_button_bg_color || '#000';
           const buttonTextColor = this.bundleData.cta_button_text_color || '#ffffff';
           const darkerBgColor = this.adjustColorBrightness(buttonBgColor, -20);
           

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Container,
@@ -21,6 +21,7 @@ import {
   Progress,
   Overlay,
   Box,
+  Select,
 } from "@mantine/core";
 import {
   IconArrowRight,
@@ -53,19 +54,32 @@ export default function BundleDetailsPage() {
     currentBundle,
     loading,
     error,
+    bundleAggregatedStats,
     getBundleDetails,
     generateOffers,
     deactivateBundle,
     deleteBundle,
+    fetchBundleAggregatedStats,
   } = useBundleStore();
   const { features } = usePlanFeatures();
   const hasBundleAnalytics = features.bundleAnalytics !== false;
+  const [selectedPeriod, setSelectedPeriod] = useState("30");
 
   useEffect(() => {
     if (bundleId) {
       getBundleDetails(bundleId);
+      if (hasBundleAnalytics) {
+        const days = selectedPeriod === "all" ? null : parseInt(selectedPeriod);
+        fetchBundleAggregatedStats(bundleId, days);
+      }
     }
-  }, [bundleId, getBundleDetails]);
+  }, [
+    bundleId,
+    selectedPeriod,
+    hasBundleAnalytics,
+    getBundleDetails,
+    fetchBundleAggregatedStats,
+  ]);
 
   const handleGenerateOffers = async () => {
     try {
@@ -161,36 +175,46 @@ export default function BundleDetailsPage() {
     expired: "منتهي الصلاحية",
   };
 
+  // Always use bundleAggregatedStats from analytics collection
+  const displayStats = bundleAggregatedStats || {
+    total_views: 0,
+    total_clicks: 0,
+    total_conversions: 0,
+    total_revenue: 0,
+    total_unique_visitors: 0,
+    average_conversion_rate: 0,
+  };
+
   const conversionRate =
-    currentBundle.total_clicks > 0
+    displayStats.total_views > 0
       ? (
-          (currentBundle.total_conversions / currentBundle.total_clicks) *
+          (displayStats.total_conversions / displayStats.total_views) *
           100
         ).toFixed(1)
       : 0;
 
   const stats = [
     {
-      title: "إجمالي المشاهدات",
-      value: currentBundle.total_views || 0,
+      title: "المشاهدات",
+      value: (displayStats.total_views || 0).toLocaleString(),
       icon: IconEye,
       color: "blue",
     },
     {
-      title: "إجمالي النقرات",
-      value: currentBundle.total_clicks || 0,
+      title: "النقرات",
+      value: (displayStats.total_clicks || 0).toLocaleString(),
       icon: IconClick,
       color: "violet",
     },
     {
-      title: "إجمالي التحويلات",
-      value: currentBundle.total_conversions || 0,
+      title: "التحويلات",
+      value: (displayStats.total_conversions || 0).toLocaleString(),
       icon: IconTrendingUp,
       color: "green",
     },
     // {
     //   title: "الإيرادات المحققة",
-    //   value: `${(currentBundle.total_revenue || 0).toFixed(2)} ر.س`,
+    //   value: `${(displayStats.total_revenue || 0).toFixed(2)} ر.س`,
     //   icon: IconCoin,
     //   color: "orange",
     // },
@@ -211,7 +235,7 @@ export default function BundleDetailsPage() {
             </Button>
           </Group>
 
-          <Group justify="space-between" align="flex-start">
+          <Group justify="space-between" align="flex-start" wrap="wrap">
             <div>
               <Group gap="sm" mb="xs">
                 <Title order={1} className="text-gray-800">
@@ -226,129 +250,148 @@ export default function BundleDetailsPage() {
               </Text>
             </div>
 
-            <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <ActionIcon variant="light" color="gray" size="lg">
-                  <IconDots size="1.2rem" />
-                </ActionIcon>
-              </Menu.Target>
+            <Group gap="md">
+              {hasBundleAnalytics && (
+                <Select
+                  placeholder="الفترة الزمنية"
+                  value={selectedPeriod}
+                  onChange={setSelectedPeriod}
+                  data={[
+                    { value: "7", label: "آخر 7 أيام" },
+                    { value: "30", label: "آخر 30 يوم" },
+                    { value: "90", label: "آخر 90 يوم" },
+                    { value: "365", label: "آخر سنة" },
+                    { value: "all", label: "كل الوقت" },
+                  ]}
+                  w={160}
+                />
+              )}
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <ActionIcon variant="light" color="gray" size="lg">
+                    <IconDots size="1.2rem" />
+                  </ActionIcon>
+                </Menu.Target>
 
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconEdit size="0.9rem" />}
-                  onClick={() =>
-                    navigate(`/dashboard/bundles/${bundleId}/edit`)
-                  }
-                >
-                  تعديل الباقة
-                </Menu.Item>
-
-                {currentBundle.status === "draft" && (
+                <Menu.Dropdown>
                   <Menu.Item
-                    leftSection={<IconPlayerPlay size="0.9rem" />}
-                    color="green"
-                    onClick={handleGenerateOffers}
+                    leftSection={<IconEdit size="0.9rem" />}
+                    onClick={() =>
+                      navigate(`/dashboard/bundles/${bundleId}/edit`)
+                    }
                   >
-                    تفعيل الباقة
+                    تعديل الباقة
                   </Menu.Item>
-                )}
 
-                {currentBundle.status === "active" && (
+                  {currentBundle.status === "draft" && (
+                    <Menu.Item
+                      leftSection={<IconPlayerPlay size="0.9rem" />}
+                      color="green"
+                      onClick={handleGenerateOffers}
+                    >
+                      تفعيل الباقة
+                    </Menu.Item>
+                  )}
+
+                  {currentBundle.status === "active" && (
+                    <Menu.Item
+                      leftSection={<IconPlayerPause size="0.9rem" />}
+                      color="orange"
+                      onClick={handleDeactivate}
+                    >
+                      إلغاء التفعيل
+                    </Menu.Item>
+                  )}
+
+                  {currentBundle.status === "inactive" && (
+                    <Menu.Item
+                      leftSection={<IconPlayerPlay size="0.9rem" />}
+                      color="green"
+                      onClick={handleGenerateOffers}
+                    >
+                      إعادة تفعيل الباقة
+                    </Menu.Item>
+                  )}
+
+                  <Menu.Divider />
+
                   <Menu.Item
-                    leftSection={<IconPlayerPause size="0.9rem" />}
-                    color="orange"
-                    onClick={handleDeactivate}
+                    leftSection={<IconTrash size="0.9rem" />}
+                    color="red"
+                    onClick={handleDelete}
                   >
-                    إلغاء التفعيل
+                    حذف الباقة
                   </Menu.Item>
-                )}
-
-                {currentBundle.status === "inactive" && (
-                  <Menu.Item
-                    leftSection={<IconPlayerPlay size="0.9rem" />}
-                    color="green"
-                    onClick={handleGenerateOffers}
-                  >
-                    إعادة تفعيل الباقة
-                  </Menu.Item>
-                )}
-
-                <Menu.Divider />
-
-                <Menu.Item
-                  leftSection={<IconTrash size="0.9rem" />}
-                  color="red"
-                  onClick={handleDelete}
-                >
-                  حذف الباقة
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
           </Group>
         </div>
 
         {/* Statistics Cards */}
-        <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
-          {stats.map((stat, index) => {
-            const isLockedStat =
-              !hasBundleAnalytics &&
-              (stat.title === "إجمالي النقرات" ||
-                stat.title === "إجمالي التحويلات");
+        <div>
+          <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
+            {stats.map((stat, index) => {
+              const isLockedStat =
+                !hasBundleAnalytics &&
+                (stat.title === "النقرات الكلية" ||
+                  stat.title === "التحويلات الكلية");
 
-            return (
-              <Box key={index} pos="relative">
-                {isLockedStat && (
-                  <Overlay
-                    color="#000"
-                    backgroundOpacity={0.05}
-                    blur={2}
-                    zIndex={1}
-                    style={{
-                      backdropFilter: "blur(6px)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
+              return (
+                <Box key={index} pos="relative">
+                  {isLockedStat && (
+                    <Overlay
+                      color="#000"
+                      backgroundOpacity={0.05}
+                      blur={2}
+                      zIndex={1}
+                      style={{
+                        backdropFilter: "blur(6px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <ThemeIcon
+                        size={40}
+                        radius="xl"
+                        color="orange"
+                        variant="light"
+                      >
+                        <IconLock size={20} />
+                      </ThemeIcon>
+                    </Overlay>
+                  )}
+                  <Card
+                    padding="lg"
+                    radius="md"
+                    withBorder
+                    style={{ filter: isLockedStat ? "blur(2px)" : "none" }}
                   >
-                    <ThemeIcon
-                      size={40}
-                      radius="xl"
-                      color="orange"
-                      variant="light"
-                    >
-                      <IconLock size={20} />
-                    </ThemeIcon>
-                  </Overlay>
-                )}
-                <Card
-                  padding="lg"
-                  radius="md"
-                  withBorder
-                  style={{ filter: isLockedStat ? "blur(2px)" : "none" }}
-                >
-                  <Group gap="sm">
-                    <ThemeIcon
-                      size="lg"
-                      radius="md"
-                      color={stat.color}
-                      variant="light"
-                    >
-                      <stat.icon size="1.2rem" />
-                    </ThemeIcon>
-                    <div>
-                      <Text size="sm" c="dimmed">
-                        {stat.title}
-                      </Text>
-                      <Text size="lg" fw={700}>
-                        {stat.value}
-                      </Text>
-                    </div>
-                  </Group>
-                </Card>
-              </Box>
-            );
-          })}
-        </SimpleGrid>
+                    <Group gap="sm">
+                      <ThemeIcon
+                        size="lg"
+                        radius="md"
+                        color={stat.color}
+                        variant="light"
+                      >
+                        <stat.icon size="1.2rem" />
+                      </ThemeIcon>
+                      <div>
+                        <Text size="sm" c="dimmed">
+                          {stat.title}
+                        </Text>
+                        <Text size="lg" fw={700}>
+                          {stat.value}
+                        </Text>
+                      </div>
+                    </Group>
+                  </Card>
+                </Box>
+              );
+            })}
+          </SimpleGrid>
+        </div>
 
         {/* Performance Overview */}
         <Box pos="relative">
@@ -410,10 +453,10 @@ export default function BundleDetailsPage() {
                       معدل النقر (CTR)
                     </Text>
                     <Text size="sm" fw={700} c="blue">
-                      {currentBundle.total_views > 0
+                      {displayStats.total_views > 0
                         ? (
-                            (currentBundle.total_clicks /
-                              currentBundle.total_views) *
+                            (displayStats.total_clicks /
+                              displayStats.total_views) *
                             100
                           ).toFixed(1)
                         : 0}
@@ -422,9 +465,9 @@ export default function BundleDetailsPage() {
                   </Group>
                   <Progress
                     value={
-                      currentBundle.total_views > 0
-                        ? (currentBundle.total_clicks /
-                            currentBundle.total_views) *
+                      displayStats.total_views > 0
+                        ? (displayStats.total_clicks /
+                            displayStats.total_views) *
                           100
                         : 0
                     }
@@ -517,19 +560,6 @@ export default function BundleDetailsPage() {
                           </Text>
                         </Stack>
                       </Group>
-
-                      {bundleViews > 0 && (
-                        <>
-                          <Text size="xs" c="dimmed" mt="xs" mb={2}>
-                            معدل نقرات الدفع من إجمالي المشاهدات ({bundleViews})
-                          </Text>
-                          <Progress
-                            value={parseFloat(conversionRate)}
-                            color="violet"
-                            size="sm"
-                          />
-                        </>
-                      )}
                     </Paper>
                   );
                 })}

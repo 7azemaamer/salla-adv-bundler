@@ -146,8 +146,6 @@ export default function SettingsPage() {
                 backgroundColor: "white",
                 borderBottom: "1px solid #dee2e6",
                 paddingBottom: "12px",
-                marginTop: "-16px",
-                paddingTop: "16px",
                 marginBottom: "24px",
               }}
             >
