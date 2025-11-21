@@ -89,6 +89,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     data: {
       ...enhancedBundle,
       settings: {
+        salla_theme: settings.salla_theme || "basic",
         hide_default_buttons: settings.hide_default_buttons,
         hide_salla_offer_modal: settings.hide_salla_offer_modal,
         hide_product_options: settings.hide_product_options,
@@ -96,13 +97,44 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         hide_price_section: settings.hide_price_section,
         hide_coupon_section: settings.hide_coupon_section,
         custom_hide_selectors: settings.custom_hide_selectors || [],
-        sticky_button: settings.sticky_button,
-        free_shipping: settings.free_shipping,
-        timer: settings.timer,
-        review_count: settings.review_count,
-        review_display: settings.review_display,
+        sticky_button: settings.sticky_button || {
+          enabled: false,
+          text: "🛍️ اطلب باقتك الآن",
+          bg_color: "#10b981",
+          text_color: "#ffffff",
+          position: "bottom-center",
+          width_type: "auto",
+          desktop_width: "250px",
+          mobile_width: "250px",
+          desktop_bottom: 20,
+          desktop_left: 20,
+          desktop_right: 20,
+          mobile_bottom: 20,
+          mobile_left: 20,
+          mobile_right: 20,
+          border_radius: 12,
+        },
+        free_shipping: settings.free_shipping || {
+          enabled: false,
+          mode: "always",
+          min_price: 0,
+          text: "شحن مجاني لهذه الباقة",
+        },
+        timer: settings.timer || {
+          enabled: false,
+          countdown_days: 3,
+          text: "العرض ينتهي خلال",
+        },
+        review_count: settings.review_count || {
+          enabled: false,
+        },
+        review_display: settings.review_display || {
+          enabled: false,
+        },
         show_payment_methods: settings.show_payment_methods !== false, // Default to true
-        announcement: settings.announcement,
+        announcement: settings.announcement || {
+          enabled: false,
+        },
         cache_version: Math.max(
           settings.cache_version || 0,
           bundle.cache_version || 0
