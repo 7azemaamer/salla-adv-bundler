@@ -13,22 +13,23 @@ import { getCachedReviews } from "../../products/services/productCache.service.j
  * =============================================== */
 export const getBundlesByProduct = asyncWrapper(async (req, res) => {
   let { store_id, product_id } = req.params;
-  const { store, store_id: queryStoreId } = req.query;
+  const { store: storeQueryParam, store_id: queryStoreId } = req.query;
 
   const storeIdFromHeader = req.headers["x-store-id"] || queryStoreId;
 
-  if (!store_id && (store || storeIdFromHeader)) {
+  if (!store_id && (storeQueryParam || storeIdFromHeader)) {
     console.log(
       "[Get Bundles] Using store from query/header:",
-      store,
+      storeQueryParam,
       storeIdFromHeader
     );
-    store_id = store || storeIdFromHeader;
+    store_id = storeQueryParam || storeIdFromHeader;
     product_id = req.params.product_id;
   }
 
+  let storeDoc = null;
   if (store_id && store_id.includes(".")) {
-    const storeDoc = await storeService.getStoreByDomain(store_id);
+    storeDoc = await storeService.getStoreByDomain(store_id);
     if (storeDoc) {
       store_id = storeDoc.store_id;
     }
@@ -82,7 +83,13 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     bundle
   );
 
-  const settings = await settingsService.getSettings(store_id);
+  const settingsResult = await settingsService.getSettings(store_id);
+  const settings = settingsResult.settings; // Extract the actual settings object
+
+  // Reuse storeDoc if already fetched, otherwise fetch it now
+  if (!storeDoc) {
+    storeDoc = await storeService.getStoreByStoreId(store_id);
+  }
 
   res.status(200).json({
     success: true,
@@ -97,49 +104,21 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         hide_price_section: settings.hide_price_section,
         hide_coupon_section: settings.hide_coupon_section,
         custom_hide_selectors: settings.custom_hide_selectors || [],
-        sticky_button: settings.sticky_button || {
-          enabled: false,
-          text: "🛍️ اطلب باقتك الآن",
-          bg_color: "#10b981",
-          text_color: "#ffffff",
-          position: "bottom-center",
-          width_type: "auto",
-          desktop_width: "250px",
-          mobile_width: "250px",
-          desktop_bottom: 20,
-          desktop_left: 20,
-          desktop_right: 20,
-          mobile_bottom: 20,
-          mobile_left: 20,
-          mobile_right: 20,
-          border_radius: 12,
-        },
-        free_shipping: settings.free_shipping || {
-          enabled: false,
-          mode: "always",
-          min_price: 0,
-          text: "شحن مجاني لهذه الباقة",
-        },
-        timer: settings.timer || {
-          enabled: false,
-          countdown_days: 3,
-          text: "العرض ينتهي خلال",
-        },
-        review_count: settings.review_count || {
-          enabled: false,
-        },
-        review_display: settings.review_display || {
-          enabled: false,
-        },
-        show_payment_methods: settings.show_payment_methods !== false, // Default to true
-        announcement: settings.announcement || {
-          enabled: false,
-        },
+        sticky_button: settings.sticky_button,
+        free_shipping: settings.free_shipping,
+        timer: settings.timer,
+        review_count: settings.review_count,
+        review_date_randomizer: settings.review_date_randomizer,
+        review_display: settings.review_display,
+        show_payment_methods: settings.show_payment_methods !== false,
+        announcement: settings.announcement,
         cache_version: Math.max(
           settings.cache_version || 0,
           bundle.cache_version || 0
-        ), // Use latest version
+        ),
+        custom_reviews: settings.custom_reviews || [],
       },
+      payment_methods: storeDoc?.payment_methods || [],
     },
   });
 });
