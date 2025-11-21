@@ -104,9 +104,10 @@ export const listBundles = asyncWrapper(async (req, res) => {
  * Get bundle details
  * =============================================== */
 export const getBundleDetails = asyncWrapper(async (req, res) => {
+  const { store_id } = req.user;
   const { bundle_id } = req.params;
 
-  const bundle = await bundleService.getBundleDetails(bundle_id);
+  const bundle = await bundleService.getBundleDetails(bundle_id, store_id);
 
   res.status(200).json({
     success: true,

@@ -110,7 +110,7 @@ class SettingsService {
       settingsDoc.announcement = {};
     }
 
-    if (!planConfig.features.ads && settingsDoc.announcement.enabled) {
+    if (!planConfig.features.announcement && settingsDoc.announcement.enabled) {
       settingsDoc.announcement.enabled = false;
       mutated = true;
     }

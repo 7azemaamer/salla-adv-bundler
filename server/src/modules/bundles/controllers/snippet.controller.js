@@ -387,12 +387,23 @@ class SnippetController {
         hide_price_section: false,
         hide_coupon_section: false,
         custom_hide_selectors: [],
-        sticky_button_enabled: false,
-        sticky_button_text: ' اطلب باقتك الآن',
-        sticky_button_bg_color: '#10b981',
-        sticky_button_text_color: '#ffffff',
-        sticky_button_position: 'bottom-center',
-        sticky_button_width_type: 'auto'
+        sticky_button: {
+          enabled: false,
+          text: '🛍️ اطلب باقتك الآن',
+          bg_color: '#10b981',
+          text_color: '#ffffff',
+          position: 'bottom-center',
+          width_type: 'auto',
+          desktop_width: '250px',
+          mobile_width: '250px',
+          desktop_bottom: 20,
+          desktop_left: 20,
+          desktop_right: 20,
+          mobile_bottom: 20,
+          mobile_left: 20,
+          mobile_right: 20,
+          border_radius: 12
+        }
       };
       this.bundleData = {
         cta_button_text: 'اختر الباقة',

@@ -406,10 +406,15 @@ class BundleService {
   /* ===============
    * Get bundle details with offers
    * ===============*/
-  async getBundleDetails(bundle_id) {
-    const bundle = await BundleConfig.findById(bundle_id);
+  async getBundleDetails(bundle_id, store_id = null) {
+    const query = { _id: bundle_id };
+    if (store_id) {
+      query.store_id = store_id;
+    }
+
+    const bundle = await BundleConfig.findOne(query);
     if (!bundle) {
-      throw new AppError("Bundle not found", 404);
+      throw new AppError("Bundle not found or access denied", 404);
     }
 
     const offers = await BundleOffer.find({ bundle_id });
