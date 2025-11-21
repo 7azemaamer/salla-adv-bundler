@@ -53,7 +53,7 @@ importers:
       react-dom:
         specifier: ^19.1.1
         version: 19.1.1(react@19.1.1)
-      react-joyride:
+      '@list-labs/react-joyride':
         specifier: ^2.9.3
         version: 2.9.3(@types/react@19.1.13)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react-router-dom:
@@ -1551,7 +1551,7 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
-  react-joyride@2.9.3:
+  @list-labs/react-joyride@2.9.3:
     resolution: {integrity: sha512-1+Mg34XK5zaqJ63eeBhqdbk7dlGCFp36FXwsEvgpjqrtyywX2C6h9vr3jgxP0bGHCw8Ilsp/nRDzNVq6HJ3rNw==}
     peerDependencies:
       react: 15 - 18
@@ -3224,7 +3224,7 @@ snapshots:
 
   react-is@16.13.1: {}
 
-  react-joyride@2.9.3(@types/react@19.1.13)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+  @list-labs/react-joyride@2.9.3(@types/react@19.1.13)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
       '@gilbarbara/deep-equal': 0.3.1
       deep-diff: 1.0.2

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import Joyride, { ACTIONS, EVENTS, STATUS } from "react-joyride";
+import Joyride, { ACTIONS, EVENTS, STATUS } from "@list-labs/react-joyride";
 import { Button } from "@mantine/core";
 import useTourStore from "../../stores/useTourStore";
 import { dashboardTourSteps } from "./tourSteps.jsx";

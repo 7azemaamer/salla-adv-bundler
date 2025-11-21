@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import Joyride, { STATUS } from "react-joyride";
+import Joyride, { STATUS } from "@list-labs/react-joyride";
 import useTourStore from "../../stores/useTourStore";
 import { createBundleTourSteps } from "./tourSteps.jsx";
 
