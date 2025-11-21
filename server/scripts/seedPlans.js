@@ -12,8 +12,8 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: resolve(__dirname, "../../../.env") });
 
-import connectDB from "../db/connectDB.js";
-import planConfigService from "../modules/admin/services/planConfig.service.js";
+import connectDB from "../src/db/connectDB.js";
+import planConfigService from "../src/modules/admin/services/planConfig.service.js";
 
 async function seedPlans() {
   try {
