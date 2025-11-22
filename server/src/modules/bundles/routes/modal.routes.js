@@ -4123,7 +4123,9 @@ router.get("/modal.js", (req, res) => {
        
        const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
        const avgRating = (totalRating / this.reviews.length).toFixed(1);
-       const displayConfig = this.reviewDisplayConfig || {};
+       
+       const displayConfig = reviewDisplaySettings || this.reviewDisplayConfig || {};
+       
        const hideNames = !!displayConfig.hide_names;
        const hideDates = !!displayConfig.hide_dates;
        const hideRatings = !!displayConfig.hide_ratings;
