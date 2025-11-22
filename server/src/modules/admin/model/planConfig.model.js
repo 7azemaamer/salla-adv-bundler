@@ -9,7 +9,6 @@ const planConfigSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
       enum: ["basic", "pro", "enterprise", "special"],
-      index: false,
     },
     label: {
       type: String,
@@ -104,7 +103,6 @@ const planConfigSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
-      index: false,
     },
     description: {
       type: String,
