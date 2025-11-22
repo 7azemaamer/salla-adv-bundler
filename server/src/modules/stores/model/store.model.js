@@ -13,11 +13,15 @@ const StoreSchema = new mongoose.Schema(
     scope: String,
     avatar: String,
     description: String,
-    merchant_email: String, // Merchant's email from Salla store info
+    merchant_email: String,
     plan: {
       type: String,
       enum: ["basic", "pro", "enterprise", "special"],
       default: "basic",
+    },
+    is_unlimited: {
+      type: Boolean,
+      default: false,
     },
     refresh_token: { type: String },
     access_token: {
@@ -32,7 +36,6 @@ const StoreSchema = new mongoose.Schema(
     json_path: {
       type: String,
     },
-    // Dashboard login credentials
     email: {
       type: String,
       sparse: true,
@@ -41,19 +44,17 @@ const StoreSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      select: false, // Don't include password in queries by default
+      select: false,
     },
     first_login_completed: {
       type: Boolean,
       default: false,
     },
-    // Secure setup token (generated on install)
     setup_token: {
       type: String,
       unique: true,
-      sparse: true, // Allow null, but if set, must be unique
+      sparse: true,
     },
-    // Password reset code (6-digit)
     reset_code: {
       type: String,
       select: false,
@@ -62,7 +63,6 @@ const StoreSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
-    // Bundle system fields
     bundles_enabled: {
       type: Boolean,
       default: true,
@@ -88,7 +88,6 @@ const StoreSchema = new mongoose.Schema(
         },
       },
     },
-    // Cached payment methods
     payment_methods: {
       type: Array,
       default: [],
@@ -96,13 +95,11 @@ const StoreSchema = new mongoose.Schema(
     payment_methods_updated_at: {
       type: Date,
     },
-    // Track store status for bundle system
     status: {
       type: String,
       enum: ["active", "inactive", "uninstalled", "needs_reauth"],
       default: "active",
     },
-    // Soft deletion flag
     is_deleted: {
       type: Boolean,
       default: false,
@@ -114,9 +111,7 @@ const StoreSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Pre-save middleware to set bundle limits based on plan
 StoreSchema.pre("save", function (next) {
-  // Set max_bundles_per_store based on plan
   const planConfig = getPlanConfig(this.plan);
 
   if (!this.bundle_settings) {
@@ -144,8 +139,10 @@ StoreSchema.pre("save", function (next) {
   next();
 });
 
-// Instance method to get bundle limit
 StoreSchema.methods.getBundleLimit = function () {
+  if (this.is_unlimited) {
+    return null;
+  }
   const planConfig = getPlanConfig(this.plan);
   return planConfig.limits.maxBundles;
 };
@@ -155,6 +152,9 @@ StoreSchema.methods.getPlanConfig = function () {
 };
 
 StoreSchema.methods.getMonthlyViewLimit = function () {
+  if (this.is_unlimited) {
+    return null;
+  }
   const planConfig = this.getPlanConfig();
   return planConfig.limits.monthlyViews;
 };

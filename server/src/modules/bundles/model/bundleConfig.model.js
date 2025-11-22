@@ -95,6 +95,11 @@ const BundleConfigSchema = new mongoose.Schema(
           type: Boolean,
           default: false,
         },
+        // Sold out status
+        is_sold_out: {
+          type: Boolean,
+          default: false,
+        },
         // Tier-level analytics
         tier_selections: {
           type: Number,

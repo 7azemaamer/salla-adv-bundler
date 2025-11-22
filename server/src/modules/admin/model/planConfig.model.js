@@ -60,6 +60,14 @@ const planConfigSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      soldOutTiers: {
+        type: Boolean,
+        default: false,
+      },
+      modalStyling: {
+        type: Boolean,
+        default: false,
+      },
       // Analytics features
       bundleAnalytics: {
         type: Boolean,

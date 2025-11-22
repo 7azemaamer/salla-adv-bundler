@@ -939,6 +939,12 @@ router.get("/modal.js", (req, res) => {
       
       const isMobile = window.innerWidth <= 640;
 
+      // Get modal styling settings
+      const modalStyling = bundleConfig.settings?.modal_styling || { enabled: false };
+      const modalBg = modalStyling.enabled ? modalStyling.bg_color || '#ffffff' : '#ffffff';
+      const modalText = modalStyling.enabled ? modalStyling.text_color || '#1f2937' : '#1f2937';
+      const modalAccent = modalStyling.enabled ? modalStyling.accent_color || '#f3f4f6' : '#f3f4f6';
+
       const timerStyles = this.timerSettings && this.timerSettings.enabled ? \`
         --timer-text-color: \${this.timerSettings.style.text_color};
         --timer-bg-color: \${this.timerSettings.style.bg_color};
@@ -949,13 +955,13 @@ router.get("/modal.js", (req, res) => {
       \` : '';
 
       this.modalElement.innerHTML = \`
-        <div class="salla-bundle-panel" style="\${timerStyles}">
-          <div class="salla-bundle-header">
+        <div class="salla-bundle-panel" style="--bg-panel: \${modalBg}; --bg-card: \${modalAccent}; --text-1: \${modalText}; --text-2: \${modalText}cc; --border: \${modalText}33; background-color: \${modalBg} !important; color: \${modalText} !important; \${timerStyles}">
+          <div class="salla-bundle-header" style="background-color: \${modalBg} !important; color: \${modalText} !important; border-bottom-color: \${modalText}33 !important;">
             <div class="salla-bundle-header-row">
-              <h2 class="salla-bundle-title">\${modalTitle}</h2>
+              <h2 class="salla-bundle-title" style="color: \${modalText} !important;">\${modalTitle}</h2>
               <div style="display: flex; align-items: center; gap: 12px;">
                 \${!isMobile ? this.renderTimer('all') : ''}
-                <button class="salla-bundle-close">&times;</button>
+                <button class="salla-bundle-close" style="color: \${modalText} !important;">&times;</button>
               </div>
             </div>
             \${isMobile ? \`
@@ -966,10 +972,10 @@ router.get("/modal.js", (req, res) => {
               </div>
             \` : ''}
           </div>
-          <div class="salla-bundle-body">
+          <div class="salla-bundle-body" style="background-color: \${modalBg} !important; color: \${modalText} !important;">
             <!-- Content will be rendered here -->
           </div>
-          <div class="salla-sticky-summary">
+          <div class="salla-sticky-summary" style="background-color: \${modalBg} !important; color: \${modalText} !important; border-top-color: \${modalText}33 !important;">
             <!-- Summary will be rendered here -->
           </div>
         </div>
@@ -1021,6 +1027,23 @@ router.get("/modal.js", (req, res) => {
       const targetProductData = bundleConfig.target_product_data;
       const baseProductPrice = targetProductData?.price || 100.00;
 
+      // Extract sold-out settings
+      const soldOutSettings = bundleConfig.settings?.sold_out_tier || {
+        enabled: true,
+        badge_text: 'نفذت الكمية',
+        text_color: '#dc2626',
+        border_color: '#dc2626',
+        badge_bg_color: '#fee2e2'
+      };
+
+      // Extract modal styling settings
+      const modalStyling = bundleConfig.settings?.modal_styling || {
+        enabled: false,
+        bg_color: '#ffffff',
+        text_color: '#1f2937',
+        accent_color: '#f3f4f6'
+      };
+
       const bundleDisplayData = bundles.map((tier, index) => {
         const buyQuantity = tier.buy_quantity || 1;
         const subtotal = buyQuantity * baseProductPrice;
@@ -1029,6 +1052,7 @@ router.get("/modal.js", (req, res) => {
         const hasUnavailableProducts = unavailableProducts.length > 0;
         const targetProductUnavailable = bundleConfig.target_product_data ? 
           this.isProductCompletelyUnavailable(bundleConfig.target_product_data) : false;
+        const isSoldOut = tier.is_sold_out === true;
 
         let giftValue = 0;
         let offersCost = 0;
@@ -1080,6 +1104,23 @@ router.get("/modal.js", (req, res) => {
         const totalCustomerPays = subtotal + offersCost;
 
 
+        // Determine badge text and styling
+        let badgeText = '';
+        let badgeBgColor = tier.tier_highlight_bg_color || '#ffc107';
+        let badgeTextColor = tier.tier_highlight_text_color || '#000000';
+
+        if (isSoldOut) {
+          badgeText = soldOutSettings.badge_text || 'نفذت الكمية';
+          badgeBgColor = soldOutSettings.badge_bg_color || '#fee2e2';
+          badgeTextColor = soldOutSettings.text_color || '#dc2626';
+        } else if (hasUnavailableProducts || targetProductUnavailable) {
+          badgeText = 'منتجات غير متوفرة';
+          badgeBgColor = '#fee2e2';
+          badgeTextColor = '#dc2626';
+        } else {
+          badgeText = tier.tier_highlight_text || '';
+        }
+
         return {
           id: \`tier-\${tier.tier}\`,
           name: tier.tier_title || \`العرض \${tier.tier}\`,
@@ -1088,18 +1129,18 @@ router.get("/modal.js", (req, res) => {
           offersCost: offersCost, // What customer pays for offers
           jugCount: buyQuantity,
           value: subtotal + giftValue + offersCost, // Total value of everything
-          badge: hasUnavailableProducts || targetProductUnavailable ?
-            'منتجات غير متوفرة' :
-            (tier.tier_highlight_text || ''),
+          badge: badgeText,
           items: items,
           tier: tier,
           savings: giftValue,
           hasUnavailableProducts: hasUnavailableProducts || targetProductUnavailable,
           unavailableProducts: unavailableProducts,
+          isSoldOut: isSoldOut,
+          soldOutBorderColor: soldOutSettings.border_color || '#dc2626',
           bgColor: tier.tier_bg_color || '#f8f9fa',
           textColor: tier.tier_text_color || '#212529',
-          highlightBgColor: tier.tier_highlight_bg_color || '#ffc107',
-          highlightTextColor: tier.tier_highlight_text_color || '#000000',
+          highlightBgColor: badgeBgColor,
+          highlightTextColor: badgeTextColor,
           isDefault: tier.is_default || false,
           customSummary: tier.tier_summary_text || ''
         };
@@ -1138,9 +1179,9 @@ router.get("/modal.js", (req, res) => {
 
       let html = \`
         <!-- Bundles Section -->
-        <div class="salla-bundle-section">
-          <h3>\${bundleConfig.section_title || bundleConfig.sectionTitle || 'باقاتنا'}</h3>
-          \${modalSubtitle ? \`<div class="subtitle">\${modalSubtitle}</div>\` : ''}
+        <div class="salla-bundle-section" style="background-color: \${modalStyling.enabled ? modalStyling.bg_color : 'transparent'} !important;">
+          <h3 style="color: \${modalStyling.enabled ? modalStyling.text_color : 'inherit'} !important;">\${bundleConfig.section_title || bundleConfig.sectionTitle || 'باقاتنا'}</h3>
+          \${modalSubtitle ? \`<div class="subtitle" style="color: \${modalStyling.enabled ? modalStyling.text_color : 'inherit'}cc !important;">\${modalSubtitle}</div>\` : ''}
           \${hasAnyUnavailableProducts ? \`
             <div style="background: #fef3cd; border: 1px solid #f6d55c; border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #d97706;">
               \${allBundlesUnavailable ?
@@ -1156,36 +1197,75 @@ router.get("/modal.js", (req, res) => {
             </div>
           \` : ''}
           <div class="salla-bundle-grid">
-            \${bundleDisplayData.map(bundle => \`
-              <div class="salla-bundle-card \${this.selectedBundle === bundle.id ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
-                   style="background-color: \${bundle.bgColor}; border-color: \${this.selectedBundle === bundle.id ? bundle.textColor : bundle.bgColor}; cursor: pointer;"
-                   onclick="if(window.sallaBundleModal && !\${bundle.hasUnavailableProducts}) window.sallaBundleModal.selectBundle('\${bundle.id}');"
-                   \${bundle.hasUnavailableProducts ? 'title="تحتوي هذه الباقة على منتجات غير متوفرة"' : ''}>
+            \${bundleDisplayData.map(bundle => {
+              const isActive = this.selectedBundle === bundle.id;
+              const cardBg = modalStyling.enabled && isActive ? modalStyling.accent_color : bundle.bgColor;
+              return \`
+              <div class="salla-bundle-card \${isActive ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''} \${bundle.isSoldOut ? 'sold-out' : ''}"
+                   style="background-color: \${cardBg} !important; 
+                          border: 2px solid \${bundle.isSoldOut ? bundle.soldOutBorderColor : (this.selectedBundle === bundle.id ? bundle.textColor : bundle.bgColor)}; 
+                          cursor: \${bundle.isSoldOut || bundle.hasUnavailableProducts ? 'not-allowed' : 'pointer'};
+                          opacity: \${bundle.isSoldOut ? '0.85' : '1'};
+                          pointer-events: \${bundle.isSoldOut ? 'none' : 'auto'};
+                          position: relative;"
+                   onclick="if(window.sallaBundleModal && !(\${bundle.hasUnavailableProducts} || \${bundle.isSoldOut})) window.sallaBundleModal.selectBundle('\${bundle.id}');"
+                   \${bundle.isSoldOut ? 'title="نفذت الكمية"' : (bundle.hasUnavailableProducts ? 'title="تحتوي هذه الباقة على منتجات غير متوفرة"' : '')}>
+                \${bundle.isSoldOut ? \`
+                  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); z-index: 10; pointer-events: none;">
+                    <div style="
+                      background: \${bundle.soldOutBorderColor || '#dc2626'};
+                      color: white;
+                      padding: 12px 40px;
+                      font-size: 24px;
+                      font-weight: 900;
+                      letter-spacing: 3px;
+                      text-transform: uppercase;
+                      border: 4px solid white;
+                      box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 0 0 2px \${bundle.soldOutBorderColor || '#dc2626'};
+                      border-radius: 8px;
+                      position: relative;
+                      font-family: 'Arial Black', sans-serif;
+                    ">
+                      <div style="
+                        position: absolute;
+                        inset: -4px;
+                        border: 3px solid \${bundle.soldOutBorderColor || '#dc2626'};
+                        border-radius: 8px;
+                        pointer-events: none;
+                      "></div>
+                      \${bundle.badge}
+                    </div>
+                  </div>
+                \` : ''}
+                \${bundle.isSoldOut ? \`
+                  <div style="position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(2px); z-index: 5; border-radius: 16px;"></div>
+                \` : ''}
                 <div class="salla-bundle-card-header">
                   <div>
-                    <div class="salla-bundle-card-title" style="color: \${bundle.textColor};">\${bundle.name}</div>
-                    <div class="salla-bundle-card-value" style="color: \${bundle.textColor};">قيمة \${formatPrice(bundle.value)}</div>
-                    \${bundle.hasUnavailableProducts ? \`
+                    <div class="salla-bundle-card-title" style="color: \${modalStyling.enabled && isActive ? modalStyling.text_color : bundle.textColor};">\${bundle.name}</div>
+                    <div class="salla-bundle-card-value" style="color: \${modalStyling.enabled && isActive ? modalStyling.text_color : bundle.textColor};">قيمة \${formatPrice(bundle.value)}</div>
+                    \${bundle.hasUnavailableProducts && !bundle.isSoldOut ? \`
                       <div style="font-size: 11px; color: #ef4444; margin-top: 2px;">
                         بعض المنتجات غير متوفرة
                       </div>
                     \` : ''}
                   </div>
-                  \${bundle.badge ? \`
-                    <span class="salla-bundle-badge" style="background: \${bundle.hasUnavailableProducts ? '#fee2e2' : bundle.highlightBgColor}; color: \${bundle.hasUnavailableProducts ? '#dc2626' : bundle.highlightTextColor}; border-color: \${bundle.hasUnavailableProducts ? '#fecaca' : bundle.highlightBgColor};">\${bundle.badge}</span>
+                  \${bundle.badge && !bundle.isSoldOut ? \`
+                    <span class="salla-bundle-badge" style="background: \${bundle.highlightBgColor}; color: \${bundle.highlightTextColor}; border-color: \${bundle.highlightBgColor};">\${bundle.badge}</span>
                   \` : ''}
                 </div>
                 <ul class="salla-bundle-items">
-                  \${bundle.items.map(item => \`<li style="color: \${item.includes('(غير متوفر)') ? '#9ca3af' : bundle.textColor}; \${item.includes('(غير متوفر)') ? 'text-decoration: line-through;' : ''}">\${item}</li>\`).join('')}
+                  \${bundle.items.map(item => \`<li style="color: \${item.includes('(غير متوفر)') ? '#9ca3af' : (modalStyling.enabled && isActive ? modalStyling.text_color : bundle.textColor)}; \${item.includes('(غير متوفر)') ? 'text-decoration: line-through;' : ''}">\${item}</li>\`).join('')}
                 </ul>
                 <div class="salla-bundle-card-footer">
-                  <div class="salla-bundle-price" style="color: \${bundle.textColor};">\${formatPrice(bundle.price)}</div>
-                  <div class="salla-bundle-radio-desktop" style="border-color: \${bundle.textColor};">
-                    \${this.selectedBundle === bundle.id ? \`<div class="salla-bundle-radio-inner" style="background-color: \${bundle.textColor};"></div>\` : ''}
+                  <div class="salla-bundle-price" style="color: \${modalStyling.enabled && isActive ? modalStyling.text_color : bundle.textColor};">\${formatPrice(bundle.price)}</div>
+                  <div class="salla-bundle-radio-desktop" style="border-color: \${modalStyling.enabled && isActive ? modalStyling.text_color : bundle.textColor};">
+                    \${this.selectedBundle === bundle.id ? \`<div class="salla-bundle-radio-inner" style="background-color: \${modalStyling.enabled && isActive ? modalStyling.text_color : bundle.textColor};"></div>\` : ''}
                   </div>
                 </div>
               </div>
-            \`).join('')}
+            \`;
+            }).join('')}
           </div>
         </div>
 
@@ -1338,8 +1418,10 @@ router.get("/modal.js", (req, res) => {
       
       const targetProductData = bundleConfig.target_product_data;
       const baseProductPrice = targetProductData?.price || 100.00;
+      const soldOutSettings = bundleConfig.settings?.sold_out_tier || {};
       
       const bundleDisplayData = bundles.map((tier, index) => {
+        const isSoldOut = tier.is_sold_out === true;
         const buyQuantity = tier.buy_quantity || 1;
         const subtotal = buyQuantity * baseProductPrice;
         const unavailableProducts = this.getUnavailableProducts(bundleConfig, tier);
@@ -1396,6 +1478,13 @@ router.get("/modal.js", (req, res) => {
 
         const totalCustomerPays = subtotal + offersCost;
 
+        let badgeText = tier.tier_highlight_text || '';
+        if (isSoldOut) {
+          badgeText = soldOutSettings.badge_text || 'نفذت الكمية';
+        } else if (hasUnavailableProducts || targetProductUnavailable) {
+          badgeText = 'منتجات غير متوفرة';
+        }
+
         return {
           id: \`tier-\${tier.tier}\`,
           name: tier.tier_title || \`العرض \${tier.tier}\`,
@@ -1404,14 +1493,14 @@ router.get("/modal.js", (req, res) => {
           offersCost: offersCost,
           jugCount: buyQuantity,
           value: subtotal + giftValue + offersCost,
-          badge: hasUnavailableProducts || targetProductUnavailable ?
-            'منتجات غير متوفرة' :
-            (tier.tier_highlight_text || ''),
+          badge: badgeText,
           items: items,
           tier: tier,
           savings: giftValue,
           hasUnavailableProducts: hasUnavailableProducts || targetProductUnavailable,
           unavailableProducts: unavailableProducts,
+          isSoldOut: isSoldOut,
+          soldOutBorderColor: soldOutSettings.border_color || '#dc2626',
           bgColor: tier.tier_bg_color || '#f8f9fa',
           textColor: tier.tier_text_color || '#212529',
           highlightBgColor: tier.tier_highlight_bg_color || '#ffc107',
@@ -1504,6 +1593,7 @@ router.get("/modal.js", (req, res) => {
 
     renderStep1BundleSelection(bundleDisplayData, bundleConfig) {
       const modalSubtitle = bundleConfig.modal_subtitle || bundleConfig.modalSubtitle || bundleConfig.subtitle || '';
+      const modalStyling = bundleConfig.settings?.modal_styling || { enabled: false };
 
       return \`
         <div class="salla-step-container" data-step="1">
@@ -1514,16 +1604,52 @@ router.get("/modal.js", (req, res) => {
               \${bundleDisplayData.map((bundle, index) => {
                 const isSelected = this.selectedBundle === bundle.id;
                 const summaryText = bundle.customSummary || (bundle.items.slice(0, 2).join(' + ') + (bundle.items.length > 2 ? \` +\${bundle.items.length - 2}\` : ''));
+                const cardBg = modalStyling.enabled && isSelected ? modalStyling.accent_color : bundle.bgColor;
 
                 return \`
-                  <div class="salla-bundle-card \${isSelected ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''}"
-                       style="background-color: \${bundle.bgColor};"
-                       onclick="window.sallaBundleModal.selectBundle('\${bundle.id}')">
+                  <div class="salla-bundle-card \${isSelected ? 'active' : ''} \${bundle.hasUnavailableProducts ? 'unavailable' : ''} \${bundle.isSoldOut ? 'sold-out' : ''}"
+                       style="background-color: \${cardBg} !important; 
+                              border: 2px solid \${bundle.isSoldOut ? bundle.soldOutBorderColor : bundle.bgColor}; 
+                              cursor: \${bundle.isSoldOut || bundle.hasUnavailableProducts ? 'not-allowed' : 'pointer'};
+                              opacity: \${bundle.isSoldOut ? '0.85' : '1'};
+                              pointer-events: \${bundle.isSoldOut ? 'none' : 'auto'};
+                              position: relative;"
+                       onclick="if(!(\${bundle.hasUnavailableProducts} || \${bundle.isSoldOut})) window.sallaBundleModal.selectBundle('\${bundle.id}')">
+                    \${bundle.isSoldOut ? \`
+                      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); z-index: 10; pointer-events: none;">
+                        <div style="
+                          background: \${bundle.soldOutBorderColor || '#dc2626'};
+                          color: white;
+                          padding: 8px 24px;
+                          font-size: 18px;
+                          font-weight: 900;
+                          letter-spacing: 2px;
+                          text-transform: uppercase;
+                          border: 3px solid white;
+                          box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 0 0 2px \${bundle.soldOutBorderColor || '#dc2626'};
+                          border-radius: 6px;
+                          position: relative;
+                          font-family: 'Arial Black', sans-serif;
+                        ">
+                          <div style="
+                            position: absolute;
+                            inset: -3px;
+                            border: 2px solid \${bundle.soldOutBorderColor || '#dc2626'};
+                            border-radius: 6px;
+                            pointer-events: none;
+                          "></div>
+                          \${bundle.badge}
+                        </div>
+                      </div>
+                    \` : ''}
+                    \${bundle.isSoldOut ? \`
+                      <div style="position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(2px); z-index: 5; border-radius: 12px;"></div>
+                    \` : ''}
                     <div class="salla-bundle-radio"></div>
                     <div class="salla-bundle-card-compact">
                       <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        <div class="salla-bundle-card-title" style="color: \${bundle.textColor}; font-size: 15px; font-weight: 600;">\${bundle.name}</div>
-                        \${bundle.badge ? \`<span class="salla-bundle-badge" style="background: \${bundle.hasUnavailableProducts ? '#fee2e2' : bundle.highlightBgColor}; color: \${bundle.hasUnavailableProducts ? '#dc2626' : bundle.highlightTextColor}; border-color: \${bundle.hasUnavailableProducts ? '#fecaca' : bundle.highlightBgColor};">\${bundle.badge}</span>\` : ''}
+                        <div class="salla-bundle-card-title" style="color: \${modalStyling.enabled && isSelected ? modalStyling.text_color : bundle.textColor}; font-size: 15px; font-weight: 600;">\${bundle.name}</div>
+                        \${bundle.badge && !bundle.isSoldOut ? \`<span class="salla-bundle-badge" style="background: \${bundle.hasUnavailableProducts ? '#fee2e2' : bundle.highlightBgColor}; color: \${bundle.hasUnavailableProducts ? '#dc2626' : bundle.highlightTextColor}; border-color: \${bundle.hasUnavailableProducts ? '#fecaca' : bundle.highlightBgColor};">\${bundle.badge}</span>\` : ''}
                       </div>
                       <div class="salla-bundle-card-summary" style="font-size: 12px; color: var(--text-2); margin-bottom: 6px;">\${summaryText}</div>
                       <div class="salla-bundle-card-pricing">
@@ -1622,6 +1748,8 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderMobileFreeGiftCard(offer) {
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const modalStyling = bundleConfig.settings?.modal_styling || { enabled: false };
       const productData = offer.product_data;
       const productName = productData?.name || offer.product_name;
       const productImage = productData?.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png';
@@ -1639,8 +1767,8 @@ router.get("/modal.js", (req, res) => {
           </div>
           <div class="salla-gift-content">
             <div class="salla-gift-badges">
-              <span class="salla-gift-badge" style="\${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">هدية مجانية</span>
-              <span class="salla-gift-free" style="\${isUnavailable ? 'color: #dc2626;' : ''}">مجاناً</span>
+              <span class="salla-gift-badge" style="\${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : (modalStyling.enabled ? \`background: \${modalStyling.accent_color}; color: \${modalStyling.text_color};\` : '')}">هدية مجانية</span>
+              <span class="salla-gift-free" style="\${isUnavailable ? 'color: #dc2626;' : (modalStyling.enabled ? \`color: \${modalStyling.text_color};\` : '')}">مجاناً</span>
             </div>
             <div class="salla-gift-title" style="\${isUnavailable ? 'color: #9ca3af;' : ''}">\${productName}</div>
             <div class="salla-gift-value">\${formatPrice(productPrice)}</div>
@@ -1799,7 +1927,7 @@ router.get("/modal.js", (req, res) => {
 
     renderMobileFooter(summary, selectedBundleData, bundleConfig) {
 
-
+      const modalStyling = bundleConfig.settings?.modal_styling || { enabled: false };
       const currentSelectedBundleData = selectedBundleData || this.getSelectedBundleDisplayData();
 
 
@@ -1829,10 +1957,10 @@ router.get("/modal.js", (req, res) => {
           </div>
         </div>
         <div class="salla-step-navigation">
-          <button id="salla-step-prev" class="salla-step-btn" onclick="window.sallaBundleModal.goPrev()">
+          <button id="salla-step-prev" class="salla-step-btn" style="background-color: \${modalStyling.enabled ? modalStyling.accent_color : ''} !important;" onclick="window.sallaBundleModal.goPrev()">
             السابق
           </button>
-          <button id="salla-step-next" class="salla-step-btn primary" onclick="window.sallaBundleModal.goNext()">
+          <button id="salla-step-next" class="salla-step-btn primary" style="background-color: \${modalStyling.enabled ? modalStyling.accent_color : ''} !important;" onclick="window.sallaBundleModal.goNext()">
             التالي
           </button>
         </div>
@@ -1909,6 +2037,8 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderOfferCard(offer, type) {
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const modalStyling = bundleConfig.settings?.modal_styling || { enabled: false };
       const productPrice = offer.product_data?.price || 100;
       const productName = offer.product_data?.name || offer.product_name;
       const productImage = offer.product_data?.image || 'https://cdn.assets.salla.network/prod/admin/defaults/images/placeholder-logo.png';
@@ -1962,8 +2092,8 @@ router.get("/modal.js", (req, res) => {
           </div>
           <div class="salla-gift-content">
             <div class="salla-gift-badges">
-              <span class="salla-gift-badge" style="\${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : ''}">\${badgeText}</span>
-              <span class="salla-gift-free" style="\${isUnavailable ? 'color: #dc2626;' : ''}">\${statusText}</span>
+              <span class="salla-gift-badge" style="\${isUnavailable ? 'background: #fee2e2; color: #dc2626; border-color: #fecaca;' : (modalStyling.enabled ? \`background: \${modalStyling.accent_color}; color: \${modalStyling.text_color};\` : '')}">\${badgeText}</span>
+              <span class="salla-gift-free" style="\${isUnavailable ? 'color: #dc2626;' : (modalStyling.enabled ? \`color: \${modalStyling.text_color};\` : '')}">\${statusText}</span>
             </div>
             <div class="salla-gift-title" style="\${isUnavailable ? 'color: #9ca3af;' : ''}">\${productName}</div>
             \${priceDisplay}
@@ -3038,6 +3168,9 @@ router.get("/modal.js", (req, res) => {
         return '';
       }
 
+      const bundleConfig = this.bundleData.data || this.bundleData;
+      const modalStyling = bundleConfig.settings?.modal_styling || { enabled: false };
+
       const isSameAsTarget = isOffer && productId === this.productId;
       const selectorProductId = isSameAsTarget ? \`\${productId}-offer\` : productId;
 
@@ -3066,6 +3199,7 @@ router.get("/modal.js", (req, res) => {
             <select
               id="variant-\${selectorProductId}-\${option.id}"
               class="salla-variant-compact-select \${allOutOfStock ? 'all-out-of-stock' : ''}"
+              style="background-color: \${modalStyling.enabled ? modalStyling.accent_color : '#ffffff'} !important;"
               data-variant-product="\${selectorProductId}"
               data-option-id="\${option.id}"
               data-all-out-of-stock="\${allOutOfStock}"
@@ -4094,13 +4228,8 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderReviews(currentStepType = 'bundles') {
-       // Debug logging
-       console.log('[Reviews Debug] renderReviews called with step:', currentStepType);
-       console.log('[Reviews Debug] this.reviews:', this.reviews);
-       console.log('[Reviews Debug] this.reviews length:', this.reviews?.length);
        
        if (!this.reviews || this.reviews.length === 0) {
-         console.log('[Reviews Debug] No reviews available');
          return '';
        }
        
@@ -4114,7 +4243,6 @@ router.get("/modal.js", (req, res) => {
        const shouldShow = this.shouldShowInStep('reviews', currentStepType);
        
        if (!shouldShow) {
-         console.log('[Reviews Debug] Reviews not configured to show in this step');
          return '';
        }
        
@@ -4128,11 +4256,14 @@ router.get("/modal.js", (req, res) => {
        const hideRatings = !!displayConfig.hide_ratings;
        const hideAvatars = !!displayConfig.hide_avatars;
        
+       const bundleConfig = this.bundleData.data || this.bundleData;
+       const modalStyling = bundleConfig.settings?.modal_styling || { enabled: false };
+       
        return \`
-         <div class="salla-reviews-section">
+         <div class="salla-reviews-section" style="background-color: \${modalStyling.enabled ? modalStyling.bg_color : 'transparent'} !important;">
            <div class="salla-reviews-header">
-            <span>آراء العملاء</span>
-            \${hideRatings ? '' : '<div style="font-size: 13px; color: var(--text-2);">' + avgRating + ' ★ متوسط</div>'}
+            <span style="color: \${modalStyling.enabled ? modalStyling.text_color : 'inherit'} !important;">آراء العملاء</span>
+            \${hideRatings ? '' : '<div style="font-size: 13px; color: ' + (modalStyling.enabled ? modalStyling.text_color + 'cc' : 'var(--text-2)') + ';">' + avgRating + ' ★ متوسط</div>'}
            </div>
            <div class="salla-reviews-carousel">
              <div class="salla-reviews-track" id="salla-reviews-track">
@@ -4147,7 +4278,7 @@ router.get("/modal.js", (req, res) => {
                    : '';
                  return \`
                  <div class="salla-review-card" style="
-                   background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+                   background: \${modalStyling.enabled ? modalStyling.accent_color : 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)'} !important;
                    border: 1px solid #e5e7eb;
                    border-radius: 16px;
                    padding: 16px;
@@ -4168,12 +4299,12 @@ router.get("/modal.js", (req, res) => {
                           "
                           onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />\` : ''}
                      <div class="salla-review-customer" style="flex: 1;">
-                       \${showName ? \`<div class="salla-review-name" style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">\${review.customerName}</div>\` : ''}
+                       \${showName ? \`<div class="salla-review-name" style="font-weight: 600; color: \${modalStyling.enabled ? modalStyling.text_color : '#1f2937'}; margin-bottom: 4px;">\${review.customerName}</div>\` : ''}
                        \${showRating ? \`<div class="salla-review-rating" style="color: #fbbf24; font-size: 16px; letter-spacing: 2px;">\${stars}</div>\` : ''}
                      </div>
                    </div>
                    \${review.content ? \`<div class="salla-review-content" style="
-                     color: #4b5563;
+                     color: \${modalStyling.enabled ? modalStyling.text_color : '#4b5563'};
                      line-height: 1.6;
                      font-size: 14px;
                      margin-bottom: 8px;

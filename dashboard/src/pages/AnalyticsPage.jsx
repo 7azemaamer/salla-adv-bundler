@@ -154,7 +154,7 @@ export default function AnalyticsPage() {
       </Group>
 
       {/* Key Metrics */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg" mb="xl">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing="lg" mb="xl">
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Group justify="space-between" mb="xs">
             <Text size="sm" c="dimmed" fw={500}>
@@ -171,6 +171,25 @@ export default function AnalyticsPage() {
             <IconTrendingUp size="1rem" color="green" />
             <Text size="xs" c="dimmed">
               +12% من الشهر الماضي
+            </Text>
+          </Group>
+        </Card>
+
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Group justify="space-between" mb="xs">
+            <Text size="sm" c="dimmed" fw={500}>
+              الزوار الفريدون
+            </Text>
+            <ThemeIcon color="violet" variant="light" size="lg" radius="md">
+              <IconPackage size="1.2rem" />
+            </ThemeIcon>
+          </Group>
+          <Text size="xl" fw={700} className="text-gray-800">
+            {(stats.total_unique_visitors || 0).toLocaleString()}
+          </Text>
+          <Group gap={4} mt="xs">
+            <Text size="xs" c="dimmed">
+              تتبع بواسطة IP
             </Text>
           </Group>
         </Card>

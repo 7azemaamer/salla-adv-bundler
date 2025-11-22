@@ -5,6 +5,7 @@ import BundleAnalytics from "../model/bundleAnalytics.model.js";
 import Store from "../../stores/model/store.model.js";
 import specialOffersService from "./specialOffers.service.js";
 import productService from "../../products/services/product.service.js";
+import bundleAnalyticsService from "./bundleAnalytics.service.js";
 import { AppError } from "../../../utils/errorHandler.js";
 import {
   stripBundleStylingInput,
@@ -29,18 +30,19 @@ class BundleService {
       planConfig.key
     );
 
-    // Check bundle limits based on plan
-    const activeBundles = await BundleConfig.countDocuments({
-      store_id,
-      status: { $in: ["active", "draft"] },
-    });
-
     const maxBundles = store.getBundleLimit();
-    if (activeBundles >= maxBundles) {
-      throw new AppError(
-        `Bundle limit reached. Your plan allows ${maxBundles} bundles maximum.`,
-        403
-      );
+    if (maxBundles !== null) {
+      const activeBundles = await BundleConfig.countDocuments({
+        store_id,
+        status: { $in: ["active", "draft"] },
+      });
+
+      if (activeBundles >= maxBundles) {
+        throw new AppError(
+          `Bundle limit reached. Your plan allows ${maxBundles} bundles maximum.`,
+          403
+        );
+      }
     }
 
     // Fetch real product data from Salla API
@@ -329,6 +331,108 @@ class BundleService {
   }
 
   /* ===============
+   * Handle sold-out tier changes (delete offers for sold-out, create for un-sold-out)
+   * ===============*/
+  async handleSoldOutTierChanges(updatedBundle, originalTiers, newTiers) {
+    try {
+      const store_id = updatedBundle.store_id;
+
+      // Compare each tier to detect sold-out status changes
+      for (const newTier of newTiers) {
+        const originalTier = originalTiers.find((t) => t.tier === newTier.tier);
+
+        if (!originalTier) continue; // New tier, will be handled by generateOffers
+
+        const wasNotSoldOut = !originalTier.is_sold_out;
+        const isNowSoldOut = newTier.is_sold_out;
+        const wasSoldOut = originalTier.is_sold_out;
+        const isNowAvailable = !newTier.is_sold_out;
+
+        // Case 1: Tier just became sold-out -> delete its offers
+        if (wasNotSoldOut && isNowSoldOut) {
+          console.log(
+            `[Bundle Service]: Tier ${newTier.tier} marked as sold-out, deleting offers...`
+          );
+
+          const tierOffers = await BundleOffer.find({
+            bundle_id: updatedBundle._id,
+            tier: newTier.tier,
+            status: "active",
+          });
+
+          if (tierOffers.length > 0) {
+            const offerIds = tierOffers.map((o) => o.offer_id);
+            await specialOffersService.deleteOffers(store_id, offerIds);
+            await BundleOffer.deleteMany({
+              bundle_id: updatedBundle._id,
+              tier: newTier.tier,
+            });
+            console.log(
+              `[Bundle Service]: Deleted ${offerIds.length} offers for sold-out tier ${newTier.tier}`
+            );
+          }
+        }
+
+        // Case 2: Tier un-sold-out (became available again) -> create offers
+        if (wasSoldOut && isNowAvailable) {
+          console.log(
+            `[Bundle Service]: Tier ${newTier.tier} is now available, creating offers...`
+          );
+
+          // Create a temporary bundle config with only this tier
+          const singleTierBundle = {
+            ...updatedBundle.toObject(),
+            bundles: [newTier],
+          };
+
+          try {
+            const offerResult = await specialOffersService.createBundleOffers(
+              store_id,
+              singleTierBundle
+            );
+
+            // Save offer mappings
+            for (const offerData of offerResult.created_offers) {
+              await BundleOffer.create({
+                bundle_id: updatedBundle._id,
+                store_id: store_id,
+                offer_id: offerData.offer_id,
+                tier: offerData.tier,
+                gift_product_id: offerData.gift_product_id,
+                gift_product_name: offerData.gift_product_name,
+                buy_quantity: offerData.buy_quantity,
+                gift_quantity: offerData.gift_quantity,
+                discount_type: offerData.discount_type || "free",
+                discount_amount: offerData.discount_amount || 100,
+                offer_type: offerData.offer_type || "gift",
+                status: "active",
+                salla_response: offerData.salla_response,
+                offer_config: offerData.offer_config,
+                sync_status: "synced",
+                last_sync_at: new Date(),
+              });
+            }
+
+            console.log(
+              `[Bundle Service]: Created ${offerResult.created_offers.length} offers for tier ${newTier.tier}`
+            );
+          } catch (error) {
+            console.error(
+              `[Bundle Service]: Failed to create offers for tier ${newTier.tier}:`,
+              error.message
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error(
+        "[Bundle Service]: Error handling sold-out tier changes:",
+        error.message
+      );
+    }
+  }
+
+  /* ===============
    * Deactivate bundle and DELETE its offers from Salla
    * ===============*/
   async deactivateBundle(bundle_id) {
@@ -490,6 +594,10 @@ class BundleService {
           year: currentYear,
         }).lean();
 
+        // Get all-time aggregated analytics
+        const aggregatedStats =
+          await bundleAnalyticsService.getBundleAggregatedStats(bundle._id);
+
         // Construct proper Salla product URL
         let productUrl = null;
         if (store?.domain) {
@@ -516,13 +624,24 @@ class BundleService {
                 clicks: currentMonthAnalytics.clicks || 0,
                 conversions: currentMonthAnalytics.conversions || 0,
                 revenue: currentMonthAnalytics.revenue || 0,
+                unique_visitors:
+                  currentMonthAnalytics.unique_visitors?.length || 0,
               }
             : {
                 views: 0,
                 clicks: 0,
                 conversions: 0,
                 revenue: 0,
+                unique_visitors: 0,
               },
+          all_time_analytics: {
+            views: aggregatedStats.total_views || 0,
+            clicks: aggregatedStats.total_clicks || 0,
+            conversions: aggregatedStats.total_conversions || 0,
+            revenue: aggregatedStats.total_revenue || 0,
+            unique_visitors: aggregatedStats.total_unique_visitors || 0,
+            conversion_rate: aggregatedStats.average_conversion_rate || 0,
+          },
         };
 
         return enrichBundleForPlanResponse(bundleObject, planKey);
@@ -612,6 +731,7 @@ class BundleService {
           tier_highlight_bg_color: tier.tier_highlight_bg_color,
           tier_highlight_text_color: tier.tier_highlight_text_color,
           is_default: tier.is_default,
+          is_sold_out: tier.is_sold_out,
           offers: tier.offers.map((offer) => ({
             product_id: offer.product_id,
             product_name: offer.product_name,

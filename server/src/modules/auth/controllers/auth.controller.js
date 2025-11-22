@@ -156,7 +156,7 @@ export const completeSetup = asyncWrapper(async (req, res) => {
     { expiresIn: "30d" } // Long-lived token
   );
 
-  const planContext = getPlanFeatureSnapshot(store.plan);
+  const planContext = getPlanFeatureSnapshot(store.plan, store);
 
   res.json({
     success: true,
@@ -270,7 +270,7 @@ export const loginWithCredentials = asyncWrapper(async (req, res) => {
     { expiresIn: "30d" }
   );
 
-  const planContext = getPlanFeatureSnapshot(store.plan);
+  const planContext = getPlanFeatureSnapshot(store.plan, store);
 
   res.json({
     success: true,
@@ -402,5 +402,58 @@ export const resetPassword = asyncWrapper(async (req, res) => {
   res.json({
     success: true,
     message: "تم تحديث كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول",
+  });
+});
+
+export const getUserInfo = asyncWrapper(async (req, res) => {
+  const storeId = req.user?.store_id;
+
+  if (!storeId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Store ID not found" });
+  }
+
+  const store = await Store.findOne({ store_id: storeId });
+
+  if (!store) {
+    return res.status(404).json({ success: false, message: "Store not found" });
+  }
+
+  const planContext = getPlanFeatureSnapshot(store.plan, store);
+
+  res.json({
+    success: true,
+    data: {
+      store_id: store.store_id,
+      name: store.name,
+      domain: store.domain,
+      plan: store.plan,
+      email: store.email,
+      plan_context: planContext,
+    },
+  });
+});
+
+export const refreshPlan = asyncWrapper(async (req, res) => {
+  const storeId = req.user?.store_id;
+
+  if (!storeId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Store ID not found" });
+  }
+
+  const store = await Store.findOne({ store_id: storeId });
+
+  if (!store) {
+    return res.status(404).json({ success: false, message: "Store not found" });
+  }
+
+  const planContext = getPlanFeatureSnapshot(store.plan, store);
+
+  res.json({
+    success: true,
+    plan_context: planContext,
   });
 });

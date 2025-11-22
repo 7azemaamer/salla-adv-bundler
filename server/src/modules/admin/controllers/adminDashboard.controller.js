@@ -460,7 +460,12 @@ export const updateStore = async (req, res) => {
     const updates = req.body;
 
     // Allowed fields to update
-    const allowedUpdates = ["is_active", "plan", "needs_reauth"];
+    const allowedUpdates = [
+      "is_active",
+      "plan",
+      "needs_reauth",
+      "is_unlimited",
+    ];
     const filteredUpdates = {};
 
     for (const key of allowedUpdates) {

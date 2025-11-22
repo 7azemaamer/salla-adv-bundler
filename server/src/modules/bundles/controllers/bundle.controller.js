@@ -8,6 +8,7 @@ import {
   syncManualReviewsToCache,
 } from "../../products/services/productCache.service.js";
 import Store from "../../stores/model/store.model.js";
+import { getValidAccessToken } from "../../../utils/tokenHelper.js";
 import { stripBundleStylingUpdate } from "../../stores/constants/planConfig.js";
 
 /* ===============================================
@@ -177,6 +178,19 @@ export const updateBundle = asyncWrapper(async (req, res) => {
 
   sanitizedUpdates.updatedAt = new Date();
 
+  // Get the original bundle before update to compare sold-out status
+  const originalBundle = await BundleConfig.findOne({
+    _id: bundle_id,
+    store_id,
+  });
+
+  if (!originalBundle) {
+    return res.status(404).json({
+      success: false,
+      message: "Bundle not found",
+    });
+  }
+
   // Update the bundle
   const updatedBundle = await BundleConfig.findOneAndUpdate(
     { _id: bundle_id, store_id },
@@ -184,11 +198,13 @@ export const updateBundle = asyncWrapper(async (req, res) => {
     { new: true }
   );
 
-  if (!updatedBundle) {
-    return res.status(404).json({
-      success: false,
-      message: "Bundle not found",
-    });
+  // Handle sold-out tier changes (delete/create offers)
+  if (sanitizedUpdates.bundles && updatedBundle.status === "active") {
+    await bundleService.handleSoldOutTierChanges(
+      updatedBundle,
+      originalBundle.bundles,
+      sanitizedUpdates.bundles
+    );
   }
 
   // If manual_reviews were updated, sync them to product cache
@@ -300,8 +316,16 @@ export const refetchProductReviews = asyncWrapper(async (req, res) => {
     const productId = bundle.target_product_id.toString().replace(/^p/, "");
     const fetchLimit = bundle.review_fetch_limit || 20;
 
+    // Get valid access token for Salla API
+    const accessToken = await getValidAccessToken(store_id);
+
     // Force fetch from Salla API (bypasses cache)
-    const result = await forceFetchReviews(store_id, productId, fetchLimit);
+    const result = await forceFetchReviews(
+      store_id,
+      productId,
+      accessToken,
+      fetchLimit
+    );
 
     if (result.success) {
       return res.status(200).json({

@@ -9,6 +9,8 @@ export const BASE_PLAN_FEATURES = {
   customHideSelectors: true,
   reviewsWidget: true,
   announcement: true,
+  soldOutTiers: true,
+  modalStyling: true,
   bundleAnalytics: true,
   dashboardAnalytics: true,
   analyticsPage: true,
@@ -55,6 +57,8 @@ const PLAN_TEMPLATES = {
       customHideSelectors: false,
       reviewsWidget: false,
       announcement: false,
+      soldOutTiers: false,
+      modalStyling: false,
       bundleAnalytics: false,
       dashboardAnalytics: false,
       analyticsPage: false,
@@ -264,8 +268,38 @@ export const enrichBundleForPlanResponse = (bundleObject, planKey) => {
   return enriched;
 };
 
-export const getPlanFeatureSnapshot = (planKey) => {
+export const getPlanFeatureSnapshot = (planKey, store = null) => {
   const planConfig = getPlanConfig(planKey);
+
+  if (store?.is_unlimited) {
+    return {
+      plan: planConfig.key,
+      label: planConfig.label + " (Unlimited)",
+      limits: {
+        maxBundles: null,
+        monthlyViews: null,
+      },
+      features: {
+        advancedBundleStyling: true,
+        stickyButton: true,
+        timer: true,
+        freeShipping: true,
+        couponControls: true,
+        customHideSelectors: true,
+        reviewsWidget: true,
+        announcement: true,
+        soldOutTiers: true,
+        modalStyling: true,
+        bundleAnalytics: true,
+        dashboardAnalytics: true,
+        conversionInsights: true,
+        bundlePerformance: true,
+        offerAnalytics: true,
+        productReviewsSection: true,
+      },
+    };
+  }
+
   return {
     plan: planConfig.key,
     label: planConfig.label,

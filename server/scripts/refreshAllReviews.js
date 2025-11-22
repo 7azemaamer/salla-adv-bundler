@@ -85,15 +85,22 @@ async function refreshAllReviews() {
           customerCity: review.customer?.city || null,
           createdAt: review.created_at || new Date().toISOString(),
           timeAgo: calculateTimeAgo(review.created_at),
+          isManual: false, // Mark as Salla API review
         }));
 
-        // Update cache with fresh reviews
-        cache.cached_reviews = formattedReviews;
+        // Preserve existing manual reviews
+        const existingManualReviews =
+          cache.cached_reviews?.filter((r) => r.isManual) || [];
+
+        // Merge manual reviews with new Salla reviews (manual reviews first)
+        cache.cached_reviews = [...existingManualReviews, ...formattedReviews];
         cache.last_fetched = new Date();
         cache.cache_expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
         await cache.save();
 
-        console.log(`  ✅ Updated ${formattedReviews.length} reviews`);
+        console.log(
+          `  ✅ Updated ${formattedReviews.length} Salla reviews (${existingManualReviews.length} manual preserved)`
+        );
         successCount++;
 
         // Add small delay to avoid rate limiting

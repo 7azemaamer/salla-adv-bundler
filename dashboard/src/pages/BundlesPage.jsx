@@ -227,7 +227,7 @@ function BundleCard({
         <Grid.Col span={3}>
           <div className="text-center">
             <Text size="lg" fw={700} c="blue">
-              {bundle.total_views || 0}
+              {bundle.all_time_analytics?.views || 0}
             </Text>
             <Text size="xs" c="dimmed">
               مشاهدة
@@ -258,8 +258,41 @@ function BundleCard({
               className="text-center"
               style={{ filter: hasBundleAnalytics ? "none" : "blur(2px)" }}
             >
+              <Text size="lg" fw={700} c="orange">
+                {bundle.all_time_analytics?.unique_visitors || 0}
+              </Text>
+              <Text size="xs" c="dimmed">
+                زائر فريد
+              </Text>
+            </div>
+          </Box>
+        </Grid.Col>
+        <Grid.Col span={3}>
+          <Box pos="relative">
+            {!hasBundleAnalytics && (
+              <Overlay
+                color="#000"
+                backgroundOpacity={0.05}
+                blur={2}
+                zIndex={1}
+                style={{
+                  backdropFilter: "blur(6px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ThemeIcon size={24} radius="xl" color="orange" variant="light">
+                  <IconLock size={12} />
+                </ThemeIcon>
+              </Overlay>
+            )}
+            <div
+              className="text-center"
+              style={{ filter: hasBundleAnalytics ? "none" : "blur(2px)" }}
+            >
               <Text size="lg" fw={700} c="green">
-                {bundle.total_clicks || 0}
+                {bundle.all_time_analytics?.clicks || 0}
               </Text>
               <Text size="xs" c="dimmed">
                 نقرة
@@ -292,7 +325,7 @@ function BundleCard({
               style={{ filter: hasBundleAnalytics ? "none" : "blur(2px)" }}
             >
               <Text size="lg" fw={700} c="violet">
-                {bundle.total_conversions || 0}
+                {bundle.all_time_analytics?.conversions || 0}
               </Text>
               <Text size="xs" c="dimmed">
                 تحويل
@@ -300,16 +333,6 @@ function BundleCard({
             </div>
           </Box>
         </Grid.Col>
-        {/* <Grid.Col span={3}>
-          <div className="text-center">
-            <Text size="lg" fw={700} c="orange">
-              {conversionRate}%
-            </Text>
-            <Text size="xs" c="dimmed">
-              معدل
-            </Text>
-          </div>
-        </Grid.Col> */}
       </Grid>
 
       {/* Dates */}
@@ -536,7 +559,8 @@ export default function BundlesPage() {
   const { limits, canCreateBundle } = usePlanFeatures();
   const bundleCount = bundles?.length || 0;
   const canCreate = canCreateBundle(bundleCount);
-  const isAtLimit = bundleCount >= limits.maxBundles;
+  const isAtLimit =
+    limits.maxBundles !== null && bundleCount >= limits.maxBundles;
 
   return (
     <Container size="xl" px={0}>
@@ -553,14 +577,17 @@ export default function BundlesPage() {
                 color={
                   isAtLimit
                     ? "red"
-                    : bundleCount >= limits.maxBundles * 0.8
+                    : limits.maxBundles !== null &&
+                      bundleCount >= limits.maxBundles * 0.8
                     ? "orange"
                     : "blue"
                 }
                 variant="light"
               >
                 {bundleCount} /{" "}
-                {limits.maxBundles === 999999 ? "∞" : limits.maxBundles}
+                {limits.maxBundles === null || limits.maxBundles === 999999
+                  ? "∞"
+                  : limits.maxBundles}
               </Badge>
             </Group>
             <Text className="text-gray-600">

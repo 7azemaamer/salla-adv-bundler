@@ -41,6 +41,7 @@ import {
   IconChartLine,
   IconExternalLink,
   IconLock,
+  IconUsers,
 } from "@tabler/icons-react";
 import { notifications } from "@mantine/notifications";
 import useBundleStore from "../stores/useBundleStore";
@@ -201,6 +202,12 @@ export default function BundleDetailsPage() {
       color: "blue",
     },
     {
+      title: "الزوار الفريدون",
+      value: (displayStats.total_unique_visitors || 0).toLocaleString(),
+      icon: IconUsers,
+      color: "orange",
+    },
+    {
       title: "النقرات",
       value: (displayStats.total_clicks || 0).toLocaleString(),
       icon: IconClick,
@@ -212,12 +219,6 @@ export default function BundleDetailsPage() {
       icon: IconTrendingUp,
       color: "green",
     },
-    // {
-    //   title: "الإيرادات المحققة",
-    //   value: `${(displayStats.total_revenue || 0).toFixed(2)} ر.س`,
-    //   icon: IconCoin,
-    //   color: "orange",
-    // },
   ];
 
   return (
@@ -330,7 +331,7 @@ export default function BundleDetailsPage() {
 
         {/* Statistics Cards */}
         <div>
-          <SimpleGrid cols={{ base: 2, sm: 3 }} spacing="md">
+          <SimpleGrid cols={{ base: 2, sm: 2, md: 4 }} spacing="md">
             {stats.map((stat, index) => {
               const isLockedStat =
                 !hasBundleAnalytics &&

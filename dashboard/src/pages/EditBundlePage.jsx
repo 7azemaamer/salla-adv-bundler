@@ -128,6 +128,7 @@ export default function EditBundlePage() {
           tier_highlight_bg_color: "#ffc107",
           tier_highlight_text_color: "#000000",
           is_default: true,
+          is_sold_out: false,
           offers: [
             {
               product_id: "",
@@ -199,6 +200,7 @@ export default function EditBundlePage() {
               tier_highlight_text_color:
                 bundle.tier_highlight_text_color || "#000000",
               is_default: bundle.is_default || false,
+              is_sold_out: bundle.is_sold_out || false,
               offers:
                 bundle.offers && bundle.offers.length > 0
                   ? bundle.offers.map((offer) => ({
@@ -355,6 +357,7 @@ export default function EditBundlePage() {
       tier_highlight_bg_color: colorScheme.highlightBg,
       tier_highlight_text_color: colorScheme.highlightText,
       is_default: false,
+      is_sold_out: false,
       offers: [
         {
           product_id: "",
@@ -921,7 +924,7 @@ export default function EditBundlePage() {
                           )}
                         />
                       </Grid.Col>
-                      <Grid.Col span={6}>
+                      <Grid.Col span={12}>
                         <Switch
                           label="جعل هذا العرض افتراضياً"
                           description="سيتم تحديد هذا العرض مسبقاً في الواجهة"
@@ -938,6 +941,27 @@ export default function EditBundlePage() {
                             );
                             form.setFieldValue("bundles", updatedBundles);
                           }}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={12}>
+                        {!features.soldOutTiers && (
+                          <UpgradePrompt
+                            featureName="إدارة الخيارات المباعة"
+                            compact={true}
+                          />
+                        )}
+                        <Switch
+                          label="منتهي من المخزون (مباع)"
+                          description="لن يتم إنشاء عروض سلة لهذا الخيار"
+                          checked={tier.is_sold_out || false}
+                          onChange={(event) => {
+                            form.setFieldValue(
+                              `bundles.${tierIndex}.is_sold_out`,
+                              event.currentTarget.checked
+                            );
+                          }}
+                          color="red"
+                          disabled={!features.soldOutTiers}
                         />
                       </Grid.Col>
                     </Grid>

@@ -12,6 +12,7 @@ import {
   Paper,
   Divider,
   Select,
+  Switch,
 } from "@mantine/core";
 import {
   IconPlus,
@@ -388,6 +389,248 @@ export default function DisplaySettingsPanel({
                     الصفحة بشكل غير متوقع.
                   </Text>
                 </Alert>
+              )}
+            </Stack>
+          </Accordion.Panel>
+        </Accordion.Item>
+
+        {/* Sold Out Tier Settings */}
+        {!planFeatures.soldOutTiers && (
+          <UpgradePrompt featureName="إدارة الخيارات المباعة" />
+        )}
+        <Accordion.Item
+          value="sold-out-tier"
+          disabled={!planFeatures.soldOutTiers}
+        >
+          <Accordion.Control icon={<IconAlertTriangle size="1.2rem" />}>
+            <Group gap="xs">
+              <Text fw={500}>إعدادات الخيارات المباعة</Text>
+              {settings?.sold_out_tier?.enabled && (
+                <Badge color="red" variant="light" size="sm">
+                  مفعل
+                </Badge>
+              )}
+            </Group>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Stack gap="md">
+              {/* Info Alert */}
+              <Alert
+                icon={<IconInfoCircle size="1rem" />}
+                title="إعدادات الخيارات المباعة"
+                color="blue"
+                variant="light"
+              >
+                <Text size="sm">
+                  قم بتخصيص مظهر الخيارات المباعة في باقاتك. عند تفعيل هذه
+                  الميزة:
+                </Text>
+                <Stack gap="xs" mt="sm">
+                  <Text size="sm" c="dimmed">
+                    • سيتم إيقاف الخيار المباع وعدم إمكانية اختياره
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    • سيظهر بحدود ملونة وشارة تنبيه "مباع"
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    • لن يتم إنشاء عروض سلة للخيارات المباعة تلقائياً
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    • عند عودة المخزون، سيتم إنشاء العروض تلقائياً
+                  </Text>
+                </Stack>
+              </Alert>
+
+              {/* Enable Toggle */}
+              <Paper withBorder p="md" radius="md">
+                <Group justify="space-between">
+                  <div>
+                    <Text size="sm" fw={500}>
+                      تفعيل ميزة الخيارات المباعة
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      إظهار وتخصيص الخيارات المباعة في الباقات
+                    </Text>
+                  </div>
+                  <Switch
+                    checked={settings?.sold_out_tier?.enabled || false}
+                    onChange={(e) =>
+                      onToggle("sold_out_tier.enabled", e.currentTarget.checked)
+                    }
+                    disabled={loading.updating}
+                  />
+                </Group>
+              </Paper>
+
+              {/* Customization Options */}
+              {settings?.sold_out_tier?.enabled && (
+                <Paper withBorder p="md" radius="md">
+                  <Stack gap="md">
+                    <Text size="sm" fw={500}>
+                      تخصيص المظهر
+                    </Text>
+
+                    {/* Badge Text */}
+                    <TextInput
+                      label="نص الشارة"
+                      placeholder="مباع"
+                      value={settings?.sold_out_tier?.badge_text || ""}
+                      onChange={(e) =>
+                        onToggle("sold_out_tier.badge_text", e.target.value)
+                      }
+                      disabled={loading.updating}
+                      description="النص الذي سيظهر على شارة الخيار المباع"
+                    />
+
+                    {/* Color Inputs */}
+                    <Group grow>
+                      <TextInput
+                        label="لون النص"
+                        type="color"
+                        value={settings?.sold_out_tier?.text_color || "#ffffff"}
+                        onChange={(e) =>
+                          onToggle("sold_out_tier.text_color", e.target.value)
+                        }
+                        disabled={loading.updating}
+                      />
+                      <TextInput
+                        label="لون الخلفية"
+                        type="color"
+                        value={
+                          settings?.sold_out_tier?.badge_bg_color || "#dc2626"
+                        }
+                        onChange={(e) =>
+                          onToggle(
+                            "sold_out_tier.badge_bg_color",
+                            e.target.value
+                          )
+                        }
+                        disabled={loading.updating}
+                      />
+                      <TextInput
+                        label="لون الحدود"
+                        type="color"
+                        value={
+                          settings?.sold_out_tier?.border_color || "#dc2626"
+                        }
+                        onChange={(e) =>
+                          onToggle("sold_out_tier.border_color", e.target.value)
+                        }
+                        disabled={loading.updating}
+                      />
+                    </Group>
+                  </Stack>
+                </Paper>
+              )}
+            </Stack>
+          </Accordion.Panel>
+        </Accordion.Item>
+
+        {/* Modal Styling Settings */}
+        <Accordion.Item
+          value="modal-styling"
+          disabled={!planFeatures.modalStyling}
+        >
+          <Accordion.Control icon={<IconPalette size="1.2rem" />}>
+            <Group gap="xs">
+              <Text fw={500}>تخصيص النافذة المنبثقة</Text>
+              {!planFeatures.modalStyling ? (
+                <Badge color="orange" variant="light" size="sm">
+                  ترقية
+                </Badge>
+              ) : settings?.modal_styling?.enabled ? (
+                <Badge color="violet" variant="light" size="sm">
+                  مفعل
+                </Badge>
+              ) : null}
+            </Group>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Stack gap="md">
+              {/* Info Alert */}
+              <Alert
+                icon={<IconInfoCircle size="1rem" />}
+                title="تخصيص النافذة المنبثقة"
+                color="violet"
+                variant="light"
+              >
+                <Text size="sm">
+                  قم بتخصيص الألوان الافتراضية للنافذة المنبثقة. هذه الألوان
+                  ستطبق على جميع الباقات ما لم يتم تخصيص ألوان خاصة بكل باقة.
+                </Text>
+              </Alert>
+
+              {/* Enable Toggle */}
+              <Paper withBorder p="md" radius="md">
+                <Group justify="space-between">
+                  <div>
+                    <Text size="sm" fw={500}>
+                      تفعيل تخصيص النافذة
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      استخدام ألوان مخصصة للنافذة المنبثقة
+                    </Text>
+                  </div>
+                  <Switch
+                    checked={settings?.modal_styling?.enabled || false}
+                    onChange={(e) =>
+                      onToggle("modal_styling.enabled", e.currentTarget.checked)
+                    }
+                    disabled={loading.updating || !planFeatures.modalStyling}
+                  />
+                </Group>
+              </Paper>
+
+              {/* Color Customization */}
+              {settings?.modal_styling?.enabled && (
+                <Paper withBorder p="md" radius="md">
+                  <Stack gap="md">
+                    <Text size="sm" fw={500}>
+                      الألوان الافتراضية
+                    </Text>
+
+                    <Group grow>
+                      <TextInput
+                        label="لون الخلفية"
+                        type="color"
+                        value={settings?.modal_styling?.bg_color || "#ffffff"}
+                        onChange={(e) =>
+                          onToggle("modal_styling.bg_color", e.target.value)
+                        }
+                        disabled={
+                          loading.updating || !planFeatures.modalStyling
+                        }
+                        description="لون خلفية النافذة المنبثقة"
+                      />
+                      <TextInput
+                        label="لون النص"
+                        type="color"
+                        value={settings?.modal_styling?.text_color || "#1f2937"}
+                        onChange={(e) =>
+                          onToggle("modal_styling.text_color", e.target.value)
+                        }
+                        disabled={
+                          loading.updating || !planFeatures.modalStyling
+                        }
+                        description="لون النص الافتراضي"
+                      />
+                      <TextInput
+                        label="لون العناصر الداخلية"
+                        type="color"
+                        value={
+                          settings?.modal_styling?.accent_color || "#f3f4f6"
+                        }
+                        onChange={(e) =>
+                          onToggle("modal_styling.accent_color", e.target.value)
+                        }
+                        disabled={
+                          loading.updating || !planFeatures.modalStyling
+                        }
+                        description="لون البطاقات والأقسام الداخلية"
+                      />
+                    </Group>
+                  </Stack>
+                </Paper>
               )}
             </Stack>
           </Accordion.Panel>

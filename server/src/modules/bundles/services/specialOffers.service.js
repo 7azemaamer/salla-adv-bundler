@@ -123,7 +123,6 @@ class SpecialOffersService {
         }
       );
 
-
       return response.data;
     } catch (error) {
       console.error(
@@ -411,7 +410,6 @@ class SpecialOffersService {
       },
     };
 
-
     return payload;
   }
 
@@ -492,9 +490,9 @@ class SpecialOffersService {
       offer_type: "buy_x_get_y",
       applied_to: "product",
       start_date: effectiveStartDate,
-      min_purchase_amount: 0, 
-      min_items_count: 0, 
-      min_items: 0, 
+      min_purchase_amount: 0,
+      min_items_count: 0,
+      min_items: 0,
       discounts_table: [
         // Required field for buy_x_get_y offers
         {
@@ -516,7 +514,6 @@ class SpecialOffersService {
         products: [parseInt(offer.product_id)], // Ensure numeric ID
       },
     };
-
 
     let expiryDate;
     if (bundleConfig.expiry_date) {
@@ -657,7 +654,6 @@ class SpecialOffersService {
     try {
       // Create ONE consolidated offer per tier
       for (const tier of bundleConfig.bundles) {
-
         let offerPayload = null;
         let allGiftProducts = [];
         let productDetails = [];
@@ -742,6 +738,14 @@ class SpecialOffersService {
               .split(".")[0];
           }
 
+          // Skip sold-out tiers
+          if (tier.is_sold_out) {
+            console.log(
+              `[SpecialOffers]: Skipping sold-out tier ${tier.tier} for bundle ${bundleConfig.name}`
+            );
+            continue;
+          }
+
           offerPayload = {
             name: offerName.substring(0, 100),
             message: offerMessage,
@@ -800,10 +804,8 @@ class SpecialOffersService {
 
           await new Promise((resolve) => setTimeout(resolve, 500));
         } catch (error) {
-
           const responseData =
             error.originalResponse?.data || error.response?.data;
-
 
           if (responseData?.error?.fields) {
             Object.entries(responseData.error.fields).forEach(

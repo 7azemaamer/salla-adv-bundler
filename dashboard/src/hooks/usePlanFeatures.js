@@ -15,6 +15,8 @@ export const usePlanFeatures = () => {
         customHideSelectors: false,
         reviewsWidget: false,
         announcement: false,
+        soldOutTiers: false,
+        modalStyling: false,
         bundleAnalytics: false,
         dashboardAnalytics: false,
         conversionInsights: false,
@@ -45,6 +47,7 @@ export const usePlanFeatures = () => {
   };
 
   const canCreateBundle = (currentCount) => {
+    if (limits.maxBundles === null) return true;
     return currentCount < limits.maxBundles;
   };
 

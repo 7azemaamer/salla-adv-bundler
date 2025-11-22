@@ -332,10 +332,14 @@ export default function DashboardHome() {
       >
         <StatCard
           title="إجمالي العروض"
-          value={`${stats.total} / ${limits.maxBundles}`}
+          value={`${stats.total}${
+            limits.maxBundles !== null ? ` / ${limits.maxBundles}` : ""
+          }`}
           icon={IconPackage}
           color="blue"
-          description={`${stats.active} نشط من ${limits.maxBundles}`}
+          description={`${stats.active} نشط${
+            limits.maxBundles !== null ? ` من ${limits.maxBundles}` : ""
+          }`}
         />
 
         <StatCard
@@ -378,28 +382,30 @@ export default function DashboardHome() {
         spacing="md"
         data-tour="progress-bars"
       >
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Group justify="space-between" mb="md">
-            <div>
-              <Text fw={600}>استخدام العروض</Text>
-              <Text size="sm" c="dimmed">
-                {stats.total} من {limits.maxBundles} عرض
-              </Text>
-            </div>
-            <Badge
-              variant="light"
-              color={stats.total >= limits.maxBundles ? "red" : "blue"}
-            >
-              {Math.round((stats.total / limits.maxBundles) * 100)}%
-            </Badge>
-          </Group>
+        {limits.maxBundles !== null && (
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Group justify="space-between" mb="md">
+              <div>
+                <Text fw={600}>استخدام العروض</Text>
+                <Text size="sm" c="dimmed">
+                  {stats.total} من {limits.maxBundles} عرض
+                </Text>
+              </div>
+              <Badge
+                variant="light"
+                color={stats.total >= limits.maxBundles ? "red" : "blue"}
+              >
+                {Math.round((stats.total / limits.maxBundles) * 100)}%
+              </Badge>
+            </Group>
 
-          <Progress
-            value={(stats.total / limits.maxBundles) * 100}
-            color={stats.total >= limits.maxBundles ? "red" : "blue"}
-            size="lg"
-          />
-        </Card>
+            <Progress
+              value={(stats.total / limits.maxBundles) * 100}
+              color={stats.total >= limits.maxBundles ? "red" : "blue"}
+              size="lg"
+            />
+          </Card>
+        )}
 
         {limits.monthlyViews && (
           <Card shadow="sm" padding="lg" radius="md" withBorder>

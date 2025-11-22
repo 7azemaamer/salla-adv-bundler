@@ -458,6 +458,48 @@ const settingsSchema = new mongoose.Schema(
         default: "#0c4a6e",
       },
     },
+    // Sold out tier settings
+    sold_out_tier: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+      badge_text: {
+        type: String,
+        default: "نفذت الكمية",
+      },
+      text_color: {
+        type: String,
+        default: "#dc2626",
+      },
+      border_color: {
+        type: String,
+        default: "#dc2626",
+      },
+      badge_bg_color: {
+        type: String,
+        default: "#fee2e2",
+      },
+    },
+    // Modal styling settings
+    modal_styling: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      bg_color: {
+        type: String,
+        default: "#ffffff",
+      },
+      text_color: {
+        type: String,
+        default: "#1f2937",
+      },
+      accent_color: {
+        type: String,
+        default: "#f3f4f6",
+      },
+    },
     // Cache version for client-side cache busting
     cache_version: {
       type: Number,

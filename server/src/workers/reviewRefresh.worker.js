@@ -58,16 +58,24 @@ export const startReviewRefreshWorker = () => {
             avatar: review.author?.avatar || review.customer?.avatar || "",
             date: review.created_at || new Date().toISOString(),
             created_at: new Date(review.created_at || Date.now()),
+            isManual: false, // Mark as Salla API review
           }));
 
-          // Update cache with fresh reviews
-          cache.cached_reviews = formattedReviews;
+          // Preserve existing manual reviews
+          const existingManualReviews =
+            cache.cached_reviews?.filter((r) => r.isManual) || [];
+
+          // Merge manual reviews with new Salla reviews (manual reviews first)
+          cache.cached_reviews = [
+            ...existingManualReviews,
+            ...formattedReviews,
+          ];
           cache.last_fetched = new Date();
           cache.cache_expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
           await cache.save();
 
           console.log(
-            `[ReviewRefresh Worker]: Refreshed ${formattedReviews.length} reviews for product ${product_id} (store: ${store_id})`
+            `[ReviewRefresh Worker]: Refreshed ${formattedReviews.length} Salla reviews for product ${product_id} (${existingManualReviews.length} manual reviews preserved)`
           );
 
           successCount++;

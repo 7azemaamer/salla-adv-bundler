@@ -118,11 +118,11 @@ class SettingsService {
     return mutated;
   }
 
-  serializeSettings(settingsDoc, planConfig) {
+  serializeSettings(settingsDoc, planConfig, store = null) {
     const payload = settingsDoc.toObject();
     return {
       settings: payload,
-      planContext: getPlanFeatureSnapshot(planConfig.key),
+      planContext: getPlanFeatureSnapshot(planConfig.key, store),
     };
   }
 
@@ -207,6 +207,13 @@ class SettingsService {
             hide_names: false,
             hide_avatars: false,
           },
+          sold_out_tier: {
+            enabled: true,
+            badge_text: "نفذت الكمية",
+            text_color: "#dc2626",
+            border_color: "#dc2626",
+            badge_bg_color: "#fee2e2",
+          },
         });
 
         await settings.save();
@@ -218,7 +225,7 @@ class SettingsService {
         await settings.save();
       }
 
-      return this.serializeSettings(settings, planConfig);
+      return this.serializeSettings(settings, planConfig, store);
     } catch (error) {
       console.error(
         `[Settings]: Failed to get settings for store ${store_id}:`,
@@ -243,14 +250,16 @@ class SettingsService {
         "hide_price_section",
         "hide_coupon_section",
         "custom_hide_selectors",
-        "sticky_button", // Nested object
-        "free_shipping", // Nested object
-        "timer", // Nested object
-        "review_count", // Nested object - review count settings
-        "review_date_randomizer", // Nested object - review date presets
-        "review_display", // Nested object - review display toggles
-        "custom_reviews", // Array of custom review objects
-        "announcement", // Nested object - announcement banner settings
+        "sticky_button",
+        "free_shipping",
+        "timer",
+        "review_count",
+        "review_date_randomizer",
+        "review_display",
+        "custom_reviews",
+        "announcement",
+        "sold_out_tier",
+        "modal_styling",
       ];
 
       const filteredUpdates = {};
@@ -319,11 +328,13 @@ class SettingsService {
         settings.markModified("custom_reviews");
         settings.markModified("announcement");
         settings.markModified("custom_hide_selectors");
+        settings.markModified("sold_out_tier");
+        settings.markModified("modal_styling");
       }
 
       await settings.save({ validateBeforeSave: true });
 
-      return this.serializeSettings(settings, planConfig);
+      return this.serializeSettings(settings, planConfig, store);
     } catch (error) {
       console.error(
         `[Settings]: Failed to update settings for store ${store_id}:`,
