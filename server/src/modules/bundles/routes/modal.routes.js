@@ -4131,6 +4131,14 @@ router.get("/modal.js", (req, res) => {
        const hideRatings = !!displayConfig.hide_ratings;
        const hideAvatars = !!displayConfig.hide_avatars;
        
+       console.log('[Reviews Debug] Display Config:', {
+         hideNames,
+         hideDates,
+         hideRatings,
+         hideAvatars,
+         displayConfig
+       });
+       
        return \`
          <div class="salla-reviews-section">
            <div class="salla-reviews-header">
@@ -4144,7 +4152,7 @@ router.get("/modal.js", (req, res) => {
                  const showName = !hideNames && review.customerName;
                  const showDate = !hideDates && review.timeAgo;
                  const showRating = !hideRatings && typeof review.rating === 'number';
-                 const showAvatar = !hideAvatars && review.customerAvatar;
+                 const showAvatar = !hideAvatars;
                  const stars = showRating
                    ? Array.from({length: 5}, (_, i) => i < ratingValue ? '★' : '☆').join('')
                    : '';
@@ -4157,7 +4165,7 @@ router.get("/modal.js", (req, res) => {
                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                    transition: transform 0.2s, box-shadow 0.2s;
                  " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.12)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';">
-                   <div class="salla-review-header" style="margin-bottom: 12px;">
+                   <div class="salla-review-header" style="margin-bottom: 12px; display: flex; gap: 12px; align-items: center;">
                      \${showAvatar ? \`<img src="\${review.customerAvatar || 'https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'}" 
                           alt="\${review.customerName || ''}" 
                           class="salla-review-avatar"
@@ -4171,11 +4179,11 @@ router.get("/modal.js", (req, res) => {
                           "
                           onerror="this.src='https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png'" />\` : ''}
                      <div class="salla-review-customer" style="flex: 1;">
-                       <div class="salla-review-name" style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">\${showName || ''}</div>
+                       \${showName ? \`<div class="salla-review-name" style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">\${review.customerName}</div>\` : ''}
                        \${showRating ? \`<div class="salla-review-rating" style="color: #fbbf24; font-size: 16px; letter-spacing: 2px;">\${stars}</div>\` : ''}
                      </div>
                    </div>
-                   <div class="salla-review-content" style="
+                   \${review.content ? \`<div class="salla-review-content" style="
                      color: #4b5563;
                      line-height: 1.6;
                      font-size: 14px;
@@ -4185,7 +4193,7 @@ router.get("/modal.js", (req, res) => {
                      display: -webkit-box;
                      -webkit-line-clamp: 3;
                      -webkit-box-orient: vertical;
-                   ">\${review.content}</div>
+                   ">\${review.content}</div>\` : ''}
                    \${showDate ? \`<div class="salla-review-time" style="
                      font-size: 12px;
                      color: #9ca3af;
@@ -4194,7 +4202,7 @@ router.get("/modal.js", (req, res) => {
                      gap: 4px;
                    ">
                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                       <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                       <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
                      </svg>
                      \${review.timeAgo}
                    </div>\` : ''}
