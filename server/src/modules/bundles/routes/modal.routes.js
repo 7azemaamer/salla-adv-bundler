@@ -4081,9 +4081,9 @@ router.get("/modal.js", (req, res) => {
 
     renderReviews(currentStepType = 'bundles') {
        if (!this.reviews || this.reviews.length === 0) return '';
-       // Check if review count feature is enabled
-       const reviewSettings = this.bundleData?.settings?.review_count;
-       if (reviewSettings && reviewSettings.enabled === false) return '';
+       // Check if review display feature is enabled
+       const reviewDisplaySettings = this.bundleData?.settings?.review_display;
+       if (reviewDisplaySettings && reviewDisplaySettings.enabled === false) return '';
        if (!this.shouldShowInStep('reviews', currentStepType)) return '';
        
        const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);

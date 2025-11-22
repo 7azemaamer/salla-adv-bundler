@@ -931,7 +931,9 @@ class SnippetController {
       style.id = 'salla-bundle-hide-quantity-input';
       style.textContent = \`
         /* Hide quantity input section in product form for target products with bundles (Theme: \${this.settings.salla_theme || 'basic'}) */
-        \${quantitySelectors} {
+        \${quantitySelectors},
+        form.product-form salla-quantity-input,
+        salla-quantity-input {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
