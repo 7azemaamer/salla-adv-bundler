@@ -104,28 +104,34 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
           accessToken
         );
 
-        if (cacheResult.success && cacheResult.data && cacheResult.data.length > 0) {
+        if (
+          cacheResult.success &&
+          cacheResult.data &&
+          cacheResult.data.length > 0
+        ) {
           reviews = cacheResult.data.slice(0, 20); // Limit to 20 reviews
         }
       }
 
       // Add custom reviews
       if (settings.custom_reviews && settings.custom_reviews.length > 0) {
-        const formattedCustomReviews = settings.custom_reviews.map((review) => ({
-          id: review._id || null,
-          rating: review.stars || 5,
-          content: review.comment || "",
-          customerName: review.name || "عميل",
-          customerAvatar:
-            review.gender === "female"
-              ? "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_female.png"
-              : "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png",
-          customerCity: review.city || null,
-          createdAt: review.created_at || new Date().toISOString(),
-          timeAgo: review.date_text || "قبل يومين",
-          isVerified: review.is_verified || false,
-        }));
-        
+        const formattedCustomReviews = settings.custom_reviews.map(
+          (review) => ({
+            id: review._id || null,
+            rating: review.stars || 5,
+            content: review.comment || "",
+            customerName: review.name || "عميل",
+            customerAvatar:
+              review.gender === "female"
+                ? "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_female.png"
+                : "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png",
+            customerCity: review.city || null,
+            createdAt: review.created_at || new Date().toISOString(),
+            timeAgo: review.date_text || "قبل يومين",
+            isVerified: review.is_verified || false,
+          })
+        );
+
         // Merge custom reviews with fetched reviews
         reviews = [...reviews, ...formattedCustomReviews];
       }
