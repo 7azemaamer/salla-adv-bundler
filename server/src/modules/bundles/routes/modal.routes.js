@@ -624,7 +624,16 @@ router.get("/modal.js", (req, res) => {
           if (Array.isArray(cachedProductReviews)) {
             this.reviews = cachedProductReviews;
           }
-          // Reviews already loaded from bundle endpoint with include_reviews=true
+          
+          // If not in cache, check if reviews are in the bundleData directly
+          if (!this.reviews || this.reviews.length === 0) {
+            const bundleDataReviews = bundleConfig.reviews || this.bundleData?.data?.reviews;
+            if (Array.isArray(bundleDataReviews) && bundleDataReviews.length > 0) {
+              this.reviews = bundleDataReviews;
+              // Cache them for future use
+              productReviewCache[normalizedProductKey] = bundleDataReviews;
+            }
+          }
         }
 
         // Merge manual reviews with fetched reviews
@@ -632,6 +641,11 @@ router.get("/modal.js", (req, res) => {
         if (manualReviews.length > 0) {
           // Add manual reviews at the beginning
           this.reviews = [...manualReviews, ...(this.reviews || [])];
+        }
+
+        // Extract review display config from bundleData if not already set
+        if (!this.reviewDisplayConfig && bundleConfig.settings && bundleConfig.settings.review_display) {
+          this.reviewDisplayConfig = bundleConfig.settings.review_display;
         }
 
         // Apply review selection and limit
@@ -4080,11 +4094,32 @@ router.get("/modal.js", (req, res) => {
     }
 
     renderReviews(currentStepType = 'bundles') {
-       if (!this.reviews || this.reviews.length === 0) return '';
+       // Debug logging
+       console.log('[Reviews Debug] renderReviews called with step:', currentStepType);
+       console.log('[Reviews Debug] this.reviews:', this.reviews);
+       console.log('[Reviews Debug] this.reviews length:', this.reviews?.length);
+       
+       if (!this.reviews || this.reviews.length === 0) {
+         console.log('[Reviews Debug] No reviews available');
+         return '';
+       }
+       
        // Check if review display feature is enabled
        const reviewDisplaySettings = this.bundleData?.settings?.review_display;
-       if (reviewDisplaySettings && reviewDisplaySettings.enabled === false) return '';
-       if (!this.shouldShowInStep('reviews', currentStepType)) return '';
+       console.log('[Reviews Debug] reviewDisplaySettings:', reviewDisplaySettings);
+       
+       if (reviewDisplaySettings && reviewDisplaySettings.enabled === false) {
+         console.log('[Reviews Debug] Review display is disabled');
+         return '';
+       }
+       
+       const shouldShow = this.shouldShowInStep('reviews', currentStepType);
+       console.log('[Reviews Debug] shouldShowInStep result:', shouldShow);
+       
+       if (!shouldShow) {
+         console.log('[Reviews Debug] Reviews not configured to show in this step');
+         return '';
+       }
        
        const totalRating = this.reviews.reduce((sum, r) => sum + (r.rating || 5), 0);
        const avgRating = (totalRating / this.reviews.length).toFixed(1);
