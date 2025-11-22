@@ -208,7 +208,7 @@ export default function StoreDetailPage() {
                   Updated At
                 </span>
                 <span className="text-sm text-gray-900 dark:text-white">
-                  {new Date(store.updated_at).toLocaleDateString()}
+                  {new Date(store.updatedAt).toLocaleDateString()}
                 </span>
               </div>
             </div>
@@ -264,6 +264,7 @@ function EditStoreForm({ store, plans, onSubmit }) {
     handleSubmit,
     setValue,
     control,
+    reset,
     formState: { isDirty },
   } = useForm({
     defaultValues: {
@@ -280,9 +281,23 @@ function EditStoreForm({ store, plans, onSubmit }) {
     },
   });
 
-  // Watch plan changes to sync limits
   const selectedPlan = useWatch({ control, name: "plan" });
   const isUnlimited = useWatch({ control, name: "is_unlimited" });
+
+  useEffect(() => {
+    reset({
+      plan: store.plan,
+      status: store.status,
+      bundles_enabled: store.bundles_enabled,
+      is_unlimited: store.is_unlimited || false,
+      plan_override_enabled: store.plan_override_enabled || false,
+      bundle_settings: {
+        max_bundles_per_store: store.bundle_settings?.max_bundles_per_store,
+        max_monthly_views: store.bundle_settings?.max_monthly_views,
+        analytics_enabled: store.bundle_settings?.analytics_enabled,
+      },
+    });
+  }, [store, reset]);
 
   // Sync plan limits when plan changes (unless in override mode)
   useEffect(() => {

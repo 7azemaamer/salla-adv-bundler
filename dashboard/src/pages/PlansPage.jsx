@@ -30,8 +30,8 @@ import useAuthStore from "../stores/useAuthStore";
 export default function PlansPage() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuthStore();
-  const currentPlan = user?.plan || "free";
+  const { user, planContext } = useAuthStore();
+  const currentPlan = planContext?.plan || user?.plan || "basic";
 
   useEffect(() => {
     fetchPlans();

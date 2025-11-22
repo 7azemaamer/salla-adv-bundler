@@ -17,7 +17,7 @@ export default function StoresPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["stores", page, search, statusFilter, planFilter],
     queryFn: async () => {
       const params = {
