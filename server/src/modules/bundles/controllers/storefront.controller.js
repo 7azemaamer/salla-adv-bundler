@@ -91,6 +91,50 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
     storeDoc = await storeService.getStoreByStoreId(store_id);
   }
 
+  // Fetch reviews if review_display is enabled
+  let reviews = [];
+  try {
+    if (settings.review_display && settings.review_display.enabled !== false) {
+      const accessToken = await getValidAccessToken(store_id);
+      if (accessToken) {
+        const normalizedProductId = product_id.toString().replace(/^p/, "");
+        const cacheResult = await getCachedReviews(
+          store_id,
+          normalizedProductId,
+          accessToken
+        );
+
+        if (cacheResult.success && cacheResult.data && cacheResult.data.length > 0) {
+          reviews = cacheResult.data.slice(0, 20); // Limit to 20 reviews
+        }
+      }
+
+      // Add custom reviews
+      if (settings.custom_reviews && settings.custom_reviews.length > 0) {
+        const formattedCustomReviews = settings.custom_reviews.map((review) => ({
+          id: review._id || null,
+          rating: review.stars || 5,
+          content: review.comment || "",
+          customerName: review.name || "عميل",
+          customerAvatar:
+            review.gender === "female"
+              ? "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_female.png"
+              : "https://cdn.assets.salla.network/prod/stores/themes/default/assets/images/avatar_male.png",
+          customerCity: review.city || null,
+          createdAt: review.created_at || new Date().toISOString(),
+          timeAgo: review.date_text || "قبل يومين",
+          isVerified: review.is_verified || false,
+        }));
+        
+        // Merge custom reviews with fetched reviews
+        reviews = [...reviews, ...formattedCustomReviews];
+      }
+    }
+  } catch (reviewError) {
+    console.error("[Get Bundles] Failed to fetch reviews:", reviewError);
+    // Continue without reviews
+  }
+
   res.status(200).json({
     success: true,
     data: {
@@ -119,6 +163,7 @@ export const getBundlesByProduct = asyncWrapper(async (req, res) => {
         custom_reviews: settings.custom_reviews || [],
       },
       payment_methods: storeDoc?.payment_methods || [],
+      reviews: reviews,
     },
   });
 });
