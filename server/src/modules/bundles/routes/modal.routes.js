@@ -4104,17 +4104,14 @@ router.get("/modal.js", (req, res) => {
          return '';
        }
        
-       // Check if review display feature is enabled
-       const reviewDisplaySettings = this.bundleData?.settings?.review_display;
-       console.log('[Reviews Debug] reviewDisplaySettings:', reviewDisplaySettings);
-       
+       const reviewDisplaySettings = this.bundleData?.settings?.review_display || 
+                                    this.bundleData?.data?.settings?.review_display ||
+                                    this.reviewDisplayConfig;
        if (reviewDisplaySettings && reviewDisplaySettings.enabled === false) {
-         console.log('[Reviews Debug] Review display is disabled');
          return '';
        }
        
        const shouldShow = this.shouldShowInStep('reviews', currentStepType);
-       console.log('[Reviews Debug] shouldShowInStep result:', shouldShow);
        
        if (!shouldShow) {
          console.log('[Reviews Debug] Reviews not configured to show in this step');
@@ -4130,14 +4127,6 @@ router.get("/modal.js", (req, res) => {
        const hideDates = !!displayConfig.hide_dates;
        const hideRatings = !!displayConfig.hide_ratings;
        const hideAvatars = !!displayConfig.hide_avatars;
-       
-       console.log('[Reviews Debug] Display Config:', {
-         hideNames,
-         hideDates,
-         hideRatings,
-         hideAvatars,
-         displayConfig
-       });
        
        return \`
          <div class="salla-reviews-section">
